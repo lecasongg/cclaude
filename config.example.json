@@ -1,0 +1,34 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8846,
+    "token": "change-me-local-token"
+  },
+  "runtime_mode": "openai-compatible",
+  "workers": [
+    {
+      "worker_id": "niuma-1",
+      "display_name": "牛马1",
+      "provider": "smarthse",
+      "model": "deepseek-v4-pro",
+      "api_key_env": "NIUMA_1_API_KEY",
+      "profile_dir": "profiles/niuma-1",
+      "workspace_dir": "workspaces/niuma-1",
+      "skills_dir": "skills/niuma-1",
+      "role": "JSP/JS/SQL 老系统逆向分析工位",
+      "enabled": true
+    },
+    {
+      "worker_id": "niuma-2",
+      "display_name": "牛马2",
+      "provider": "smarthse",
+      "model": "deepseek-v4-pro",
+      "api_key_env": "NIUMA_2_API_KEY",
+      "profile_dir": "profiles/niuma-2",
+      "workspace_dir": "workspaces/niuma-2",
+      "skills_dir": "skills/niuma-2",
+      "role": "需求文档编写工位",
+      "enabled": true
+    }
+  ]
+}

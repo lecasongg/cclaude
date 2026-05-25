@@ -1,0 +1,30 @@
+# --- Secrets / runtime ---
+runtime_config.json
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Runtime / generated output ---
+artifacts/
+workspaces/
+logs/
+*.log
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
