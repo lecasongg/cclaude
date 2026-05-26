@@ -67,6 +67,40 @@ def test_load_factory_config_preserves_worker_isolation(tmp_path):
     assert config.workers[0].profile_dir != config.workers[1].profile_dir
     assert config.workers[0].workspace_dir != config.workers[1].workspace_dir
     assert config.workers[0].skills_dir != config.workers[1].skills_dir
+    assert "backend_type" not in config.workers[0].__dict__
+
+
+def test_load_factory_config_preserves_explicit_worker_backend_type(tmp_path):
+    config_path = tmp_path / "factory.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "workers": [
+                    {
+                        "worker_id": "niuma-1",
+                        "display_name": "牛马1",
+                        "provider": "anthropic",
+                        "model": "claude-sonnet-4-6",
+                        "api_key_env": "ANTHROPIC_API_KEY",
+                        "profile_dir": "profiles/niuma-1",
+                        "workspace_dir": "workspaces/niuma-1",
+                        "skills_dir": "skills/niuma-1",
+                        "backend_type": "claude_cli",
+                        "backend_options": {"timeout_seconds": 1800},
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    config = load_factory_config(config_path)
+
+    assert config.workers[0].backend_type == "claude_cli"
+    assert config.workers[0].backend_options == {"timeout_seconds": 1800}
+    assert "backend_type" in config.workers[0].__dict__
 
 
 def test_load_factory_config_rejects_duplicate_worker_ids(tmp_path):

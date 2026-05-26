@@ -27,7 +27,7 @@ class FactoryConfig:
 def load_factory_config(path: str | Path) -> FactoryConfig:
     data = loads(Path(path).read_text(encoding="utf-8"))
     server_data = data["server"]
-    workers = [WorkerConfig(**worker_data) for worker_data in data["workers"]]
+    workers = [_load_worker_config(worker_data) for worker_data in data["workers"]]
     seen: set[str] = set()
     for worker in workers:
         if worker.worker_id in seen:
@@ -42,6 +42,14 @@ def load_factory_config(path: str | Path) -> FactoryConfig:
         workers=workers,
         runtime_mode=data.get("runtime_mode", "mock-subprocess"),
     )
+
+
+def _load_worker_config(worker_data: dict) -> WorkerConfig:
+    worker = WorkerConfig(**worker_data)
+    if "backend_type" not in worker_data:
+        worker.__dict__.pop("backend_type", None)
+        worker.__dict__.pop("backend_options", None)
+    return worker
 
 
 def load_runtime_config(path: str | Path) -> dict:
