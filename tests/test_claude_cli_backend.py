@@ -25,6 +25,7 @@ def make_config(tmp_path):
 async def test_claude_cli_backend_invokes_claude_with_isolated_profile_and_cwd(tmp_path, monkeypatch):
     config = make_config(tmp_path)
     captured = {}
+    result_event = json.dumps({"type": "result", "result": "任务完成"}, ensure_ascii=False)
 
     async def fake_create_subprocess_exec(*args, **kwargs):
         captured["args"] = args
@@ -32,7 +33,6 @@ async def test_claude_cli_backend_invokes_claude_with_isolated_profile_and_cwd(t
         captured["cwd"] = kwargs.get("cwd")
 
         process = AsyncMock()
-        result_event = json.dumps({"type": "result", "result": "任务完成"}, ensure_ascii=False)
         process.communicate.return_value = (result_event.encode("utf-8"), b"")
         process.returncode = 0
         return process
@@ -49,6 +49,8 @@ async def test_claude_cli_backend_invokes_claude_with_isolated_profile_and_cwd(t
     assert "--cwd" in captured["args"]
     assert captured["env"]["CLAUDE_CONFIG_DIR"] == str(tmp_path / "profiles/niuma-1")
     assert captured["cwd"] == str(tmp_path / "workspaces/niuma-1")
+    events_path = tmp_path / "workspaces/niuma-1/.hermes/last-events.jsonl"
+    assert events_path.read_text(encoding="utf-8") == result_event + "\n"
 
 
 @pytest.mark.asyncio

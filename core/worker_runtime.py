@@ -187,17 +187,21 @@ class ClaudeCliWorkerBackend:
             raise RuntimeError(f"claude CLI exited {process.returncode}: {stderr_text}")
 
         stdout_text = stdout.decode("utf-8", errors="replace")
+        events_path = workspace_dir / ".hermes" / "last-events.jsonl"
+        events_path.parent.mkdir(parents=True, exist_ok=True)
         last_result_text = None
-        for line in stdout_text.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                event = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if event.get("type") == "result":
-                last_result_text = event.get("result", "")
+        with events_path.open("w", encoding="utf-8") as events_file:
+            for line in stdout_text.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                events_file.write(line + "\n")
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if event.get("type") == "result":
+                    last_result_text = event.get("result", "")
         if last_result_text is None:
             stdout_tail = stdout_text[-1000:].strip()
             raise RuntimeError(f"claude CLI missing result event in stream-json output: {stdout_tail}")
