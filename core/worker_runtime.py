@@ -168,6 +168,7 @@ class ClaudeCliWorkerBackend:
             prompt,
             "--output-format",
             "stream-json",
+            "--verbose",
             "--add-dir",
             str(artifacts_dir),
             "--model",
