@@ -110,6 +110,42 @@ agent_factory/core/worker_runtime.py
 
 `OpenAICompatibleWorkerBackend` 会读取每个 worker 自己的 `api_key_env`，保证 key 独立。
 
+## 切换 backend
+
+新配置推荐使用每个 worker 自己的 `backend_type` 和 `backend_options`。参考 `factory_config.example.json`：
+
+```json
+{
+  "worker_id": "niuma-1",
+  "model": "claude-sonnet-4-6",
+  "api_key_env": "ANTHROPIC_API_KEY",
+  "backend_type": "claude_cli",
+  "backend_options": {
+    "timeout_seconds": 1800,
+    "extra_args": ["--permission-mode", "acceptEdits"]
+  }
+}
+```
+
+可选值：
+
+- `claude_cli`：每个任务启动独立 `claude -p` 子进程，使用 `profile_dir`、`workspace_dir`、`skills_dir` 隔离。
+- `openai_compatible`：走 OpenAI Chat Completions 兼容接口，用于 DeepSeek/中转站回退。
+- `subprocess`：运行自定义命令，主要用于本地 mock 或集成脚本。
+- `fake`：测试用固定文本 backend。
+
+灰度建议：先只把 `niuma-1` 切到 `claude_cli`，`niuma-2` 保持 `openai_compatible`；观察任务成功率、耗时和成本后，再切第二个 worker。回滚时只需要把目标 worker 的 `backend_type` 改回 `openai_compatible` 并重启 Worker Server。
+
+本地 Windows 环境运行 pytest 时，如果默认 `%TEMP%` 目录权限异常，可以临时把 pytest 临时目录放到仓库内：
+
+```powershell
+mkdir .tmp 2>nul
+$env:TMP = "$PWD\.tmp"
+$env:TEMP = "$PWD\.tmp"
+$env:TMPDIR = "$PWD\.tmp"
+python -m pytest tests/ -q
+```
+
 ## Web 大屏配置说明
 
 监控大屏顶部按流水线纵向显示每个牛马工位：牛马1 在上，牛马2 在下。每张工位卡会显示：
