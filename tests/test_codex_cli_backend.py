@@ -65,6 +65,47 @@ async def test_codex_cli_backend_invokes_codex_exec_with_isolated_home_and_works
 
 
 @pytest.mark.asyncio
+async def test_codex_cli_backend_writes_relay_profile_config_and_maps_key(tmp_path, monkeypatch):
+    config = make_config(tmp_path)
+    config.base_url = "https://relay.local/v1"
+    captured = {}
+
+    monkeypatch.setenv("NIUMA_1_API_KEY", "relay-key")
+
+    async def fake_create_subprocess_exec(*args, **kwargs):
+        captured["env"] = kwargs.get("env", {})
+        output_path = Path(args[args.index("-o") + 1])
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text("done", encoding="utf-8")
+        process = AsyncMock()
+        process.communicate.return_value = (b"{}\n", b"")
+        process.returncode = 0
+        return process
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create_subprocess_exec)
+
+    await CodexCliWorkerBackend().run("hi", config)
+
+    config_toml = (tmp_path / "profiles/niuma-1/config.toml").read_text(encoding="utf-8")
+    assert 'model_provider = "niuma_relay"' in config_toml
+    assert 'model = "gpt-5-codex"' in config_toml
+    assert 'base_url = "https://relay.local/v1"' in config_toml
+    assert 'wire_api = "responses"' in config_toml
+    assert captured["env"]["OPENAI_API_KEY"] == "relay-key"
+
+
+@pytest.mark.asyncio
+async def test_codex_cli_backend_requires_worker_key_for_relay_config(tmp_path, monkeypatch):
+    config = make_config(tmp_path)
+    config.base_url = "https://relay.local/v1"
+
+    monkeypatch.delenv("NIUMA_1_API_KEY", raising=False)
+
+    with pytest.raises(RuntimeError, match="missing API key environment variable: NIUMA_1_API_KEY"):
+        await CodexCliWorkerBackend().run("hi", config)
+
+
+@pytest.mark.asyncio
 async def test_codex_cli_backend_raises_on_nonzero_exit(tmp_path, monkeypatch):
     config = make_config(tmp_path)
 
@@ -77,6 +118,23 @@ async def test_codex_cli_backend_raises_on_nonzero_exit(tmp_path, monkeypatch):
     monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create_subprocess_exec)
 
     with pytest.raises(RuntimeError, match="codex CLI exited 1: auth failed"):
+        await CodexCliWorkerBackend().run("hi", config)
+
+
+@pytest.mark.asyncio
+async def test_codex_cli_backend_reports_json_event_error_before_stderr_noise(tmp_path, monkeypatch):
+    config = make_config(tmp_path)
+    event = b'{"type":"error","message":"unexpected status 403 Forbidden"}\n'
+
+    async def fake_create_subprocess_exec(*args, **kwargs):
+        process = AsyncMock()
+        process.communicate.return_value = (event, b"Reading additional input from stdin...")
+        process.returncode = 1
+        return process
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create_subprocess_exec)
+
+    with pytest.raises(RuntimeError, match="unexpected status 403 Forbidden"):
         await CodexCliWorkerBackend().run("hi", config)
 
 

@@ -259,6 +259,13 @@ class CodexCliWorkerBackend:
 
         env = os.environ.copy()
         env["CODEX_HOME"] = str(profile_dir)
+        api_key = os.environ.get(config.api_key_env)
+        if config.base_url and not api_key:
+            raise RuntimeError(f"missing API key environment variable: {config.api_key_env}")
+        if api_key:
+            env["OPENAI_API_KEY"] = api_key
+        if config.base_url:
+            _write_codex_profile_config(profile_dir, config)
 
         args = [
             *self.resolved_codex_command(),
@@ -297,10 +304,10 @@ class CodexCliWorkerBackend:
 
         stdout_text = stdout.decode("utf-8", errors="replace")
         events_path = workspace_dir / ".hermes" / "last-events.jsonl"
-        _write_event_stream(stdout_text, events_path)
+        event_lines = _write_event_stream(stdout_text, events_path)
 
         if process.returncode != 0:
-            detail = stderr.decode("utf-8", errors="replace").strip() or stdout_text[-1000:].strip()
+            detail = _codex_event_error_detail(event_lines) or stderr.decode("utf-8", errors="replace").strip() or stdout_text[-1000:].strip()
             raise RuntimeError(f"codex CLI exited {process.returncode}: {detail[:400]}")
 
         if output_path.exists():
@@ -373,4 +380,43 @@ def _event_error_detail(event_lines: list[str]) -> str:
         detail = "\n".join(part for part in text_parts if part).strip()
         if detail:
             return detail
+    return ""
+
+
+def _write_codex_profile_config(profile_dir: Path, config: WorkerConfig) -> None:
+    config_path = profile_dir / "config.toml"
+    content = "\n".join(
+        [
+            'model_provider = "niuma_relay"',
+            f'model = "{_toml_string(config.model)}"',
+            "",
+            "[model_providers.niuma_relay]",
+            'name = "niuma_relay"',
+            f'base_url = "{_toml_string(config.base_url)}"',
+            'wire_api = "responses"',
+            "requires_openai_auth = true",
+            "",
+        ]
+    )
+    config_path.write_text(content, encoding="utf-8")
+
+
+def _toml_string(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _codex_event_error_detail(event_lines: list[str]) -> str:
+    for line in reversed(event_lines):
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        message = event.get("message")
+        if event.get("type") == "error" and isinstance(message, str) and message.strip():
+            return message.strip()
+        error_data = event.get("error")
+        if isinstance(error_data, dict):
+            message = error_data.get("message")
+            if isinstance(message, str) and message.strip():
+                return message.strip()
     return ""
