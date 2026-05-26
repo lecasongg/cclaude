@@ -23,6 +23,9 @@ workspaces/
 logs/
 *.log
 
+# --- Brainstorming companion ---
+.superpowers/
+
 # --- IDE / OS ---
 .idea/
 .vscode/
