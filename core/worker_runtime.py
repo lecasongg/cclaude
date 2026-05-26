@@ -10,6 +10,7 @@ from urllib import error, request
 
 from agent_factory.core.artifacts import ArtifactStore
 from agent_factory.core.models import TaskRecord, WorkerConfig
+from agent_factory.core.skill_linking import link_worker_skills
 from agent_factory.core.task_bus import TaskBus
 
 
@@ -144,6 +145,7 @@ class ClaudeCliWorkerBackend:
         profile_dir.mkdir(parents=True, exist_ok=True)
         workspace_dir.mkdir(parents=True, exist_ok=True)
         skills_dir.mkdir(parents=True, exist_ok=True)
+        link_worker_skills(skills_dir, workspace_dir)
 
         env = os.environ.copy()
         env["CLAUDE_CONFIG_DIR"] = str(profile_dir)
