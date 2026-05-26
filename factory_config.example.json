@@ -43,7 +43,7 @@
       "worker_id": "niuma-codex",
       "display_name": "牛马 Codex",
       "provider": "openai",
-      "model": "moonbridge",
+      "model": "deepseek-v4-pro",
       "api_key_env": "OPENAI_API_KEY",
       "base_url": "http://127.0.0.1:38440/v1",
       "profile_dir": "profiles/niuma-codex",
