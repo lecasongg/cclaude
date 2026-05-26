@@ -5,20 +5,29 @@ from fastapi.responses import FileResponse
 
 from agent_factory.core.api import create_app
 from agent_factory.core.artifacts import ArtifactStore
+from agent_factory.core.backends import build_backend
 from agent_factory.core.config import apply_runtime_config, load_factory_config, load_runtime_config
+from agent_factory.core.models import WorkerConfig
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
-from agent_factory.core.worker_runtime import FakeWorkerBackend, OpenAICompatibleWorkerBackend, SubprocessWorkerBackend, WorkerRuntime, default_mock_command
+from agent_factory.core.worker_runtime import WorkerRuntime, default_mock_command
 
 
-def build_backend(runtime_mode: str, worker_display_name: str):
+def apply_legacy_runtime_backend(worker: WorkerConfig, runtime_mode: str) -> WorkerConfig:
+    if "backend_type" in worker.__dict__:
+        return worker
     if runtime_mode == "mock-inline":
-        return FakeWorkerBackend(f"{worker_display_name} completed task")
-    if runtime_mode == "mock-subprocess":
-        return SubprocessWorkerBackend(default_mock_command())
+        worker.backend_type = "fake"
+        worker.backend_options = {"response_text": f"{worker.display_name} completed task"}
+        return worker
     if runtime_mode in {"deepseek", "openai-compatible"}:
-        return OpenAICompatibleWorkerBackend()
+        worker.backend_type = "openai_compatible"
+        return worker
+    if runtime_mode == "mock-subprocess":
+        worker.backend_type = "subprocess"
+        worker.backend_options = {"command": default_mock_command()}
+        return worker
     raise ValueError(f"unsupported runtime_mode: {runtime_mode}")
 
 
@@ -36,7 +45,7 @@ def build_app(config_path: str | Path):
             worker,
             bus,
             artifacts,
-            build_backend(config.runtime_mode, worker.display_name),
+            build_backend(apply_legacy_runtime_backend(worker, config.runtime_mode)),
         )
         for worker in config.workers
         if worker.enabled
