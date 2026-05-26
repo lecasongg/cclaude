@@ -1,4 +1,5 @@
 import textwrap
+from pathlib import Path
 
 import pytest
 
@@ -147,3 +148,12 @@ def test_taskbook_rejects_output_paths_outside_artifacts(tmp_path):
 
     with pytest.raises(TaskBookError, match="invalid output path for step reverse-login"):
         load_taskbook(taskbook_path)
+
+
+def test_repository_sample_taskbooks_are_valid():
+    taskbook_dir = Path(__file__).parents[1] / "taskbooks"
+    sample_paths = sorted(taskbook_dir.glob("*.yml"))
+
+    assert sample_paths
+    for path in sample_paths:
+        load_taskbook(path)
