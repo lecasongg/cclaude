@@ -53,4 +53,22 @@ async def test_supervisor_chain_passes_source_artifacts_to_target(tmp_path):
     assert second.status == TaskStatus.SUCCEEDED
     assert second.parent_task_id == first.task_id
     assert "上游任务: 逆向分析 JSP" in target_backend.calls[0][0]
-    assert "# 需求清单" in target_backend.calls[0][0]
+    assert "上游产物文件路径" in target_backend.calls[0][0]
+    assert "# 需求清单" not in target_backend.calls[0][0]
+
+
+@pytest.mark.asyncio
+async def test_supervisor_chain_passes_artifact_file_paths_not_content(tmp_path):
+    bus = TaskBus(["niuma-1", "niuma-2"])
+    artifacts = ArtifactStore(tmp_path)
+    source_runtime = WorkerRuntime(worker_config("niuma-1"), bus, artifacts, FakeWorkerBackend("# 需求清单\n非常长的内容" * 100))
+    target_backend = FakeWorkerBackend("# 需求文档")
+    target_runtime = WorkerRuntime(worker_config("niuma-2"), bus, artifacts, target_backend)
+    supervisor = HermesSupervisor(bus, artifacts, {"niuma-1": source_runtime, "niuma-2": target_runtime})
+
+    await supervisor.chain("niuma-1", "niuma-2", "逆向 JSP", "写文档")
+
+    target_prompt = target_backend.calls[0][0]
+    assert "非常长的内容" not in target_prompt
+    assert "result.md" in target_prompt
+    assert "请用 Read 工具读取" in target_prompt

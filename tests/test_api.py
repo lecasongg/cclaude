@@ -269,7 +269,9 @@ def test_api_chain_does_not_leak_niuma_1_documents_into_niuma_2_prompt(tmp_path)
     assert "任务手册正文" not in target_prompt
     assert "转换规则正文" not in target_prompt
     assert "上游任务: 逆向分析 JSP" in target_prompt
-    assert "# 需求清单" in target_prompt
+    assert "上游产物文件路径" in target_prompt
+    assert "result.md" in target_prompt
+    assert "# 需求清单" not in target_prompt
 
 
 def test_api_does_not_require_manual_rules_for_niuma_2_direct_delegate(tmp_path):
