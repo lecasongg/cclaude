@@ -19,7 +19,7 @@ class ResourceManager:
     def __init__(self, db_path: str | Path):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._db = sqlite3.connect(self.db_path)
+        self._db = sqlite3.connect(self.db_path, check_same_thread=False)
         self._db.row_factory = sqlite3.Row
         self._initialize_schema()
 
@@ -135,6 +135,12 @@ class ResourceManager:
     def get_pipeline_run(self, run_id: str) -> dict:
         return dict(self._fetch_one("select * from pipeline_runs where run_id = ?", (run_id,)))
 
+    def list_pipeline_runs(self) -> list[dict]:
+        rows = self._db.execute(
+            "select * from pipeline_runs order by created_at desc"
+        ).fetchall()
+        return [dict(row) for row in rows]
+
     def update_pipeline_status(self, run_id: str, status: str) -> None:
         self._ensure_pipeline_run(run_id)
         with self._db:
@@ -171,6 +177,19 @@ class ResourceManager:
         step = dict(row)
         step["depends_on"] = json.loads(step.pop("depends_on_json"))
         return step
+
+    def list_step_runs(self, run_id: str) -> list[dict]:
+        self._ensure_pipeline_run(run_id)
+        rows = self._db.execute(
+            "select * from step_runs where run_id = ? order by created_at",
+            (run_id,),
+        ).fetchall()
+        steps = []
+        for row in rows:
+            step = dict(row)
+            step["depends_on"] = json.loads(step.pop("depends_on_json"))
+            steps.append(step)
+        return steps
 
     def update_step_status(self, run_id: str, step_id: str, status: str) -> None:
         self.get_step_run(run_id, step_id)

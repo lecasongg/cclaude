@@ -6,7 +6,9 @@ from fastapi.testclient import TestClient
 
 from agent_factory.core.api import create_app
 from agent_factory.core.artifacts import ArtifactStore
+from agent_factory.core.event_log import EventLog
 from agent_factory.core.models import WorkerConfig
+from agent_factory.core.resource_manager import ResourceManager
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
@@ -481,3 +483,39 @@ def test_api_lists_task_history_and_reads_artifact(tmp_path):
     assert body["source"]["status"] == "succeeded"
     assert body["target"]["status"] == "succeeded"
     assert body["target"]["parent_task_id"] == body["source"]["task_id"]
+
+
+def test_api_exposes_pipeline_runs_steps_and_events(tmp_path):
+    bus = TaskBus(["niuma-1"])
+    artifacts = ArtifactStore(tmp_path)
+    config = worker_config("niuma-1")
+    supervisor = HermesSupervisor(bus, artifacts, {"niuma-1": WorkerRuntime(config, bus, artifacts, FakeWorkerBackend("清单"))})
+    resource_manager = ResourceManager(tmp_path / "marvis.db")
+    resource_manager.register_agent("niuma-1", display_name="牛马1")
+    run_id = resource_manager.create_pipeline_run("登录模块改造")
+    resource_manager.create_step_run(run_id, "reverse-login", "niuma-1", "逆向登录模块")
+    resource_manager.update_pipeline_status(run_id, "running")
+    resource_manager.update_step_status(run_id, "reverse-login", "running")
+    event_log = EventLog(tmp_path / "events")
+    event_log.write_event(run_id, "step_started", agent_id="niuma-1", step_id="reverse-login")
+    app = create_app(
+        supervisor,
+        bus,
+        [config],
+        SecurityGate("local-token"),
+        resource_manager=resource_manager,
+        event_log=event_log,
+    )
+    client = TestClient(app)
+
+    runs = client.get("/api/runs", headers={"x-hermes-token": "local-token"})
+    run = client.get(f"/api/runs/{run_id}", headers={"x-hermes-token": "local-token"})
+    events = client.get(f"/api/runs/{run_id}/events", headers={"x-hermes-token": "local-token"})
+
+    assert runs.status_code == 200
+    assert runs.json()["runs"][0]["run_id"] == run_id
+    assert run.status_code == 200
+    assert run.json()["run"]["title"] == "登录模块改造"
+    assert run.json()["steps"][0]["step_id"] == "reverse-login"
+    assert events.status_code == 200
+    assert events.json()["events"][0]["type"] == "step_started"

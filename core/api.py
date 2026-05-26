@@ -7,7 +7,9 @@ from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from agent_factory.core.config import save_runtime_config
+from agent_factory.core.event_log import EventLog
 from agent_factory.core.models import TaskRecord, WorkerConfig
+from agent_factory.core.resource_manager import ResourceManager, ResourceManagerError
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
@@ -111,6 +113,8 @@ def create_app(
     security: SecurityGate,
     runtime_config_path: Path | None = None,
     runtime_config: dict | None = None,
+    resource_manager: ResourceManager | None = None,
+    event_log: EventLog | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Hermes Local Agent Factory")
     runtime_data = runtime_config if runtime_config is not None else {}
@@ -261,6 +265,33 @@ def create_app(
     async def list_tasks(x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
         return {"tasks": [task_to_dict(task) for task in bus.list_tasks()]}
+
+    @app.get("/api/runs")
+    async def list_runs(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None:
+            return {"runs": []}
+        return {"runs": resource_manager.list_pipeline_runs()}
+
+    @app.get("/api/runs/{run_id}")
+    async def get_run(run_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        try:
+            return {
+                "run": resource_manager.get_pipeline_run(run_id),
+                "steps": resource_manager.list_step_runs(run_id),
+            }
+        except ResourceManagerError as exc:
+            raise HTTPException(status_code=404, detail="run not found") from exc
+
+    @app.get("/api/runs/{run_id}/events")
+    async def get_run_events(run_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if event_log is None:
+            return {"events": []}
+        return {"events": event_log.read_events(run_id)}
 
     @app.get("/api/artifacts/{worker_id}/{task_id}/{filename}")
     async def read_artifact(worker_id: str, task_id: str, filename: str, x_hermes_token: str | None = Header(default=None)):
