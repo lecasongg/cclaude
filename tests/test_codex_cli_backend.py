@@ -23,10 +23,11 @@ def make_config(tmp_path):
 
 
 def test_codex_cli_default_extra_args_match_current_exec_cli():
-    backend = CodexCliWorkerBackend(extra_args=["-s", "workspace-write", "--skip-git-repo-check"])
+    backend = CodexCliWorkerBackend(extra_args=["--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check"])
 
     assert "-a" not in backend.extra_args
     assert "--ask-for-approval" not in backend.extra_args
+    assert "--dangerously-bypass-approvals-and-sandbox" in backend.extra_args
 
 
 @pytest.mark.asyncio

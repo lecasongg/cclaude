@@ -54,7 +54,7 @@
       "backend_type": "codex_cli",
       "backend_options": {
         "timeout_seconds": 1800,
-        "extra_args": ["-s", "workspace-write", "--skip-git-repo-check"]
+        "extra_args": ["--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check"]
       }
     },
     {
