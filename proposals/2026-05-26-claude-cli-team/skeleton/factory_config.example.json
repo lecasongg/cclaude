@@ -1,0 +1,58 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8846,
+    "token": "local-token"
+  },
+  "workers": [
+    {
+      "worker_id": "niuma-1",
+      "display_name": "牛马1",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "profile_dir": "profiles/niuma-1",
+      "workspace_dir": "workspaces/niuma-1",
+      "skills_dir": "skills/niuma-1",
+      "role": "JSP/JS/SQL 老系统逆向分析工位",
+      "backend_type": "claude_cli",
+      "backend_options": {
+        "timeout_seconds": 1800,
+        "extra_args": ["--permission-mode", "acceptEdits"]
+      }
+    },
+    {
+      "worker_id": "niuma-2",
+      "display_name": "牛马2",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "profile_dir": "profiles/niuma-2",
+      "workspace_dir": "workspaces/niuma-2",
+      "skills_dir": "skills/niuma-2",
+      "role": "需求文档撰写工位",
+      "backend_type": "claude_cli",
+      "backend_options": {
+        "timeout_seconds": 1800,
+        "extra_args": ["--permission-mode", "acceptEdits"]
+      }
+    },
+    {
+      "worker_id": "niuma-3-deepseek",
+      "display_name": "牛马3（DeepSeek 备用，关闭）",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "api_key_env": "NIUMA_3_API_KEY",
+      "profile_dir": "profiles/niuma-3",
+      "workspace_dir": "workspaces/niuma-3",
+      "skills_dir": "skills/niuma-3",
+      "role": "通用辅助工位",
+      "enabled": false,
+      "backend_type": "openai_compatible",
+      "backend_options": {
+        "timeout_seconds": 600
+      }
+    }
+  ],
+  "runtime_mode": "claude-cli"
+}

@@ -23,6 +23,9 @@ workspaces/
 logs/
 *.log
 
+# --- Proposal package archives (源目录入库，zip 不入库) ---
+proposals/*.zip
+
 # --- Brainstorming companion ---
 .superpowers/
 
