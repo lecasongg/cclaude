@@ -7,6 +7,16 @@
 
 由 Hermes 主管派工，Worker Server 提供 HTTP 接口与 Web 监控大屏。worker backend 可切换：默认范例使用 Claude CLI，也保留 OpenAI Chat Completions 兼容协议（DeepSeek、Opus/Sonnet 中转、OneAPI/NewAPI/OpenRouter 等）作为回退。
 
+## Agent 形态
+
+每个 `niuma-*` 是一个独立 Claude CLI 进程，不是共享上下文里的“角色名”。它有自己的身份三件套：
+
+- `profiles/niuma-N/`：自己的 Claude 配置、记忆、命令历史和 MCP 配置。
+- `workspaces/niuma-N/`：自己的工作目录，Claude CLI 以这里作为 `cwd`。
+- `skills/niuma-N/`：专属技能目录，启动时会链接到该 worker 的 `.claude/skills`。
+
+Claude CLI backend 会把每个 worker 的 `workspace_dir` 作为 `--cwd`，把 `profile_dir` 作为 `CLAUDE_CONFIG_DIR`，并把 `artifacts/` 通过 `--add-dir` 授权给 CLI 读取。链式派工因此走文件级握手：下游 worker 收到上游 artifact 的绝对路径后，用自己的工具读取文件，而不是把上游内容整段拼进 prompt。
+
 ## 快速开始
 
 ```powershell

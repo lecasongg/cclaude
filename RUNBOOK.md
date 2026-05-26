@@ -77,6 +77,16 @@ claude.cmd --version
 $env:ANTHROPIC_API_KEY="你的 Anthropic API Key"
 ```
 
+## niuma 身份三件套
+
+每个 niuma 都是一次独立的 Claude CLI 子进程，任务结束进程退出，但身份和工作区保留在磁盘上：
+
+- `profiles/niuma-N/`：作为 `CLAUDE_CONFIG_DIR`，保存该 worker 的 Claude 配置、记忆、命令历史和 MCP 配置。
+- `workspaces/niuma-N/`：作为 `--cwd`，该 worker 的 Read/Write/Edit/Bash 等工具默认在这里工作。
+- `skills/niuma-N/`：启动任务前链接到 `workspaces/niuma-N/.claude/skills/`，用于安装专属技能。
+
+Claude CLI backend 还会用 `--add-dir artifacts` 授权 worker 读取 artifact 根目录。链式派工时，niuma-2 收到的是 niuma-1 artifact 的绝对路径；它应该用自己的 Read 工具读取文件，而不是依赖 Hermes 把上游内容拼进 prompt。
+
 ## OpenAI 兼容中转模型模式
 
 真实模型后端使用 OpenAI Chat Completions 兼容接口，支持 DeepSeek、Opus/Sonnet 中转、OneAPI/NewAPI/OpenRouter 类服务。只要中转站支持：

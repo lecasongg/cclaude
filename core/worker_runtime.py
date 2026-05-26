@@ -140,10 +140,12 @@ class ClaudeCliWorkerBackend:
         profile_dir = Path(config.profile_dir).resolve()
         workspace_dir = Path(config.workspace_dir).resolve()
         skills_dir = Path(config.skills_dir).resolve()
+        artifacts_dir = workspace_dir.parent.parent / "artifacts"
 
         profile_dir.mkdir(parents=True, exist_ok=True)
         workspace_dir.mkdir(parents=True, exist_ok=True)
         skills_dir.mkdir(parents=True, exist_ok=True)
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
         link_worker_skills(skills_dir, workspace_dir)
 
         env = os.environ.copy()
@@ -157,6 +159,8 @@ class ClaudeCliWorkerBackend:
             "stream-json",
             "--cwd",
             str(workspace_dir),
+            "--add-dir",
+            str(artifacts_dir),
             "--model",
             config.model,
             *self.extra_args,

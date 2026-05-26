@@ -47,6 +47,8 @@ async def test_claude_cli_backend_invokes_claude_with_isolated_profile_and_cwd(t
     assert "-p" in captured["args"]
     assert "分析 JSP" in captured["args"]
     assert "--cwd" in captured["args"]
+    assert "--add-dir" in captured["args"]
+    assert str((tmp_path / "artifacts").resolve()) in captured["args"]
     assert captured["env"]["CLAUDE_CONFIG_DIR"] == str(tmp_path / "profiles/niuma-1")
     assert captured["cwd"] == str(tmp_path / "workspaces/niuma-1")
     events_path = tmp_path / "workspaces/niuma-1/.hermes/last-events.jsonl"
