@@ -296,6 +296,14 @@ def test_console_uses_kind_specific_file_inputs_for_document_install():
     assert "@change=\"installDocument\"" not in html
 
 
+def test_console_displays_worker_backend_type():
+    console = Path(__file__).parents[1] / "web" / "console.html"
+    html = console.read_text(encoding="utf-8")
+
+    assert "worker.backend_type" in html
+    assert "BACKEND" in html
+
+
 def test_api_lists_workers_with_token(tmp_path):
     client = build_client(tmp_path)
 

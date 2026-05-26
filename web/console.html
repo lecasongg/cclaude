@@ -231,6 +231,10 @@
                       <p class="mt-1 truncate"><span x-text="worker.provider"></span> · <span x-text="worker.model"></span></p>
                     </div>
                     <div>
+                      <div class="br-label">BACKEND</div>
+                      <p class="mt-1 br-mono" x-text="worker.backend_type || 'unknown'"></p>
+                    </div>
+                    <div>
                       <div class="br-label">API KEY</div>
                       <p class="mt-1"><span class="br-mono" x-text="worker.api_key_env"></span> · <span :class="worker.api_key_configured ? 'text-[var(--success)]' : 'text-[var(--accent)]'" x-text="worker.api_key_configured ? '已配置' : '未配置'"></span></p>
                     </div>
