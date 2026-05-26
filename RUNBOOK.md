@@ -153,10 +153,16 @@ agent_factory/core/worker_runtime.py
 
 灰度建议：先只把 `niuma-1` 切到 `claude_cli`，`niuma-2` 保持 `openai_compatible`；观察任务成功率、耗时和成本后，再切第二个 worker。回滚时只需要把目标 worker 的 `backend_type` 改回 `openai_compatible` 并重启 Worker Server。
 
-本地 Windows 环境运行 pytest 时，项目已在 `pyproject.toml` 里把 pytest 临时目录固定到仓库内的 `.tmp/pytest`，避免默认 `%TEMP%` 目录权限异常。直接运行：
+本地运行 pytest。测试配置会自动把每次运行的临时目录放到仓库内唯一的 `.tmp/pytest-runs/<run-id>`，避免 Windows 默认 `%TEMP%` 或旧 `.tmp/pytest` 残留目录被锁：
 
 ```powershell
 python -m pytest tests/ -q
+```
+
+如果需要临时覆盖，也可以显式指定一个新的 basetemp：
+
+```powershell
+python -m pytest tests/ -q --basetemp=.tmp/pytest-local
 ```
 
 ## Claude CLI 排障
