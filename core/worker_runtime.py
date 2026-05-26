@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import subprocess
@@ -129,13 +130,81 @@ class OpenAICompatibleWorkerBackend:
 DeepSeekWorkerBackend = OpenAICompatibleWorkerBackend
 
 
+@dataclass
+class ClaudeCliWorkerBackend:
+    claude_command: list[str] = field(default_factory=lambda: ["claude"])
+    timeout_seconds: int = 1800
+    extra_args: list[str] = field(default_factory=list)
+
+    async def run(self, prompt: str, config: WorkerConfig) -> str:
+        profile_dir = Path(config.profile_dir).resolve()
+        workspace_dir = Path(config.workspace_dir).resolve()
+        skills_dir = Path(config.skills_dir).resolve()
+
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        workspace_dir.mkdir(parents=True, exist_ok=True)
+        skills_dir.mkdir(parents=True, exist_ok=True)
+
+        env = os.environ.copy()
+        env["CLAUDE_CONFIG_DIR"] = str(profile_dir)
+
+        args = [
+            *self.claude_command,
+            "-p",
+            prompt,
+            "--output-format",
+            "stream-json",
+            "--cwd",
+            str(workspace_dir),
+            "--model",
+            config.model,
+            *self.extra_args,
+        ]
+
+        process = await asyncio.create_subprocess_exec(
+            *args,
+            cwd=str(workspace_dir),
+            env=env,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=self.timeout_seconds,
+            )
+        except asyncio.TimeoutError:
+            process.kill()
+            await process.wait()
+            raise RuntimeError(f"claude CLI exceeded {self.timeout_seconds}s, killed")
+
+        if process.returncode != 0:
+            stderr_text = stderr.decode("utf-8", errors="replace")[:400]
+            raise RuntimeError(f"claude CLI exited {process.returncode}: {stderr_text}")
+
+        last_result_text = ""
+        for line in stdout.decode("utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if event.get("type") == "result":
+                last_result_text = event.get("result", "")
+        return last_result_text
+
+
 class WorkerRuntime:
     def __init__(
         self,
         config: WorkerConfig,
         bus: TaskBus,
         artifacts: ArtifactStore,
-        backend: FakeWorkerBackend | SubprocessWorkerBackend | OpenAICompatibleWorkerBackend,
+        backend: FakeWorkerBackend | SubprocessWorkerBackend | OpenAICompatibleWorkerBackend | ClaudeCliWorkerBackend,
     ):
         self.config = config
         self.bus = bus
