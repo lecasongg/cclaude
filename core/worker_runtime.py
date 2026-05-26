@@ -25,7 +25,7 @@ class FakeWorkerBackend:
 @dataclass
 class SubprocessWorkerBackend:
     command: list[str]
-    timeout_seconds: int = 120
+    timeout_seconds: int = 600
 
     async def run(self, prompt: str, config: WorkerConfig) -> str:
         Path(config.profile_dir).mkdir(parents=True, exist_ok=True)
@@ -66,7 +66,7 @@ class SubprocessWorkerBackend:
 @dataclass
 class OpenAICompatibleWorkerBackend:
     api_url: str = "https://api.deepseek.com/chat/completions"
-    timeout_seconds: int = 300
+    timeout_seconds: int = 600
 
     def completion_url(self, base_url: str | None = None) -> str:
         configured_url = (base_url or os.environ.get("OPENAI_COMPATIBLE_API_URL") or os.environ.get("DEEPSEEK_API_URL", self.api_url)).rstrip("/")

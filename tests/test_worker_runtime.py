@@ -115,7 +115,7 @@ async def test_openai_compatible_backend_posts_chat_completion(monkeypatch):
         "如果用户只是问候或闲聊，请简短自然回复，不要强行生成交接文档。\n"
         "正式任务结果请写成可交接的 Markdown 产物。"
     )
-    assert captured["timeout"] == 300
+    assert captured["timeout"] == 600
 
 
 @pytest.mark.asyncio
