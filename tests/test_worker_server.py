@@ -115,3 +115,37 @@ def test_worker_server_build_app_from_factory_config_example(tmp_path):
     workers = response.json()["workers"]
     assert workers[0]["worker_id"] == "niuma-1"
     assert workers[0]["backend_type"] == "claude_cli"
+
+
+def test_worker_server_lists_codex_cli_backend_type(tmp_path):
+    config_path = tmp_path / "factory.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "runtime_mode": "mock-inline",
+                "workers": [
+                    {
+                        "worker_id": "niuma-1",
+                        "display_name": "niuma-1",
+                        "provider": "openai",
+                        "model": "gpt-5-codex",
+                        "api_key_env": "NIUMA_1_API_KEY",
+                        "profile_dir": str(tmp_path / "profiles/niuma-1"),
+                        "workspace_dir": str(tmp_path / "workspaces/niuma-1"),
+                        "skills_dir": str(tmp_path / "skills/niuma-1"),
+                        "backend_type": "codex_cli",
+                        "backend_options": {"extra_args": ["-s", "workspace-write", "-a", "never"]},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    client = TestClient(build_app(config_path))
+
+    response = client.get("/api/workers", headers={"x-hermes-token": "local-token"})
+
+    assert response.status_code == 200
+    assert response.json()["workers"][0]["backend_type"] == "codex_cli"

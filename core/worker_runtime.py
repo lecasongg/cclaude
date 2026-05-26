@@ -226,13 +226,95 @@ class ClaudeCliWorkerBackend:
         return last_result_text
 
 
+@dataclass
+class CodexCliWorkerBackend:
+    codex_command: list[str] = field(default_factory=lambda: ["codex"])
+    timeout_seconds: int = 1800
+    extra_args: list[str] = field(default_factory=list)
+
+    def resolved_codex_command(self) -> list[str]:
+        if self.codex_command != ["codex"]:
+            return self.codex_command
+        candidates = ["codex.cmd", "codex.exe", "codex"] if os.name == "nt" else ["codex"]
+        for candidate in candidates:
+            resolved = shutil.which(candidate)
+            if resolved:
+                return [resolved]
+        return self.codex_command
+
+    async def run(self, prompt: str, config: WorkerConfig) -> str:
+        profile_dir = Path(config.profile_dir).resolve()
+        workspace_dir = Path(config.workspace_dir).resolve()
+        skills_dir = Path(config.skills_dir).resolve()
+        artifacts_dir = workspace_dir.parent.parent / "artifacts"
+
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        workspace_dir.mkdir(parents=True, exist_ok=True)
+        skills_dir.mkdir(parents=True, exist_ok=True)
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+        hermes_dir = workspace_dir / ".hermes"
+        hermes_dir.mkdir(parents=True, exist_ok=True)
+        output_path = hermes_dir / "last-message.md"
+
+        env = os.environ.copy()
+        env["CODEX_HOME"] = str(profile_dir)
+
+        args = [
+            *self.resolved_codex_command(),
+            "exec",
+            "--json",
+            "--cd",
+            str(workspace_dir),
+            "--add-dir",
+            str(artifacts_dir),
+            "-m",
+            config.model,
+            "-o",
+            str(output_path),
+            *self.extra_args,
+            prompt,
+        ]
+
+        process = await asyncio.create_subprocess_exec(
+            *args,
+            cwd=str(workspace_dir),
+            env=env,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=self.timeout_seconds,
+            )
+        except asyncio.TimeoutError:
+            process.kill()
+            await process.wait()
+            raise RuntimeError(f"codex CLI exceeded {self.timeout_seconds}s, killed")
+
+        stdout_text = stdout.decode("utf-8", errors="replace")
+        events_path = workspace_dir / ".hermes" / "last-events.jsonl"
+        _write_event_stream(stdout_text, events_path)
+
+        if process.returncode != 0:
+            detail = stderr.decode("utf-8", errors="replace").strip() or stdout_text[-1000:].strip()
+            raise RuntimeError(f"codex CLI exited {process.returncode}: {detail[:400]}")
+
+        if output_path.exists():
+            return output_path.read_text(encoding="utf-8").strip()
+        return stdout_text.strip()
+
+
 class WorkerRuntime:
     def __init__(
         self,
         config: WorkerConfig,
         bus: TaskBus,
         artifacts: ArtifactStore,
-        backend: FakeWorkerBackend | SubprocessWorkerBackend | OpenAICompatibleWorkerBackend | ClaudeCliWorkerBackend,
+        backend: FakeWorkerBackend | SubprocessWorkerBackend | OpenAICompatibleWorkerBackend | ClaudeCliWorkerBackend | CodexCliWorkerBackend,
     ):
         self.config = config
         self.bus = bus

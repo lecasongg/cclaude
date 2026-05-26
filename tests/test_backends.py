@@ -4,6 +4,7 @@ from agent_factory.core.backends import BackendError, build_backend
 from agent_factory.core.models import WorkerConfig
 from agent_factory.core.worker_runtime import (
     ClaudeCliWorkerBackend,
+    CodexCliWorkerBackend,
     FakeWorkerBackend,
     OpenAICompatibleWorkerBackend,
     SubprocessWorkerBackend,
@@ -33,6 +34,11 @@ def test_build_backend_returns_claude_cli_by_default():
 def test_build_backend_returns_openai_compatible():
     config = base_config("openai_compatible")
     assert isinstance(build_backend(config), OpenAICompatibleWorkerBackend)
+
+
+def test_build_backend_returns_codex_cli():
+    config = base_config("codex_cli")
+    assert isinstance(build_backend(config), CodexCliWorkerBackend)
 
 
 def test_build_backend_returns_fake_with_options():

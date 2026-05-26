@@ -40,6 +40,23 @@
       }
     },
     {
+      "worker_id": "niuma-codex",
+      "display_name": "牛马 Codex",
+      "provider": "openai",
+      "model": "gpt-5-codex",
+      "api_key_env": "OPENAI_API_KEY",
+      "profile_dir": "profiles/niuma-codex",
+      "workspace_dir": "workspaces/niuma-codex",
+      "skills_dir": "skills/niuma-codex",
+      "role": "Codex CLI 文件执行工位",
+      "enabled": false,
+      "backend_type": "codex_cli",
+      "backend_options": {
+        "timeout_seconds": 1800,
+        "extra_args": ["-s", "workspace-write", "-a", "never", "--skip-git-repo-check"]
+      }
+    },
+    {
       "worker_id": "niuma-3-deepseek",
       "display_name": "牛马3（DeepSeek 备用，关闭）",
       "provider": "deepseek",
