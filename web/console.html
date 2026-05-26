@@ -180,67 +180,90 @@
           <div class="br-divider"></div>
           <!-- ↓↓↓ 下面跟旧的所有 section ↓↓↓ -->
 
-    <section class="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-      <div class="panel">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="font-mono text-xs uppercase tracking-[0.25em] text-zinc-500">Pipeline</p>
-            <h2 class="mt-1 text-xl font-medium">牛马流水线</h2>
-          </div>
-          <span class="chip">niuma-1 → niuma-2</span>
-        </div>
+          <section class="grid grid-cols-4 gap-3">
+            <div class="br-card-tight">
+              <div class="br-label">SERVER</div>
+              <div class="mt-3 flex items-center gap-2">
+                <span class="inline-block w-2 h-2" :class="health.status === 'ok' ? 'bg-[var(--success)]' : 'bg-[var(--accent)]'"></span>
+                <span class="br-h3" x-text="health.status === 'ok' ? 'ONLINE' : 'UNKNOWN'"></span>
+              </div>
+              <p class="br-mono mt-2 break-all" x-text="baseUrl"></p>
+            </div>
+            <div class="br-card-tight">
+              <div class="br-label">WORKERS</div>
+              <p class="br-h1 mt-3 !text-3xl" x-text="`${workers.length} / ${health.workers_total || workers.length}`"></p>
+              <p class="br-mono mt-2">已加载工位</p>
+            </div>
+            <div class="br-card-tight">
+              <div class="br-label">API KEYS</div>
+              <p class="br-h1 mt-3 !text-3xl" x-text="`${workersWithKeys()} / ${workers.length}`"></p>
+              <p class="br-mono mt-2">已配置密钥</p>
+            </div>
+            <div class="br-card-tight">
+              <div class="br-label">AUTO REFRESH</div>
+              <button @click="toggleAutoRefresh" class="br-btn mt-3 w-full" x-text="autoRefresh ? '[ AUTO · ON ]' : '[ AUTO · OFF ]'"></button>
+              <p class="br-mono mt-2">每 5 秒刷新</p>
+            </div>
+          </section>
 
-        <div class="mt-5 grid gap-4">
-          <template x-for="(worker, index) in workers" :key="worker.worker_id">
-            <article @click="selectedWorker = worker.worker_id" class="rounded-2xl border p-4 transition" :class="selectedWorker === worker.worker_id ? 'border-indigo-400 bg-indigo-500/10' : 'border-white/10 bg-black/30 hover:border-white/20'">
-              <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div class="min-w-0">
-                  <div class="flex items-center gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 font-mono text-sm text-indigo-200" x-text="index + 1"></span>
-                    <div class="min-w-0">
-                      <h3 class="font-medium" x-text="worker.display_name"></h3>
-                      <p class="font-mono text-xs text-zinc-500" x-text="worker.worker_id"></p>
+          <section>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="br-label">PIPELINE</div>
+                <h3 class="br-h3 mt-1">牛马流水线</h3>
+              </div>
+              <span class="br-tag">niuma-1 → niuma-2</span>
+            </div>
+            <div class="mt-4 space-y-4">
+              <template x-for="(worker, index) in workers" :key="worker.worker_id">
+                <article @click="selectedWorker = worker.worker_id" class="br-card cursor-pointer" :class="selectedWorker === worker.worker_id ? 'bg-[var(--paper)] border-[3px]' : ''">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-start gap-3 min-w-0">
+                      <span class="br-tag-on shrink-0" x-text="`N°0${index + 1}`"></span>
+                      <div class="min-w-0">
+                        <div class="br-label" x-text="worker.worker_id === 'niuma-1' ? 'UNIT 01 · REVERSE' : 'UNIT 02 · WRITER'"></div>
+                        <h3 class="br-h3 mt-1" x-text="worker.display_name"></h3>
+                        <p class="text-sm text-[var(--ink-soft)] mt-2" x-text="worker.role"></p>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <span :class="brStatusClass(worker.status)" x-text="`[ ${worker.status.toUpperCase()} ]`"></span>
+                      <button @click.stop="openWorkerConfig(worker)" class="br-btn !py-1">[ 配置 ]</button>
+                      <button x-show="worker.worker_id === 'niuma-1'" @click.stop="openDocumentInstall(worker)" class="br-btn !py-1">[ 规则 ]</button>
                     </div>
                   </div>
-                  <p class="mt-3 text-sm leading-6 text-zinc-300" x-text="worker.role"></p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="rounded-full px-2 py-1 font-mono text-xs" :class="statusClass(worker.status)" x-text="worker.status"></span>
-                  <button @click.stop="openWorkerConfig(worker)" class="btn-secondary px-3 py-1.5">配置</button>
-                  <button x-show="worker.worker_id === 'niuma-1'" @click.stop="openDocumentInstall(worker)" class="btn-secondary px-3 py-1.5">规则安装</button>
-                  <button x-show="worker.worker_id === 'niuma-1'" @click.stop="openDocumentInstall(worker)" class="btn-secondary px-3 py-1.5">任务手册</button>
-                </div>
-              </div>
 
-              <div class="mt-4 grid gap-3 text-sm md:grid-cols-2">
-                <div class="panel-soft p-3">
-                  <p class="font-mono text-xs text-zinc-500">Provider / Model</p>
-                  <p class="mt-1 truncate text-zinc-200"><span x-text="worker.provider"></span> · <span x-text="worker.model"></span></p>
-                </div>
-                <div class="panel-soft p-3">
-                  <p class="font-mono text-xs text-zinc-500">API Key</p>
-                  <p class="mt-1 text-zinc-300"><span x-text="worker.api_key_env"></span> · <span :class="worker.api_key_configured ? 'text-emerald-300' : 'text-red-300'" x-text="worker.api_key_configured ? '已配置' : '未配置'"></span></p>
-                </div>
-                <div class="panel-soft p-3 md:col-span-2">
-                  <p class="font-mono text-xs text-zinc-500">Base URL</p>
-                  <p class="mt-1 break-all font-mono text-xs text-zinc-300" x-text="worker.base_url || '未配置'"></p>
-                </div>
-                <div class="panel-soft p-3 md:col-span-2">
-                  <p class="font-mono text-xs text-zinc-500">任务材料</p>
-                  <div class="mt-2 flex flex-wrap gap-2">
-                    <span class="rounded-full px-2 py-1 font-mono text-xs" :class="documentInstalled(worker, 'task_manual') ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'" x-text="documentInstalled(worker, 'task_manual') ? '任务手册已安装' : '缺任务手册'"></span>
-                    <span class="rounded-full px-2 py-1 font-mono text-xs" :class="documentInstalled(worker, 'conversion_rules') ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'" x-text="documentInstalled(worker, 'conversion_rules') ? '转换规则已安装' : '缺转换规则'"></span>
+                  <div class="br-rule"></div>
+
+                  <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div class="br-label">PROVIDER / MODEL</div>
+                      <p class="mt-1 truncate"><span x-text="worker.provider"></span> · <span x-text="worker.model"></span></p>
+                    </div>
+                    <div>
+                      <div class="br-label">API KEY</div>
+                      <p class="mt-1"><span class="br-mono" x-text="worker.api_key_env"></span> · <span :class="worker.api_key_configured ? 'text-[var(--success)]' : 'text-[var(--accent)]'" x-text="worker.api_key_configured ? '已配置' : '未配置'"></span></p>
+                    </div>
+                    <div class="col-span-2">
+                      <div class="br-label">BASE URL</div>
+                      <p class="mt-1 br-mono break-all" x-text="worker.base_url || '未配置'"></p>
+                    </div>
+                    <div class="col-span-2">
+                      <div class="br-label">任务材料</div>
+                      <div class="mt-2 flex flex-wrap gap-2">
+                        <span :class="documentInstalled(worker, 'task_manual') ? 'br-tag-success' : 'br-tag-failed'" x-text="documentInstalled(worker, 'task_manual') ? '任务手册 ✓' : '缺任务手册'"></span>
+                        <span :class="documentInstalled(worker, 'conversion_rules') ? 'br-tag-success' : 'br-tag-failed'" x-text="documentInstalled(worker, 'conversion_rules') ? '转换规则 ✓' : '缺转换规则'"></span>
+                      </div>
+                    </div>
+                    <div class="col-span-2">
+                      <div class="br-label">当前任务</div>
+                      <p class="mt-1 text-[var(--ink-soft)] line-clamp-2" x-text="currentTaskPrompt(worker) || '— 空闲 —'"></p>
+                    </div>
                   </div>
-                </div>
-                <div class="panel-soft p-3 md:col-span-2">
-                  <p class="font-mono text-xs text-zinc-500">当前任务</p>
-                  <p class="mt-1 line-clamp-2 text-zinc-300" x-text="currentTaskPrompt(worker) || '空闲'"></p>
-                </div>
-              </div>
-            </article>
-          </template>
-        </div>
-      </div>
+                </article>
+              </template>
+            </div>
+          </section>
 
       <div class="grid gap-5">
         <section x-show="configWorker" class="panel border-indigo-400/30 bg-indigo-500/10">
@@ -290,7 +313,6 @@
           </div>
         </section>
       </div>
-    </section>
 
     <section class="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
       <div class="panel">
@@ -737,6 +759,13 @@
           if (status === 'failed') return 'bg-red-500/15 text-red-300';
           if (status === 'running') return 'bg-indigo-500/15 text-indigo-300';
           return 'bg-zinc-800 text-zinc-300';
+        },
+        brStatusClass(status) {
+          if (status === 'succeeded') return 'br-tag-success';
+          if (status === 'failed') return 'br-tag-failed';
+          if (status === 'running') return 'br-tag-on';
+          if (status === 'idle') return 'br-tag-muted';
+          return 'br-tag';
         },
         showAlert(type, message) {
           this.alert = {type, message};
