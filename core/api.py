@@ -11,6 +11,7 @@ from agent_factory.core.models import TaskRecord, WorkerConfig
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
+from agent_factory.core.worker_runtime import ClaudeCliWorkerBackend, FakeWorkerBackend, OpenAICompatibleWorkerBackend, SubprocessWorkerBackend
 
 
 class DelegateRequest(BaseModel):
@@ -52,6 +53,18 @@ def task_to_dict(task: TaskRecord) -> dict:
     data = asdict(task)
     data["status"] = task.status.value
     return data
+
+
+def backend_type_name(backend) -> str:
+    if isinstance(backend, ClaudeCliWorkerBackend):
+        return "claude_cli"
+    if isinstance(backend, OpenAICompatibleWorkerBackend):
+        return "openai_compatible"
+    if isinstance(backend, SubprocessWorkerBackend):
+        return "subprocess"
+    if isinstance(backend, FakeWorkerBackend):
+        return "fake"
+    return backend.__class__.__name__
 
 
 def build_file_prompt(files: list[tuple[str, str, int]]) -> dict:
@@ -157,6 +170,7 @@ def create_app(
             "current_task_id": state.current_task_id,
             "provider": worker.provider,
             "model": worker.model,
+            "backend_type": backend_type_name(runtime.backend) if runtime else getattr(worker, "backend_type", ""),
             "api_key_env": worker.api_key_env,
             "api_key_configured": bool(os.environ.get(worker.api_key_env)),
             "base_url": base_url,
