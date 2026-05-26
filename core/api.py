@@ -266,6 +266,7 @@ def create_app(
             request.target_worker,
             compose_worker_prompt(request.source_worker, request.prompt),
             request.next_instruction,
+            handoff_user_prompt=request.prompt,
         )
         return {"source": task_to_dict(source), "target": task_to_dict(target)}
 

@@ -239,6 +239,39 @@ def test_api_prepends_manual_then_rules_before_chain_source(tmp_path):
     assert prompt.index("任务手册正文") < prompt.index("转换规则正文") < prompt.index("用户任务正文")
 
 
+def test_api_chain_does_not_leak_niuma_1_documents_into_niuma_2_prompt(tmp_path):
+    bus = TaskBus(["niuma-1", "niuma-2"])
+    artifacts = ArtifactStore(tmp_path)
+    backend_1 = FakeWorkerBackend("# 需求清单")
+    backend_2 = FakeWorkerBackend("# 需求文档")
+    config_1 = worker_config("niuma-1")
+    config_2 = worker_config("niuma-2")
+    supervisor = HermesSupervisor(
+        bus,
+        artifacts,
+        {
+            "niuma-1": WorkerRuntime(config_1, bus, artifacts, backend_1),
+            "niuma-2": WorkerRuntime(config_2, bus, artifacts, backend_2),
+        },
+    )
+    app = create_app(supervisor, bus, [config_1, config_2], SecurityGate("local-token"), runtime_config_path=tmp_path / "runtime_config.json", runtime_config={})
+    client = TestClient(app)
+    install_niuma_1_documents(client)
+
+    response = client.post(
+        "/api/chain",
+        headers={"x-hermes-token": "local-token"},
+        json={"source_worker": "niuma-1", "target_worker": "niuma-2", "prompt": "逆向分析 JSP", "next_instruction": "写需求文档"},
+    )
+
+    assert response.status_code == 200
+    target_prompt = backend_2.calls[0][0]
+    assert "任务手册正文" not in target_prompt
+    assert "转换规则正文" not in target_prompt
+    assert "上游任务: 逆向分析 JSP" in target_prompt
+    assert "# 需求清单" in target_prompt
+
+
 def test_api_does_not_require_manual_rules_for_niuma_2_direct_delegate(tmp_path):
     client = build_client(tmp_path)
 

@@ -18,14 +18,16 @@ class HermesSupervisor:
         self,
         source_worker: str,
         target_worker: str,
-        prompt: str,
+        source_prompt: str,
         next_instruction: str,
+        handoff_user_prompt: str | None = None,
     ) -> tuple[TaskRecord, TaskRecord]:
-        first = await self.delegate(source_worker, prompt)
+        first = await self.delegate(source_worker, source_prompt)
         artifact_texts = [self.artifacts.read_text(artifact_id) for artifact_id in first.artifact_ids]
+        upstream_reference = handoff_user_prompt if handoff_user_prompt is not None else source_prompt
         handoff_prompt = (
             f"{next_instruction}\n\n"
-            f"上游任务: {prompt}\n\n"
+            f"上游任务: {upstream_reference}\n\n"
             "上游产物:\n"
             + "\n\n---\n\n".join(artifact_texts)
         )
