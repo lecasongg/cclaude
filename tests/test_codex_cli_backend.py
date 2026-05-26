@@ -21,6 +21,13 @@ def make_config(tmp_path):
     )
 
 
+def test_codex_cli_default_extra_args_match_current_exec_cli():
+    backend = CodexCliWorkerBackend(extra_args=["-s", "workspace-write", "--skip-git-repo-check"])
+
+    assert "-a" not in backend.extra_args
+    assert "--ask-for-approval" not in backend.extra_args
+
+
 @pytest.mark.asyncio
 async def test_codex_cli_backend_invokes_codex_exec_with_isolated_home_and_workspace(tmp_path, monkeypatch):
     config = make_config(tmp_path)

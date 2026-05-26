@@ -135,7 +135,7 @@ def test_worker_server_lists_codex_cli_backend_type(tmp_path):
                         "workspace_dir": str(tmp_path / "workspaces/niuma-1"),
                         "skills_dir": str(tmp_path / "skills/niuma-1"),
                         "backend_type": "codex_cli",
-                        "backend_options": {"extra_args": ["-s", "workspace-write", "-a", "never"]},
+                        "backend_options": {"extra_args": ["-s", "workspace-write", "--skip-git-repo-check"]},
                     }
                 ],
             }
