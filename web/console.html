@@ -55,56 +55,66 @@
   </style>
 </head>
 <body class="min-h-screen bg-[var(--paper)] text-[var(--ink)] antialiased" style="font-family: Georgia, 'Songti SC', '宋体', serif;">
-  <main x-data="factoryConsole()" x-init="init()" class="mx-auto flex min-h-screen max-w-7xl flex-col gap-5 px-5 py-5 lg:px-8">
-    <header class="panel overflow-hidden">
-      <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p class="font-mono text-xs uppercase tracking-[0.32em] text-indigo-300">Hermes Workshop</p>
-          <h1 class="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">本地 Agent 工厂控制台</h1>
-          <p class="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">把牛马1的老系统逆向分析和牛马2的需求文档编写串成一条可观察、可派工、可读产物的本地流水线。</p>
-        </div>
-        <div class="grid gap-3 lg:w-[30rem]">
-          <div class="grid gap-2 md:grid-cols-[1fr_11rem]">
-            <input x-model="baseUrl" class="field font-mono" aria-label="Server URL">
-            <button @click="refreshAll" :disabled="isRefreshing" class="btn-primary" x-text="isRefreshing ? '刷新中...' : '刷新状态'"></button>
+  <main x-data="factoryConsole()" x-init="init()" class="min-h-screen flex">
+    <!-- 左侧垂直窄条 -->
+    <aside class="w-8 shrink-0 border-r-[1.5px] border-[var(--ink)] flex items-start justify-center pt-6 sticky top-0 h-screen">
+      <div class="font-mono text-[10px] uppercase tracking-[3px] text-[var(--ink)]" style="writing-mode: vertical-rl; transform: rotate(180deg);">NIUMA · WORKSHOP · N°01</div>
+    </aside>
+
+    <!-- 右侧主区 -->
+    <div class="flex-1 min-w-0 flex flex-col">
+      <!-- 顶部报头 -->
+      <header class="sticky top-0 z-30 bg-[var(--paper)] border-b-[1.5px] border-[var(--ink)] px-8 pt-6 pb-4">
+        <div class="flex items-end justify-between gap-6">
+          <div>
+            <div class="br-label">N°01 · LOCAL AGENT WORKSHOP</div>
+            <h1 class="br-h1 mt-2">本地牛马工厂.</h1>
+            <p class="br-mono mt-2">逆向 / 编写 / 交付 — 一条流水线</p>
           </div>
-          <input x-model="token" type="password" class="field font-mono" aria-label="Hermes Token">
+          <div class="flex flex-col items-end gap-2">
+            <div class="br-mono" x-text="new Date().toISOString().slice(0,10)"></div>
+            <div class="flex gap-2">
+              <span class="br-tag" x-text="`SERVER · ${health.status === 'ok' ? 'ONLINE' : '...'}`"></span>
+              <span class="br-tag" x-text="`UNITS · ${workers.length}`"></span>
+            </div>
+            <div class="flex gap-2 items-center mt-1">
+              <input x-model="baseUrl" class="br-input-mono w-72 py-1" aria-label="Server URL">
+              <input x-model="token" type="password" class="br-input-mono w-44 py-1" aria-label="Hermes Token">
+              <button @click="refreshAll" :disabled="isRefreshing" class="br-btn-primary !py-1" x-text="isRefreshing ? '...' : '刷新'"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 标签栏 -->
+        <nav class="flex gap-1 mt-4 border-t-[1.5px] border-[var(--ink)] pt-3">
+          <button @click="setActiveTab('dispatch')" :class="activeTab === 'dispatch' ? 'br-tab-active' : 'br-tab'">[ DISPATCH ]</button>
+          <button @click="setActiveTab('pipeline')" :class="activeTab === 'pipeline' ? 'br-tab-active' : 'br-tab'">[ PIPELINE ]</button>
+          <button @click="setActiveTab('archive')" :class="activeTab === 'archive' ? 'br-tab-active' : 'br-tab'">[ ARCHIVE ]</button>
+        </nav>
+      </header>
+
+      <!-- Alert（重新设计为 brutalist）-->
+      <div x-show="alert" x-transition class="mx-8 mt-4 border-[1.5px] px-4 py-3 text-sm" :class="alert && alert.type === 'error' ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-[var(--ink)] text-[var(--ink)]'">
+        <div class="flex items-start justify-between gap-4">
+          <p x-text="alert ? alert.message : ''"></p>
+          <button @click="alert = null" class="br-mono hover:text-[var(--ink)]">[ × ]</button>
         </div>
       </div>
-    </header>
 
-    <section class="grid gap-3 lg:grid-cols-4">
-      <div class="panel-soft">
-        <p class="font-mono text-xs uppercase tracking-widest text-zinc-500">Server</p>
-        <div class="mt-3 flex items-center gap-2">
-          <span class="status-dot" :class="health.status === 'ok' ? 'bg-emerald-400' : 'bg-red-400'"></span>
-          <span class="font-medium" x-text="health.status === 'ok' ? 'online' : 'unknown'"></span>
-        </div>
-        <p class="mt-2 break-all font-mono text-xs text-zinc-500" x-text="baseUrl"></p>
-      </div>
-      <div class="panel-soft">
-        <p class="font-mono text-xs uppercase tracking-widest text-zinc-500">Workers</p>
-        <p class="mt-3 text-2xl font-semibold" x-text="`${workers.length} / ${health.workers_total || workers.length}`"></p>
-        <p class="mt-2 text-xs text-zinc-500">已加载工位</p>
-      </div>
-      <div class="panel-soft">
-        <p class="font-mono text-xs uppercase tracking-widest text-zinc-500">API Keys</p>
-        <p class="mt-3 text-2xl font-semibold" x-text="`${workersWithKeys()} / ${workers.length}`"></p>
-        <p class="mt-2 text-xs text-zinc-500">已配置模型密钥</p>
-      </div>
-      <div class="panel-soft">
-        <p class="font-mono text-xs uppercase tracking-widest text-zinc-500">Auto Refresh</p>
-        <button @click="toggleAutoRefresh" class="mt-3 btn-secondary w-full" x-text="autoRefresh ? '关闭自动刷新' : '开启自动刷新'"></button>
-        <p class="mt-2 text-xs text-zinc-500">开启后每 5 秒刷新状态</p>
-      </div>
-    </section>
+      <!-- 内容区：三个标签 -->
+      <div class="flex-1 px-8 py-6">
+        <!-- DISPATCH（暂时空，下一任务填充）-->
+        <section x-show="activeTab === 'dispatch'" class="space-y-6">
+          <h2 class="br-h2">派工 · DISPATCH</h2>
+          <div class="br-divider"></div>
+          <p class="br-mono">（暂留空，下个任务填充）</p>
+        </section>
 
-    <div x-show="alert" x-transition class="rounded-2xl border px-4 py-3 text-sm" :class="alert && alert.type === 'error' ? 'border-red-400/40 bg-red-500/10 text-red-200' : 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200'">
-      <div class="flex items-start justify-between gap-4">
-        <p x-text="alert ? alert.message : ''"></p>
-        <button @click="alert = null" class="text-xs text-zinc-400 hover:text-zinc-100">关闭</button>
-      </div>
-    </div>
+        <!-- PIPELINE（包住所有旧内容，先把页面跑起来）-->
+        <section x-show="activeTab === 'pipeline'" class="space-y-6">
+          <h2 class="br-h2">流水线 · PIPELINE</h2>
+          <div class="br-divider"></div>
+          <!-- ↓↓↓ 下面跟旧的所有 section ↓↓↓ -->
 
     <section class="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
       <div class="panel">
@@ -358,6 +368,17 @@
         <p x-show="events.length === 0" class="text-sm text-zinc-500">暂无操作回执。</p>
       </div>
     </section>
+          <!-- ↑↑↑ 旧的 section 全部包在 PIPELINE 标签下 ↑↑↑ -->
+        </section>
+
+        <!-- ARCHIVE（暂时空）-->
+        <section x-show="activeTab === 'archive'" class="space-y-6">
+          <h2 class="br-h2">档案 · ARCHIVE</h2>
+          <div class="br-divider"></div>
+          <p class="br-mono">（暂留空，下个任务填充）</p>
+        </section>
+      </div>
+    </div>
   </main>
 
   <script>
