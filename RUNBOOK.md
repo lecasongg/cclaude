@@ -151,7 +151,7 @@ agent_factory/core/worker_runtime.py
 可选值：
 
 - `claude_cli`：每个任务启动独立 `claude -p` 子进程，使用 `profile_dir`、`workspace_dir`、`skills_dir` 隔离。
-- `codex_cli`：每个任务启动独立 `codex.cmd exec` 子进程，使用 `CODEX_HOME=profile_dir`、`--cd workspace_dir`、`--add-dir artifacts` 隔离并授权文件级交接；适合需要真实 Read/Write/Edit/Bash 行为的 niuma。
+- `codex_cli`：每个任务启动独立 `codex.cmd exec` 子进程，使用 `CODEX_HOME=profile_dir`、`--cd workspace_dir`、`--add-dir artifacts` 隔离并授权文件级交接；适合需要真实 Read/Write/Edit/Bash 行为的 niuma。Codex CLI 0.131.0 的自定义 provider 使用 Responses wire API，因此中转站必须支持 `/v1/responses`；仅支持 `/v1/chat/completions` 的中转站请使用 `openai_compatible`。
 - `openai_compatible`：走 OpenAI Chat Completions 兼容接口，用于 DeepSeek/中转站回退。
 - `subprocess`：运行自定义命令，主要用于本地 mock 或集成脚本。
 - `fake`：测试用固定文本 backend。
