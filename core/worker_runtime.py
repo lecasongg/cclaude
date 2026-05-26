@@ -385,6 +385,7 @@ def _event_error_detail(event_lines: list[str]) -> str:
 
 def _write_codex_profile_config(profile_dir: Path, config: WorkerConfig) -> None:
     config_path = profile_dir / "config.toml"
+    catalog_path = profile_dir / "models_catalog.json"
     content = "\n".join(
         [
             'model_provider = "niuma_relay"',
@@ -399,6 +400,24 @@ def _write_codex_profile_config(profile_dir: Path, config: WorkerConfig) -> None
         ]
     )
     config_path.write_text(content, encoding="utf-8")
+    catalog = {
+        "models": [
+            {
+                "slug": config.model,
+                "display_name": config.model,
+                "description": "Niuma relay model exposed through a Responses-compatible bridge.",
+                "default_reasoning_level": "medium",
+                "supported_reasoning_levels": [
+                    {"effort": "low", "description": "Fast responses with lighter reasoning"},
+                    {"effort": "medium", "description": "Balanced speed and reasoning"},
+                    {"effort": "high", "description": "Greater reasoning depth"},
+                ],
+                "wire_api": "responses",
+                "supported_in_api": True,
+            }
+        ]
+    }
+    catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _toml_string(value: str) -> str:

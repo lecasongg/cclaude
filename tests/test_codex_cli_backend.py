@@ -1,4 +1,5 @@
 import asyncio
+import json
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -92,6 +93,10 @@ async def test_codex_cli_backend_writes_relay_profile_config_and_maps_key(tmp_pa
     assert 'base_url = "https://relay.local/v1"' in config_toml
     assert 'wire_api = "responses"' in config_toml
     assert captured["env"]["OPENAI_API_KEY"] == "relay-key"
+
+    catalog = json.loads((tmp_path / "profiles/niuma-1/models_catalog.json").read_text(encoding="utf-8"))
+    assert catalog["models"][0]["slug"] == "gpt-5-codex"
+    assert catalog["models"][0]["wire_api"] == "responses"
 
 
 @pytest.mark.asyncio
