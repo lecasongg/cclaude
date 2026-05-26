@@ -310,6 +310,30 @@ def create_app(
             "steps": resource_manager.list_step_runs(run_id),
         }
 
+    @app.get("/api/runs/{run_id}/artifacts")
+    async def list_run_artifacts(run_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        workspace_root = pipeline_workspace_root or Path.cwd()
+        run_root = workspace_root / "artifacts" / "runs" / run_id
+        if not run_root.exists():
+            return {"artifacts": []}
+        artifacts = []
+        for path in sorted(run_root.rglob("*")):
+            if path.is_file():
+                relative_path = path.relative_to(workspace_root).as_posix()
+                artifacts.append({"path": relative_path, "size": path.stat().st_size})
+        return {"artifacts": artifacts}
+
+    @app.get("/api/runs/{run_id}/artifacts/{artifact_path:path}")
+    async def read_run_artifact(run_id: str, artifact_path: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        workspace_root = (pipeline_workspace_root or Path.cwd()).resolve()
+        run_root = (workspace_root / "artifacts" / "runs" / run_id).resolve()
+        artifact = (workspace_root / artifact_path).resolve()
+        if not artifact.is_relative_to(run_root) or not artifact.is_file():
+            raise HTTPException(status_code=404, detail="artifact not found")
+        return {"path": artifact.relative_to(workspace_root).as_posix(), "content": artifact.read_text(encoding="utf-8")}
+
     @app.get("/api/runs/{run_id}")
     async def get_run(run_id: str, x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)

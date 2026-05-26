@@ -578,3 +578,18 @@ steps:
     assert body["steps"][0]["status"] == "succeeded"
     output_path = tmp_path / "artifacts" / "runs" / body["run"]["run_id"] / "reverse-login" / "function-list.md"
     assert output_path.read_text(encoding="utf-8") == "功能清单"
+
+    artifacts_response = client.get(
+        f"/api/runs/{body['run']['run_id']}/artifacts",
+        headers={"x-hermes-token": "local-token"},
+    )
+    artifact_id = f"artifacts/runs/{body['run']['run_id']}/reverse-login/function-list.md"
+    assert artifacts_response.status_code == 200
+    assert artifacts_response.json()["artifacts"][0]["path"] == artifact_id
+
+    artifact_response = client.get(
+        f"/api/runs/{body['run']['run_id']}/artifacts/{artifact_id}",
+        headers={"x-hermes-token": "local-token"},
+    )
+    assert artifact_response.status_code == 200
+    assert artifact_response.json() == {"path": artifact_id, "content": "功能清单"}
