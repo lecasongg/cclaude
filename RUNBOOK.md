@@ -142,6 +142,22 @@ agent_factory/core/worker_runtime.py
 python -m pytest tests/ -q
 ```
 
+## Claude CLI 排障
+
+`claude_cli` backend 每次任务都会把原始 stream-json 事件写到 worker 的 workspace：
+
+```text
+workspaces/<worker_id>/.hermes/last-events.jsonl
+```
+
+如果任务失败，优先看三处：
+
+- `/api/tasks` 或 Console 里的 `error` 字段：区分 CLI 未安装、凭据缺失、非零退出、超时或缺少 `result` 事件。
+- `workspaces/<worker_id>/.hermes/last-events.jsonl`：回看 Claude CLI 的 system/assistant/tool/result 事件流。
+- `artifacts/<worker_id>/<task_id>/result.md`：任务成功时的最终文本产物。
+
+当错误包含 `claude CLI missing result event` 时，说明 CLI 退出码是 0，但 stdout 里没有最终 `type=result` 事件。此时打开 `last-events.jsonl` 看最后几行，通常能判断是输出格式变化、CLI 提前结束，还是只产生了中间事件。
+
 ## Web 大屏配置说明
 
 监控大屏顶部按流水线纵向显示每个牛马工位：牛马1 在上，牛马2 在下。每张工位卡会显示：
