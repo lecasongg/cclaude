@@ -24,6 +24,8 @@ class WorkerConfig:
     base_url: str = ""
     role: str = "通用交付工位"
     enabled: bool = True
+    backend_type: str = "claude_cli"
+    backend_options: dict = field(default_factory=dict)
 
 
 @dataclass

@@ -4,6 +4,22 @@ import os
 import pytest
 
 from agent_factory.core.config import ConfigError, apply_runtime_config, load_factory_config, load_runtime_config, save_runtime_config
+from agent_factory.core.models import WorkerConfig
+
+
+def test_worker_config_defaults_backend_type_to_claude_cli():
+    config = WorkerConfig(
+        worker_id="niuma-1",
+        display_name="牛马1",
+        provider="anthropic",
+        model="claude-sonnet-4-6",
+        api_key_env="ANTHROPIC_API_KEY",
+        profile_dir="profiles/niuma-1",
+        workspace_dir="workspaces/niuma-1",
+        skills_dir="skills/niuma-1",
+    )
+    assert config.backend_type == "claude_cli"
+    assert config.backend_options == {}
 
 
 def test_load_factory_config_preserves_worker_isolation(tmp_path):
