@@ -7,7 +7,18 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <style type="text/tailwindcss">
+    @layer base {
+      :root {
+        --paper: #f4f1ea;
+        --ink: #111111;
+        --ink-soft: #3a3a3a;
+        --muted: #7a7468;
+        --accent: #b00020;
+        --success: #1f6b3a;
+      }
+    }
     @layer components {
+      /* === 旧类（保留，迁移完成前不删）=== */
       .panel { @apply rounded-2xl border border-white/10 bg-[#0f1011]/90 p-5; }
       .panel-soft { @apply rounded-xl border border-white/10 bg-black/30 p-4; }
       .btn-primary { @apply rounded-lg bg-[#5e6ad2] px-4 py-2 text-sm font-medium text-white hover:bg-[#828fff] disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400; }
@@ -15,10 +26,35 @@
       .field { @apply rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-zinc-100 outline-none ring-[#5e6ad2]/40 placeholder:text-zinc-600 focus:ring-2; }
       .chip { @apply rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-xs text-zinc-300; }
       .status-dot { @apply inline-block h-2 w-2 rounded-full; }
+
+      /* === 新类（brutalist）=== */
+      .br-card { @apply border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-4; }
+      .br-card-tight { @apply border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3; }
+      .br-divider { @apply border-t-[3px] border-double border-[var(--ink)] my-4; }
+      .br-rule { @apply border-t-[1.5px] border-[var(--ink)] my-3; }
+      .br-h1 { @apply text-3xl font-black tracking-tight text-[var(--ink)] md:text-4xl; font-family: Georgia, 'Songti SC', '宋体', serif; letter-spacing: -0.5px; }
+      .br-h2 { @apply text-xl font-black text-[var(--ink)]; font-family: Georgia, 'Songti SC', '宋体', serif; }
+      .br-h3 { @apply text-base font-bold text-[var(--ink)]; font-family: Georgia, 'Songti SC', '宋体', serif; }
+      .br-label { @apply font-mono text-[10px] uppercase tracking-[2px] text-[var(--ink-soft)]; }
+      .br-mono { @apply font-mono text-xs text-[var(--ink-soft)]; }
+      .br-tag { @apply inline-block border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--ink)]; }
+      .br-tag-on { @apply inline-block border-[1.5px] border-[var(--ink)] bg-[var(--ink)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--paper)]; }
+      .br-tag-success { @apply inline-block border-[1.5px] border-[var(--success)] bg-[var(--paper)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--success)]; }
+      .br-tag-failed { @apply inline-block border-[1.5px] border-[var(--accent)] bg-[var(--paper)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--accent)]; }
+      .br-tag-muted { @apply inline-block px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--muted)]; }
+      .br-btn { @apply inline-flex items-center justify-center border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-4 py-2 font-mono text-xs uppercase tracking-[1px] text-[var(--ink)] hover:bg-[var(--ink)] hover:text-[var(--paper)] disabled:cursor-not-allowed disabled:border-[var(--muted)] disabled:text-[var(--muted)] disabled:hover:bg-[var(--paper)]; transition: background-color 80ms, color 80ms; }
+      .br-btn-primary { @apply inline-flex items-center justify-center border-[1.5px] border-[var(--ink)] bg-[var(--ink)] px-4 py-2 font-mono text-xs uppercase tracking-[1px] text-[var(--paper)] hover:bg-[var(--paper)] hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:bg-[var(--muted)] disabled:border-[var(--muted)] disabled:hover:bg-[var(--muted)] disabled:hover:text-[var(--paper)]; transition: background-color 80ms, color 80ms; }
+      .br-input { @apply w-full bg-transparent border-0 border-b-[1.5px] border-[var(--ink)] px-1 py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-b-[3px]; font-family: Georgia, 'Songti SC', '宋体', serif; }
+      .br-input-mono { @apply w-full bg-transparent border-0 border-b-[1.5px] border-[var(--ink)] px-1 py-2 font-mono text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-b-[3px]; }
+      .br-textarea { @apply w-full border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[3px]; font-family: Georgia, 'Songti SC', '宋体', serif; resize: vertical; }
+      .br-tab { @apply inline-flex items-center px-4 py-2 font-mono text-xs uppercase tracking-[2px] text-[var(--ink-soft)] hover:text-[var(--ink)] cursor-pointer; }
+      .br-tab-active { @apply inline-flex items-center bg-[var(--ink)] px-4 py-2 font-mono text-xs uppercase tracking-[2px] text-[var(--paper)] cursor-default; }
+      .br-modal-mask { @apply fixed inset-0 z-40 flex items-center justify-center; background-color: rgba(244, 241, 234, 0.85); }
+      .br-modal { @apply relative z-50 max-w-[560px] w-[90vw] border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-6; }
     }
   </style>
 </head>
-<body class="min-h-screen bg-[#010102] text-zinc-100 antialiased">
+<body class="min-h-screen bg-[var(--paper)] text-[var(--ink)] antialiased" style="font-family: Georgia, 'Songti SC', '宋体', serif;">
   <main x-data="factoryConsole()" x-init="init()" class="mx-auto flex min-h-screen max-w-7xl flex-col gap-5 px-5 py-5 lg:px-8">
     <header class="panel overflow-hidden">
       <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
