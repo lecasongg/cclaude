@@ -265,27 +265,27 @@
             </div>
           </section>
 
-    <section class="panel">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="font-mono text-xs uppercase tracking-[0.25em] text-zinc-500">Timeline</p>
-          <h2 class="mt-1 text-xl font-medium">操作回执</h2>
-        </div>
-        <button @click="events = []" class="btn-secondary">清空</button>
-      </div>
-      <div class="mt-5 grid gap-3">
-        <template x-for="event in events" :key="event.id">
-          <article class="rounded-2xl border border-white/10 bg-black/30 p-4">
-            <div class="flex items-center justify-between gap-4">
-              <span class="font-mono text-xs uppercase tracking-widest text-indigo-300" x-text="event.type"></span>
-              <span class="font-mono text-xs text-zinc-500" x-text="event.time"></span>
+          <section>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="br-label">TIMELINE</div>
+                <h3 class="br-h3 mt-1">操作回执</h3>
+              </div>
+              <button @click="events = []" class="br-btn !py-1">[ 清空 ]</button>
             </div>
-            <pre class="mt-3 overflow-auto whitespace-pre-wrap text-sm leading-6 text-zinc-300" x-text="event.body"></pre>
-          </article>
-        </template>
-        <p x-show="events.length === 0" class="text-sm text-zinc-500">暂无操作回执。</p>
-      </div>
-    </section>
+            <div class="mt-4 space-y-3">
+              <template x-for="event in events" :key="event.id">
+                <article class="br-card-tight">
+                  <div class="flex items-center justify-between">
+                    <span class="br-tag" x-text="event.type.toUpperCase()"></span>
+                    <span class="br-mono" x-text="event.time"></span>
+                  </div>
+                  <pre class="mt-3 overflow-auto whitespace-pre-wrap text-sm leading-6 text-[var(--ink-soft)]" x-text="event.body"></pre>
+                </article>
+              </template>
+              <p x-show="events.length === 0" class="br-mono">— 暂无操作回执 —</p>
+            </div>
+          </section>
           <!-- ↑↑↑ 旧的 section 全部包在 PIPELINE 标签下 ↑↑↑ -->
         </section>
 
