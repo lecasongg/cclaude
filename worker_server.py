@@ -8,7 +8,9 @@ from agent_factory.core.api import create_app
 from agent_factory.core.artifacts import ArtifactStore
 from agent_factory.core.backends import build_backend
 from agent_factory.core.config import apply_runtime_config, load_factory_config, load_runtime_config
+from agent_factory.core.event_log import EventLog
 from agent_factory.core.models import WorkerConfig
+from agent_factory.core.resource_manager import ResourceManager
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
@@ -53,6 +55,8 @@ def build_app(config_path: str | Path):
     worker_ids = [worker.worker_id for worker in config.workers if worker.enabled]
     bus = TaskBus(worker_ids)
     artifacts = ArtifactStore(config_path.parent / "artifacts")
+    resource_manager = ResourceManager(config_path.parent / "marvis.db")
+    event_log = EventLog(config_path.parent / "events")
     runtimes = {
         worker.worker_id: WorkerRuntime(
             worker,
@@ -71,6 +75,9 @@ def build_app(config_path: str | Path):
         SecurityGate(config.server.token),
         runtime_config_path=runtime_config_path,
         runtime_config=runtime_config,
+        resource_manager=resource_manager,
+        event_log=event_log,
+        pipeline_workspace_root=config_path.parent,
     )
 
     @app.get("/")

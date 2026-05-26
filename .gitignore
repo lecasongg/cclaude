@@ -21,7 +21,10 @@ env/
 # --- Runtime / generated output ---
 artifacts/
 workspaces/
+events/
 logs/
+marvis.db
+marvis.db-*
 *.log
 
 # --- Proposal package archives (源目录入库，zip 不入库) ---

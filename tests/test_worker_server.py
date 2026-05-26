@@ -149,3 +149,54 @@ def test_worker_server_lists_codex_cli_backend_type(tmp_path):
 
     assert response.status_code == 200
     assert response.json()["workers"][0]["backend_type"] == "codex_cli"
+
+
+def test_worker_server_build_app_configures_pipeline_runtime(tmp_path):
+    config_path = tmp_path / "factory.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "runtime_mode": "mock-inline",
+                "workers": [
+                    {
+                        "worker_id": "niuma-1",
+                        "display_name": "niuma-1",
+                        "provider": "test",
+                        "model": "test-model",
+                        "api_key_env": "NIUMA_1_API_KEY",
+                        "profile_dir": "p",
+                        "workspace_dir": "w",
+                        "skills_dir": "s",
+                        "backend_type": "fake",
+                        "backend_options": {"response_text": "功能清单"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    taskbook_path = tmp_path / "login.yml"
+    taskbook_path.write_text(
+        """
+title: 登录模块改造
+objective: 输出登录模块逆向文档
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: 逆向登录模块
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+    client = TestClient(build_app(config_path))
+
+    response = client.post(
+        "/api/runs",
+        headers={"x-hermes-token": "local-token"},
+        json={"taskbook_path": str(taskbook_path)},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["run"]["status"] == "succeeded"
