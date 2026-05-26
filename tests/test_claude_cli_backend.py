@@ -83,6 +83,46 @@ async def test_claude_cli_backend_resolves_default_windows_command(tmp_path, mon
 
 
 @pytest.mark.asyncio
+async def test_claude_cli_backend_maps_worker_relay_config_to_anthropic_env(tmp_path, monkeypatch):
+    config = make_config(tmp_path)
+    config.api_key_env = "NIUMA_2_API_KEY"
+    config.base_url = "http://relay.local/v1"
+    captured = {}
+    result_event = json.dumps({"type": "result", "result": "done"})
+
+    monkeypatch.setenv("NIUMA_2_API_KEY", "relay-key")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_BASE_URL", raising=False)
+
+    async def fake_create_subprocess_exec(*args, **kwargs):
+        captured["env"] = kwargs.get("env", {})
+        process = AsyncMock()
+        process.communicate.return_value = (result_event.encode("utf-8"), b"")
+        process.returncode = 0
+        return process
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create_subprocess_exec)
+
+    await ClaudeCliWorkerBackend().run("hi", config)
+
+    assert captured["env"]["ANTHROPIC_API_KEY"] == "relay-key"
+    assert captured["env"]["ANTHROPIC_BASE_URL"] == "http://relay.local/v1"
+
+
+@pytest.mark.asyncio
+async def test_claude_cli_backend_requires_worker_key_for_relay_config(tmp_path, monkeypatch):
+    config = make_config(tmp_path)
+    config.api_key_env = "NIUMA_2_API_KEY"
+    config.base_url = "http://relay.local/v1"
+
+    monkeypatch.delenv("NIUMA_2_API_KEY", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "stale-key")
+
+    with pytest.raises(RuntimeError, match="missing API key environment variable: NIUMA_2_API_KEY"):
+        await ClaudeCliWorkerBackend().run("hi", config)
+
+
+@pytest.mark.asyncio
 async def test_claude_cli_backend_raises_on_nonzero_exit(tmp_path, monkeypatch):
     config = make_config(tmp_path)
     event = json.dumps({"type": "assistant", "message": {"content": "auth failed after init"}})

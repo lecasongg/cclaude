@@ -74,8 +74,11 @@ factory_config.json → factory_config.example.json → config.example.json
 
 ```powershell
 claude.cmd --version
-$env:ANTHROPIC_API_KEY="你的 Anthropic API Key"
+$env:NIUMA_1_API_KEY="你的 niuma-1 中转站 Key"
+$env:NIUMA_2_API_KEY="你的 niuma-2 中转站 Key"
 ```
+
+`claude_cli` backend 会在启动 Claude CLI 子进程时，把当前 worker 的 `api_key_env` 映射为 `ANTHROPIC_API_KEY`，把 `base_url` 映射为 `ANTHROPIC_BASE_URL`。因此使用 Anthropic-compatible 中转站时，在 `factory_config.json` 里给每个 niuma 配自己的 `api_key_env` 和 `base_url` 即可；不要把真实 key 写进配置文件。
 
 ## niuma 身份三件套
 
@@ -135,7 +138,8 @@ agent_factory/core/worker_runtime.py
 {
   "worker_id": "niuma-1",
   "model": "claude-sonnet-4-6",
-  "api_key_env": "ANTHROPIC_API_KEY",
+  "api_key_env": "NIUMA_1_API_KEY",
+  "base_url": "https://your-anthropic-compatible-relay/v1",
   "backend_type": "claude_cli",
   "backend_options": {
     "timeout_seconds": 1800,

@@ -161,6 +161,13 @@ class ClaudeCliWorkerBackend:
 
         env = os.environ.copy()
         env["CLAUDE_CONFIG_DIR"] = str(profile_dir)
+        api_key = os.environ.get(config.api_key_env)
+        if config.base_url and not api_key:
+            raise RuntimeError(f"missing API key environment variable: {config.api_key_env}")
+        if api_key:
+            env["ANTHROPIC_API_KEY"] = api_key
+        if config.base_url:
+            env["ANTHROPIC_BASE_URL"] = config.base_url
 
         args = [
             *self.resolved_claude_command(),
