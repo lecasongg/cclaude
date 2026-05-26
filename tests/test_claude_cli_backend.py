@@ -1,5 +1,7 @@
 import asyncio
 import json
+import os
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
@@ -43,7 +45,7 @@ async def test_claude_cli_backend_invokes_claude_with_isolated_profile_and_cwd(t
     result = await backend.run("分析 JSP", config)
 
     assert result == "任务完成"
-    assert "claude" in captured["args"]
+    assert Path(captured["args"][0]).stem == "claude"
     assert "-p" in captured["args"]
     assert "分析 JSP" in captured["args"]
     assert "--cwd" in captured["args"]
@@ -53,6 +55,30 @@ async def test_claude_cli_backend_invokes_claude_with_isolated_profile_and_cwd(t
     assert captured["cwd"] == str(tmp_path / "workspaces/niuma-1")
     events_path = tmp_path / "workspaces/niuma-1/.hermes/last-events.jsonl"
     assert events_path.read_text(encoding="utf-8") == result_event + "\n"
+
+
+@pytest.mark.asyncio
+async def test_claude_cli_backend_resolves_default_windows_command(tmp_path, monkeypatch):
+    config = make_config(tmp_path)
+    captured = {}
+    resolved = r"C:\Users\demo\AppData\Roaming\npm\claude.cmd"
+    result_event = json.dumps({"type": "result", "result": "done"})
+
+    monkeypatch.setattr(os, "name", "nt")
+    monkeypatch.setattr("shutil.which", lambda name: resolved if name == "claude.cmd" else None)
+
+    async def fake_create_subprocess_exec(*args, **kwargs):
+        captured["args"] = args
+        process = AsyncMock()
+        process.communicate.return_value = (result_event.encode("utf-8"), b"")
+        process.returncode = 0
+        return process
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create_subprocess_exec)
+
+    await ClaudeCliWorkerBackend().run("hi", config)
+
+    assert captured["args"][0] == resolved
 
 
 @pytest.mark.asyncio

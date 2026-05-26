@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -136,6 +137,16 @@ class ClaudeCliWorkerBackend:
     timeout_seconds: int = 1800
     extra_args: list[str] = field(default_factory=list)
 
+    def resolved_claude_command(self) -> list[str]:
+        if self.claude_command != ["claude"]:
+            return self.claude_command
+        candidates = ["claude.cmd", "claude.exe", "claude"] if os.name == "nt" else ["claude"]
+        for candidate in candidates:
+            resolved = shutil.which(candidate)
+            if resolved:
+                return [resolved]
+        return self.claude_command
+
     async def run(self, prompt: str, config: WorkerConfig) -> str:
         profile_dir = Path(config.profile_dir).resolve()
         workspace_dir = Path(config.workspace_dir).resolve()
@@ -152,7 +163,7 @@ class ClaudeCliWorkerBackend:
         env["CLAUDE_CONFIG_DIR"] = str(profile_dir)
 
         args = [
-            *self.claude_command,
+            *self.resolved_claude_command(),
             "-p",
             prompt,
             "--output-format",
