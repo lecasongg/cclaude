@@ -103,11 +103,75 @@
 
       <!-- 内容区：三个标签 -->
       <div class="flex-1 px-8 py-6">
-        <!-- DISPATCH（暂时空，下一任务填充）-->
-        <section x-show="activeTab === 'dispatch'" class="space-y-6">
-          <h2 class="br-h2">派工 · DISPATCH</h2>
-          <div class="br-divider"></div>
-          <p class="br-mono">（暂留空，下个任务填充）</p>
+        <!-- DISPATCH -->
+        <section x-show="activeTab === 'dispatch'" class="space-y-8 max-w-3xl">
+          <div>
+            <h2 class="br-h2">派工 · DISPATCH</h2>
+            <div class="br-divider"></div>
+          </div>
+
+          <!-- N°01 单工位派工 -->
+          <article class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="br-label">N°01</div>
+                <h3 class="br-h3 mt-1">单工位派工</h3>
+              </div>
+              <span class="br-tag" x-text="selectedWorker"></span>
+            </div>
+            <select x-model="selectedWorker" class="br-input-mono">
+              <template x-for="worker in workers" :key="worker.worker_id">
+                <option :value="worker.worker_id" x-text="`${worker.display_name} · ${worker.worker_id}`"></option>
+              </template>
+            </select>
+            <textarea x-model="prompt" rows="5" placeholder="给选中的牛马下达任务..." class="br-textarea"></textarea>
+            <div class="flex justify-end">
+              <button @click="delegateTask" :disabled="isDelegating || !prompt.trim()" class="br-btn-primary" x-text="isDelegating ? '派工中...' : '[ 发送任务 ]'"></button>
+            </div>
+          </article>
+
+          <div class="br-rule"></div>
+
+          <!-- N°02 链式派工 -->
+          <article class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="br-label">N°02</div>
+                <h3 class="br-h3 mt-1">牛马1 → 牛马2 链式派工</h3>
+              </div>
+              <span class="br-tag">CHAIN</span>
+            </div>
+            <textarea x-model="chainPrompt" rows="4" placeholder="给牛马1的逆向分析任务..." class="br-textarea"></textarea>
+
+            <div class="br-card space-y-3">
+              <div>
+                <div class="br-label">FILE INPUT</div>
+                <p class="br-mono mt-1">可读本机路径，也可上传 JSP / JS / SQL / Java；系统先读正文再注入牛马1提示词。</p>
+              </div>
+              <div class="grid grid-cols-[1fr_auto] gap-2">
+                <input x-model="filePath" placeholder="D:\\project\\web\\user.jsp" class="br-input-mono">
+                <button @click="loadLocalPath" :disabled="isLoadingFileContext || !filePath.trim()" class="br-btn" x-text="isLoadingFileContext ? '读取中...' : '[ 读取路径 ]'"></button>
+              </div>
+              <input @change="uploadFiles" multiple type="file" class="br-input-mono file:mr-3 file:border-0 file:bg-[var(--ink)] file:px-3 file:py-1 file:text-[var(--paper)] file:font-mono file:text-xs file:uppercase">
+              <div x-show="fileContext.files.length" class="space-y-2 border-t-[1.5px] border-[var(--ink)] pt-3">
+                <div class="flex items-center justify-between">
+                  <p class="br-mono" x-text="`已载入 ${fileContext.files.length} 个文件`"></p>
+                  <button @click="clearFileContext" class="br-mono hover:text-[var(--accent)]">[ 清空 ]</button>
+                </div>
+                <template x-for="file in fileContext.files" :key="file.path">
+                  <p class="font-mono text-xs text-[var(--ink-soft)] truncate" x-text="`${file.path} · ${formatBytes(file.size)}`"></p>
+                </template>
+              </div>
+            </div>
+
+            <div>
+              <div class="br-label mb-2">NIUMA-2 INSTRUCTION</div>
+              <textarea x-model="nextInstruction" rows="3" class="br-textarea"></textarea>
+            </div>
+            <div class="flex justify-end">
+              <button @click="chainTask" :disabled="isChaining || !chainPrompt.trim()" class="br-btn-primary" x-text="isChaining ? '执行中...' : '[ 启动链式派工 ]'"></button>
+            </div>
+          </article>
         </section>
 
         <!-- PIPELINE（包住所有旧内容，先把页面跑起来）-->
@@ -179,55 +243,6 @@
       </div>
 
       <div class="grid gap-5">
-        <section class="panel">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="font-mono text-xs uppercase tracking-[0.25em] text-zinc-500">Dispatch</p>
-              <h2 class="mt-1 text-xl font-medium">单工位派工</h2>
-            </div>
-            <span class="chip" x-text="selectedWorker"></span>
-          </div>
-          <div class="mt-5 grid gap-3">
-            <select x-model="selectedWorker" class="field">
-              <template x-for="worker in workers" :key="worker.worker_id">
-                <option class="bg-zinc-950" :value="worker.worker_id" x-text="`${worker.display_name} · ${worker.worker_id}`"></option>
-              </template>
-            </select>
-            <textarea x-model="prompt" rows="5" placeholder="给选中的牛马下达任务..." class="field resize-y"></textarea>
-            <button @click="delegateTask" :disabled="isDelegating || !prompt.trim()" class="btn-primary" x-text="isDelegating ? '派工中...' : '发送任务'"></button>
-          </div>
-        </section>
-
-        <section class="panel">
-          <p class="font-mono text-xs uppercase tracking-[0.25em] text-zinc-500">Chain</p>
-          <h2 class="mt-1 text-xl font-medium">牛马1 → 牛马2 链式派工</h2>
-          <div class="mt-5 grid gap-3">
-            <textarea x-model="chainPrompt" rows="4" placeholder="给牛马1的逆向分析任务..." class="field resize-y"></textarea>
-            <div class="panel-soft grid gap-3">
-              <div>
-                <p class="text-sm font-medium text-zinc-200">文件输入</p>
-                <p class="mt-1 text-xs leading-5 text-zinc-500">可读取本机路径，也可上传 JSP / JS / SQL / Java 等源码文件；系统会先读取正文，再把正文塞进牛马1提示词。</p>
-              </div>
-              <div class="grid gap-2 md:grid-cols-[1fr_auto]">
-                <input x-model="filePath" placeholder="本机文件或目录路径，例如 D:\\project\\web\\user.jsp" class="field font-mono">
-                <button @click="loadLocalPath" :disabled="isLoadingFileContext || !filePath.trim()" class="btn-secondary" x-text="isLoadingFileContext ? '读取中...' : '读取路径'"></button>
-              </div>
-              <input @change="uploadFiles" multiple type="file" class="field file:mr-3 file:rounded-md file:border-0 file:bg-white/10 file:px-3 file:py-1 file:text-sm file:text-zinc-100">
-              <div x-show="fileContext.files.length" class="space-y-2">
-                <div class="flex items-center justify-between gap-3">
-                  <p class="text-xs text-zinc-500" x-text="`已载入 ${fileContext.files.length} 个文件`"></p>
-                  <button @click="clearFileContext" class="text-xs text-zinc-400 hover:text-zinc-100">清空文件内容</button>
-                </div>
-                <template x-for="file in fileContext.files" :key="file.path">
-                  <p class="truncate font-mono text-xs text-zinc-400" x-text="`${file.path} · ${formatBytes(file.size)}`"></p>
-                </template>
-              </div>
-            </div>
-            <textarea x-model="nextInstruction" rows="3" class="field resize-y"></textarea>
-            <button @click="chainTask" :disabled="isChaining || !chainPrompt.trim()" class="btn-primary" x-text="isChaining ? '流水线执行中...' : '启动链式派工'"></button>
-          </div>
-        </section>
-
         <section x-show="configWorker" class="panel border-indigo-400/30 bg-indigo-500/10">
           <div class="flex items-center justify-between">
             <h3 class="font-medium">工位配置</h3>
