@@ -1,5 +1,6 @@
 # --- Secrets / runtime ---
 runtime_config.json
+factory_config.json
 .env
 .env.*
 !.env.example
@@ -21,6 +22,7 @@ env/
 # --- Runtime / generated output ---
 artifacts/
 workspaces/
+profiles/
 events/
 logs/
 marvis.db
