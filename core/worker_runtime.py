@@ -181,26 +181,22 @@ class ClaudeCliWorkerBackend:
             await process.wait()
             raise RuntimeError(f"claude CLI exceeded {self.timeout_seconds}s, killed")
 
+        stdout_text = stdout.decode("utf-8", errors="replace")
+        events_path = workspace_dir / ".hermes" / "last-events.jsonl"
+        event_lines = _write_event_stream(stdout_text, events_path)
+
         if process.returncode != 0:
             stderr_text = stderr.decode("utf-8", errors="replace")[:400]
             raise RuntimeError(f"claude CLI exited {process.returncode}: {stderr_text}")
 
-        stdout_text = stdout.decode("utf-8", errors="replace")
-        events_path = workspace_dir / ".hermes" / "last-events.jsonl"
-        events_path.parent.mkdir(parents=True, exist_ok=True)
         last_result_text = None
-        with events_path.open("w", encoding="utf-8") as events_file:
-            for line in stdout_text.splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                events_file.write(line + "\n")
-                try:
-                    event = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if event.get("type") == "result":
-                    last_result_text = event.get("result", "")
+        for line in event_lines:
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if event.get("type") == "result":
+                last_result_text = event.get("result", "")
         if last_result_text is None:
             stdout_tail = stdout_text[-1000:].strip()
             raise RuntimeError(f"claude CLI missing result event in stream-json output: {stdout_tail}")
@@ -242,3 +238,12 @@ class WorkerRuntime:
 
 def default_mock_command() -> list[str]:
     return [sys.executable, str(Path(__file__).resolve().parents[1] / "mock_worker.py")]
+
+
+def _write_event_stream(stdout_text: str, events_path: Path) -> list[str]:
+    events_path.parent.mkdir(parents=True, exist_ok=True)
+    event_lines = [line.strip() for line in stdout_text.splitlines() if line.strip()]
+    with events_path.open("w", encoding="utf-8") as events_file:
+        for line in event_lines:
+            events_file.write(line + "\n")
+    return event_lines

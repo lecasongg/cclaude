@@ -56,10 +56,11 @@ async def test_claude_cli_backend_invokes_claude_with_isolated_profile_and_cwd(t
 @pytest.mark.asyncio
 async def test_claude_cli_backend_raises_on_nonzero_exit(tmp_path, monkeypatch):
     config = make_config(tmp_path)
+    event = json.dumps({"type": "assistant", "message": {"content": "auth failed after init"}})
 
     async def fake_create_subprocess_exec(*args, **kwargs):
         process = AsyncMock()
-        process.communicate.return_value = (b"", b"auth error")
+        process.communicate.return_value = (event.encode("utf-8"), b"auth error")
         process.returncode = 1
         return process
 
@@ -68,6 +69,9 @@ async def test_claude_cli_backend_raises_on_nonzero_exit(tmp_path, monkeypatch):
 
     with pytest.raises(RuntimeError, match="exited 1"):
         await backend.run("hi", config)
+
+    events_path = tmp_path / "workspaces/niuma-1/.hermes/last-events.jsonl"
+    assert events_path.read_text(encoding="utf-8") == event + "\n"
 
 
 @pytest.mark.asyncio
