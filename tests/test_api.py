@@ -304,6 +304,14 @@ def test_console_displays_worker_backend_type():
     assert "BACKEND" in html
 
 
+def test_console_worker_config_modal_shows_backend_type_read_only():
+    console = Path(__file__).parents[1] / "web" / "console.html"
+    html = console.read_text(encoding="utf-8")
+
+    assert "configForm.backend_type" in html
+    assert "BACKEND TYPE" in html
+
+
 def test_api_lists_workers_with_token(tmp_path):
     client = build_client(tmp_path)
 

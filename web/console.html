@@ -377,6 +377,10 @@
           <div class="br-rule"></div>
           <div class="space-y-3">
             <div>
+              <div class="br-label">BACKEND TYPE</div>
+              <input x-model="configForm.backend_type" readonly class="br-input-mono text-[var(--muted)]">
+            </div>
+            <div>
               <div class="br-label">PROVIDER</div>
               <input x-model="configForm.provider" class="br-input">
             </div>
@@ -462,7 +466,7 @@
         nextInstruction: '根据上游逆向分析清单，编写可交付的需求文档。',
         taskFilter: {worker: 'all', status: 'all'},
         configWorker: null,
-        configForm: {provider: '', base_url: '', model: '', role: '', api_key: ''},
+        configForm: {backend_type: '', provider: '', base_url: '', model: '', role: '', api_key: ''},
         documentLabels: {task_manual: '任务手册', conversion_rules: '规则安装'},
         documentInstallWorker: null,
         events: [],
@@ -707,6 +711,7 @@
           this.configWorker = worker;
           this.documentInstallWorker = null;
           this.configForm = {
+            backend_type: worker.backend_type || '',
             provider: worker.provider || '',
             base_url: worker.base_url || '',
             model: worker.model || '',
