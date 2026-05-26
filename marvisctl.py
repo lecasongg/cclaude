@@ -4,7 +4,9 @@ import argparse
 import json
 import shutil
 import sys
+import tempfile
 
+from agent_factory.core.compliance import ComplianceSuite
 from agent_factory.core.config_registry import ConfigRegistryError, load_config_registry
 from agent_factory.core.taskbook import TaskBookError, load_taskbook
 
@@ -54,6 +56,14 @@ def _build_parser() -> argparse.ArgumentParser:
     taskbook_dry_run = taskbook_subparsers.add_parser("dry-run")
     taskbook_dry_run.add_argument("path")
     taskbook_dry_run.set_defaults(handler=_taskbook_dry_run)
+
+    compliance = subparsers.add_parser("compliance")
+    compliance_subparsers = compliance.add_subparsers(dest="compliance_command", required=True)
+    compliance_run = compliance_subparsers.add_parser("run")
+    compliance_run.add_argument("--suite", required=True)
+    compliance_run.add_argument("--mode", choices=["quick"], default="quick")
+    compliance_run.add_argument("--workspace")
+    compliance_run.set_defaults(handler=_compliance_run)
 
     return parser
 
@@ -109,6 +119,17 @@ def _taskbook_dry_run(args: argparse.Namespace) -> int:
     taskbook = load_taskbook(args.path)
     print(json.dumps({"title": taskbook.title, "execution_order": taskbook.execution_order()}, ensure_ascii=False, indent=2))
     return 0
+
+
+def _compliance_run(args: argparse.Namespace) -> int:
+    workspace = args.workspace or tempfile.mkdtemp(prefix="marvis-compliance-")
+    result = ComplianceSuite(args.suite).run_quick(workspace)
+    if result.success:
+        print("compliance ok")
+        return 0
+    for error in result.errors:
+        print(error, file=sys.stderr)
+    return 1
 
 
 if __name__ == "__main__":

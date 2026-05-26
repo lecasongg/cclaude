@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+from agent_factory.core.event_log import EventLog
+from agent_factory.core.pipeline_executor import PipelineExecutor, StepExecutionContext
+from agent_factory.core.resource_manager import ResourceManager
+from agent_factory.core.taskbook import TaskBook, load_taskbook
+
+
+@dataclass(frozen=True)
+class ComplianceResult:
+    success: bool
+    errors: list[str] = field(default_factory=list)
+
+
+class ComplianceSuite:
+    def __init__(self, root: str | Path):
+        self.root = Path(root)
+
+    def run_quick(self, workspace_root: str | Path) -> ComplianceResult:
+        workspace_root = Path(workspace_root)
+        errors: list[str] = []
+        for taskbook_path in sorted((self.root / "taskbooks").glob("*.yml")):
+            errors.extend(self._run_taskbook_case(taskbook_path, workspace_root / taskbook_path.stem))
+        return ComplianceResult(success=not errors, errors=errors)
+
+    def _run_taskbook_case(self, taskbook_path: Path, workspace_root: Path) -> list[str]:
+        taskbook = load_taskbook(taskbook_path)
+        expected_path = self.root / "expected" / f"{taskbook_path.stem}.assert.yml"
+        expected = _load_expected(expected_path)
+        manager = ResourceManager(workspace_root / "marvis.db")
+        for agent_id in sorted({step.agent for step in taskbook.steps}):
+            manager.register_agent(agent_id, display_name=agent_id)
+
+        executor = PipelineExecutor(
+            resource_manager=manager,
+            event_log=EventLog(workspace_root / "events"),
+            workspace_root=workspace_root,
+            step_runner=_mock_step_runner,
+        )
+        run_id = executor.run(taskbook)
+        return _assert_expected(taskbook, expected, manager, workspace_root, run_id)
+
+
+def _mock_step_runner(context: StepExecutionContext) -> dict[str, str]:
+    return {output_path: f"mock output for {context.step.step_id}" for output_path in context.output_paths}
+
+
+def _load_expected(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return data.get("assert", {})
+
+
+def _assert_expected(
+    taskbook: TaskBook,
+    expected: dict[str, Any],
+    manager: ResourceManager,
+    workspace_root: Path,
+    run_id: str,
+) -> list[str]:
+    errors: list[str] = []
+    expected_run_status = expected.get("run_status")
+    if expected_run_status and manager.get_pipeline_run(run_id)["status"] != expected_run_status:
+        errors.append(f"expected run_status {expected_run_status}")
+
+    expected_steps = expected.get("steps", {})
+    for step_id, step_expected in expected_steps.items():
+        step = manager.get_step_run(run_id, step_id)
+        expected_status = step_expected.get("status")
+        if expected_status and step["status"] != expected_status:
+            errors.append(f"expected step {step_id} status {expected_status}")
+        for output_path in step_expected.get("output_exists", []):
+            resolved = workspace_root / output_path.replace("{run_id}", run_id)
+            if not resolved.exists():
+                errors.append(f"missing expected output for step {step_id}: {resolved}")
+
+    known_steps = {step.step_id for step in taskbook.steps}
+    for step_id in expected_steps:
+        if step_id not in known_steps:
+            errors.append(f"expected unknown step: {step_id}")
+    return errors
