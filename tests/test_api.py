@@ -320,6 +320,8 @@ def test_console_fetches_pipeline_runs_and_events():
 
     assert "refreshRuns" in html
     assert "selectRun" in html
+    assert "startTaskbookRun" in html
+    assert "taskbookPath" in html
     assert "selectedRunEvents" in html
     assert "/api/runs" in html
     assert "/api/runs/${runId}/events" in html

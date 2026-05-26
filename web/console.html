@@ -204,6 +204,10 @@
               </div>
               <button @click="refreshRuns" class="br-btn !py-1">[ 刷新 RUNS ]</button>
             </div>
+            <div class="mt-4 grid grid-cols-[1fr_auto] gap-2">
+              <input x-model="taskbookPath" placeholder="D:\\codex\\cclaude\\taskbooks\\legacy-login.yml" class="br-input-mono">
+              <button @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" class="br-btn-primary" x-text="isStartingRun ? '启动中...' : '[ 启动任务书 ]'"></button>
+            </div>
             <div class="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
               <div class="space-y-3">
                 <template x-for="run in runs" :key="run.run_id">
@@ -520,6 +524,7 @@
         selectedWorker: 'niuma-1',
         prompt: '',
         chainPrompt: '',
+        taskbookPath: '',
         filePath: '',
         fileContext: {files: [], prompt: ''},
         nextInstruction: '根据上游逆向分析清单，编写可交付的需求文档。',
@@ -538,6 +543,7 @@
         isRefreshing: false,
         isDelegating: false,
         isChaining: false,
+        isStartingRun: false,
         isSavingConfig: false,
         isInstallingDocument: false,
         isLoadingFileContext: false,
@@ -621,6 +627,27 @@
         async refreshRunEvents(runId) {
           const body = await this.requestJson(`/api/runs/${runId}/events`);
           this.selectedRunEvents = body.events || [];
+        },
+        async startTaskbookRun() {
+          if (this.isStartingRun || !this.taskbookPath.trim()) return;
+          this.isStartingRun = true;
+          this.alert = null;
+          try {
+            const body = await this.requestJson('/api/runs', {
+              method: 'POST',
+              body: JSON.stringify({taskbook_path: this.taskbookPath})
+            });
+            this.selectedRun = {...body.run, steps: body.steps || []};
+            await this.refreshRunEvents(body.run.run_id);
+            await this.refreshRuns();
+            this.record('pipeline', `${body.run.run_id} · ${body.run.status}`);
+            this.showAlert('success', `任务书流水线已完成：${body.run.status}`);
+          } catch (error) {
+            this.showAlert('error', `启动任务书失败：${error.message}`);
+            this.record('error', error.message);
+          } finally {
+            this.isStartingRun = false;
+          }
         },
         toggleAutoRefresh() {
           this.autoRefresh = !this.autoRefresh;
