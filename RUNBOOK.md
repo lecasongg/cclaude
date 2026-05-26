@@ -5,13 +5,20 @@
 在 PowerShell 里运行：
 
 ```powershell
-cd D:\牛马架构审查包\agent_factory
-$env:PYTHONPATH="D:\牛马架构审查包"
-python worker_server.py
+cd D:\codex\cclaude
+copy factory_config.example.json factory_config.json
+python serve.py
 ```
 
 默认地址：`http://127.0.0.1:8846`
-默认 token：`change-me-local-token`
+默认 token：`local-token`
+
+如果 8846 端口被占用，复制一份配置改 `server.port`，再指定配置路径启动：
+
+```powershell
+$env:CCLAUDE_CONFIG_PATH="D:\codex\cclaude\factory_config.local.json"
+python serve.py
+```
 
 ## 打开监控大屏
 
@@ -26,8 +33,8 @@ http://127.0.0.1:8846/
 另开一个 PowerShell：
 
 ```powershell
-cd D:\牛马架构审查包\agent_factory
-python hermes_supervisor.py http://127.0.0.1:8846 change-me-local-token
+cd D:\codex\cclaude
+python hermes_supervisor.py http://127.0.0.1:8846 local-token
 ```
 
 进入后会看到：
@@ -48,27 +55,27 @@ exit
 仍然可以用一次性命令：
 
 ```powershell
-python hermes_supervisor.py http://127.0.0.1:8846 change-me-local-token workers
-python hermes_supervisor.py http://127.0.0.1:8846 change-me-local-token delegate niuma-1 "分析这个 JSP 项目，输出需求清单"
-python hermes_supervisor.py http://127.0.0.1:8846 change-me-local-token chain niuma-1 niuma-2 "逆向分析 JSP" "根据上游清单编写需求文档"
+python hermes_supervisor.py http://127.0.0.1:8846 local-token workers
+python hermes_supervisor.py http://127.0.0.1:8846 local-token delegate niuma-1 "分析这个 JSP 项目，输出需求清单"
+python hermes_supervisor.py http://127.0.0.1:8846 local-token chain niuma-1 niuma-2 "逆向分析 JSP" "根据上游清单编写需求文档"
 ```
 
 ## 当前试运行模式
 
-`config.example.json` 默认使用：
+`python serve.py` 会按顺序选择配置文件：
 
-```json
-"runtime_mode": "mock-subprocess"
+```text
+factory_config.json → factory_config.example.json → config.example.json
 ```
 
-这会为每个牛马启动独立 Python 子进程，验证：
+推荐复制 `factory_config.example.json` 为本地 `factory_config.json` 后修改；默认示例使用 `claude_cli` backend。旧 `config.example.json` 仍可用于 OpenAI 兼容回退。
 
-- 独立 worker_id
-- 独立 workspace
-- 独立 skills 目录
-- 独立 profile 目录
-- artifact 流水线
-- PowerShell Hermes 到 Worker Server 的派工链路
+试运行前确认：
+
+```powershell
+claude.cmd --version
+$env:ANTHROPIC_API_KEY="你的 Anthropic API Key"
+```
 
 ## OpenAI 兼容中转模型模式
 
@@ -184,9 +191,8 @@ D:\牛马架构审查包\agent_factory\runtime_config.json
 以后重启 Worker Server，只需要：
 
 ```powershell
-cd D:\牛马架构审查包\agent_factory
-$env:PYTHONPATH="D:\牛马架构审查包"
-python worker_server.py
+cd D:\codex\cclaude
+python serve.py
 ```
 
 Worker Server 会自动读取 `runtime_config.json` 恢复供应商、Base URL、模型、角色和 key。注意：Web 大屏不会显示真实 key，但 `runtime_config.json` 在当前试运行版本里会保存本地明文 key，不要分享这个文件。要重置配置，停止 Worker Server 后删除 `runtime_config.json`。

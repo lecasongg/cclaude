@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import uvicorn
@@ -12,6 +13,17 @@ from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
 from agent_factory.core.worker_runtime import WorkerRuntime, default_mock_command
+
+
+def resolve_config_path(root: str | Path, override: str | None = None) -> Path:
+    if override:
+        return Path(override)
+    root = Path(root)
+    for name in ("factory_config.json", "factory_config.example.json", "config.example.json"):
+        candidate = root / name
+        if candidate.exists():
+            return candidate
+    return root / "factory_config.example.json"
 
 
 def apply_legacy_runtime_backend(worker: WorkerConfig, runtime_mode: str) -> WorkerConfig:
@@ -69,6 +81,6 @@ def build_app(config_path: str | Path):
 
 
 if __name__ == "__main__":
-    config_path = Path(__file__).with_name("config.example.json")
+    config_path = resolve_config_path(Path(__file__).parent, os.environ.get("CCLAUDE_CONFIG_PATH"))
     config = load_factory_config(config_path)
     uvicorn.run(build_app(config_path), host=config.server.host, port=config.server.port)

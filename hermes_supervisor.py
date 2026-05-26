@@ -23,7 +23,7 @@ def api_call(base_url: str, token: str, method: str, path: str, body: dict | Non
             raise ApiError("认证失败：Hermes token 和 Worker Server token 不一致。请用服务器启动时配置的 token 重新启动 Hermes。") from exc
         raise ApiError(f"HTTP {exc.code}: {exc.reason}") from exc
     except error.URLError as exc:
-        raise ApiError(f"连接失败：无法连接 Worker Server（{exc.reason}）。请确认 python worker_server.py 正在运行。") from exc
+        raise ApiError(f"连接失败：无法连接 Worker Server（{exc.reason}）。请确认 python serve.py 正在运行。") from exc
 
 
 def print_json(data: dict) -> None:
