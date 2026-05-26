@@ -69,6 +69,24 @@ async def test_claude_cli_backend_raises_on_nonzero_exit(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_claude_cli_backend_raises_when_result_event_missing(tmp_path, monkeypatch):
+    config = make_config(tmp_path)
+
+    async def fake_create_subprocess_exec(*args, **kwargs):
+        process = AsyncMock()
+        event = json.dumps({"type": "assistant", "message": {"content": "still working"}})
+        process.communicate.return_value = (event.encode("utf-8"), b"")
+        process.returncode = 0
+        return process
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create_subprocess_exec)
+    backend = ClaudeCliWorkerBackend()
+
+    with pytest.raises(RuntimeError, match="missing result event.*still working"):
+        await backend.run("hi", config)
+
+
+@pytest.mark.asyncio
 async def test_claude_cli_backend_kills_on_timeout(tmp_path, monkeypatch):
     config = make_config(tmp_path)
     killed = {"called": False}

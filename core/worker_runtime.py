@@ -186,8 +186,9 @@ class ClaudeCliWorkerBackend:
             stderr_text = stderr.decode("utf-8", errors="replace")[:400]
             raise RuntimeError(f"claude CLI exited {process.returncode}: {stderr_text}")
 
-        last_result_text = ""
-        for line in stdout.decode("utf-8", errors="replace").splitlines():
+        stdout_text = stdout.decode("utf-8", errors="replace")
+        last_result_text = None
+        for line in stdout_text.splitlines():
             line = line.strip()
             if not line:
                 continue
@@ -197,6 +198,9 @@ class ClaudeCliWorkerBackend:
                 continue
             if event.get("type") == "result":
                 last_result_text = event.get("result", "")
+        if last_result_text is None:
+            stdout_tail = stdout_text[-1000:].strip()
+            raise RuntimeError(f"claude CLI missing result event in stream-json output: {stdout_tail}")
         return last_result_text
 
 
