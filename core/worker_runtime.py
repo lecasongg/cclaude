@@ -200,8 +200,10 @@ class ClaudeCliWorkerBackend:
         event_lines = _write_event_stream(stdout_text, events_path)
 
         if process.returncode != 0:
-            stderr_text = stderr.decode("utf-8", errors="replace")[:400]
-            raise RuntimeError(f"claude CLI exited {process.returncode}: {stderr_text}")
+            detail = stderr.decode("utf-8", errors="replace").strip()
+            if not detail:
+                detail = _event_error_detail(event_lines)
+            raise RuntimeError(f"claude CLI exited {process.returncode}: {detail[:400]}")
 
         last_result_text = None
         for line in event_lines:
@@ -261,3 +263,25 @@ def _write_event_stream(stdout_text: str, events_path: Path) -> list[str]:
         for line in event_lines:
             events_file.write(line + "\n")
     return event_lines
+
+
+def _event_error_detail(event_lines: list[str]) -> str:
+    for line in reversed(event_lines):
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        result = event.get("result")
+        if isinstance(result, str) and result.strip():
+            return result.strip()
+        message = event.get("message")
+        if not isinstance(message, dict):
+            continue
+        content = message.get("content")
+        if not isinstance(content, list):
+            continue
+        text_parts = [part.get("text", "") for part in content if isinstance(part, dict) and part.get("type") == "text"]
+        detail = "\n".join(part for part in text_parts if part).strip()
+        if detail:
+            return detail
+    return ""

@@ -104,6 +104,29 @@ async def test_claude_cli_backend_raises_on_nonzero_exit(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_claude_cli_backend_reports_result_error_when_stderr_is_empty(tmp_path, monkeypatch):
+    config = make_config(tmp_path)
+    event = json.dumps(
+        {
+            "type": "result",
+            "is_error": True,
+            "result": "Failed to authenticate. API Error: 403 Request not allowed",
+        }
+    )
+
+    async def fake_create_subprocess_exec(*args, **kwargs):
+        process = AsyncMock()
+        process.communicate.return_value = (event.encode("utf-8"), b"")
+        process.returncode = 1
+        return process
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create_subprocess_exec)
+
+    with pytest.raises(RuntimeError, match="403 Request not allowed"):
+        await ClaudeCliWorkerBackend().run("hi", config)
+
+
+@pytest.mark.asyncio
 async def test_claude_cli_backend_raises_when_result_event_missing(tmp_path, monkeypatch):
     config = make_config(tmp_path)
 
