@@ -1,3 +1,4 @@
+import asyncio
 import os
 from dataclasses import asdict
 
@@ -9,11 +10,14 @@ from pydantic import BaseModel
 from agent_factory.core.config import save_runtime_config
 from agent_factory.core.event_log import EventLog
 from agent_factory.core.models import TaskRecord, WorkerConfig
+from agent_factory.core.pipeline_executor import PipelineExecutor
 from agent_factory.core.resource_manager import ResourceManager, ResourceManagerError
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
+from agent_factory.core.taskbook import TaskBookError, load_taskbook
 from agent_factory.core.worker_runtime import ClaudeCliWorkerBackend, CodexCliWorkerBackend, FakeWorkerBackend, OpenAICompatibleWorkerBackend, SubprocessWorkerBackend
+from agent_factory.core.worker_step_runner import WorkerRuntimeStepRunner
 
 
 class DelegateRequest(BaseModel):
@@ -30,6 +34,10 @@ class ChainRequest(BaseModel):
 
 class FilePathRequest(BaseModel):
     path: str
+
+
+class TaskBookRunRequest(BaseModel):
+    taskbook_path: str
 
 
 REQUIRED_DOCUMENT_WORKER_ID = "niuma-1"
@@ -115,6 +123,7 @@ def create_app(
     runtime_config: dict | None = None,
     resource_manager: ResourceManager | None = None,
     event_log: EventLog | None = None,
+    pipeline_workspace_root: Path | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Hermes Local Agent Factory")
     runtime_data = runtime_config if runtime_config is not None else {}
@@ -185,6 +194,12 @@ def create_app(
             "skills_dir": worker.skills_dir,
             "installed_documents": document_status(worker_documents(worker.worker_id)),
         }
+
+    def ensure_workers_registered_for_pipeline() -> None:
+        if resource_manager is None:
+            return
+        for worker in workers:
+            resource_manager.register_agent(worker.worker_id, display_name=worker.display_name)
 
     @app.get("/api/health")
     async def health(x_hermes_token: str | None = Header(default=None)):
@@ -272,6 +287,28 @@ def create_app(
         if resource_manager is None:
             return {"runs": []}
         return {"runs": resource_manager.list_pipeline_runs()}
+
+    @app.post("/api/runs")
+    async def start_run(request: TaskBookRunRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None or event_log is None:
+            raise HTTPException(status_code=400, detail="pipeline runtime not configured")
+        try:
+            taskbook = load_taskbook(request.taskbook_path)
+        except (TaskBookError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        ensure_workers_registered_for_pipeline()
+        executor = PipelineExecutor(
+            resource_manager=resource_manager,
+            event_log=event_log,
+            workspace_root=pipeline_workspace_root or Path.cwd(),
+            step_runner=WorkerRuntimeStepRunner(supervisor.runtimes),
+        )
+        run_id = await asyncio.to_thread(executor.run, taskbook)
+        return {
+            "run": resource_manager.get_pipeline_run(run_id),
+            "steps": resource_manager.list_step_runs(run_id),
+        }
 
     @app.get("/api/runs/{run_id}")
     async def get_run(run_id: str, x_hermes_token: str | None = Header(default=None)):

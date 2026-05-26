@@ -530,3 +530,49 @@ def test_api_exposes_pipeline_runs_steps_and_events(tmp_path):
     assert run.json()["steps"][0]["step_id"] == "reverse-login"
     assert events.status_code == 200
     assert events.json()["events"][0]["type"] == "step_started"
+
+
+def test_api_starts_taskbook_pipeline_run(tmp_path):
+    bus = TaskBus(["niuma-1"])
+    artifacts = ArtifactStore(tmp_path / "worker-artifacts")
+    config = worker_config("niuma-1")
+    supervisor = HermesSupervisor(bus, artifacts, {"niuma-1": WorkerRuntime(config, bus, artifacts, FakeWorkerBackend("功能清单"))})
+    resource_manager = ResourceManager(tmp_path / "marvis.db")
+    event_log = EventLog(tmp_path / "events")
+    taskbook_path = tmp_path / "login.yml"
+    taskbook_path.write_text(
+        """
+title: 登录模块改造
+objective: 输出登录模块逆向文档
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: 逆向登录模块
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+    app = create_app(
+        supervisor,
+        bus,
+        [config],
+        SecurityGate("local-token"),
+        resource_manager=resource_manager,
+        event_log=event_log,
+        pipeline_workspace_root=tmp_path,
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/runs",
+        headers={"x-hermes-token": "local-token"},
+        json={"taskbook_path": str(taskbook_path)},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["run"]["status"] == "succeeded"
+    assert body["steps"][0]["status"] == "succeeded"
+    output_path = tmp_path / "artifacts" / "runs" / body["run"]["run_id"] / "reverse-login" / "function-list.md"
+    assert output_path.read_text(encoding="utf-8") == "功能清单"
