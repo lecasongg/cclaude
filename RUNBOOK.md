@@ -142,3 +142,19 @@ python worker_server.py
 ```
 
 Worker Server 会自动读取 `runtime_config.json` 恢复供应商、Base URL、模型、角色和 key。注意：Web 大屏不会显示真实 key，但 `runtime_config.json` 在当前试运行版本里会保存本地明文 key，不要分享这个文件。要重置配置，停止 Worker Server 后删除 `runtime_config.json`。
+
+## 控制台手动验证清单（重做后）
+
+每次重做控制台或改动 `web/console.html` 后，逐项打勾：
+
+- [ ] 默认进 PIPELINE 标签
+- [ ] 切到 DISPATCH，刷新页面后仍在 DISPATCH（localStorage 起效）
+- [ ] 4 张统计卡数据正确（Server online、Workers 2/2、Keys、AUTO 开关）
+- [ ] 工位卡上下叠展示；「规则」按钮只 1 个，且只在 niuma-1 上有
+- [ ] 点「配置」→ 居中模态弹出，蒙版 / ESC / × 三种方式都能关
+- [ ] 点「规则」→ 居中模态弹出，任务手册和转换规则两个上传区都在
+- [ ] DISPATCH 单工位派工：选工位 + 填 prompt + 发送，成功并出现在 Timeline
+- [ ] DISPATCH 链式派工：填 prompt + 上传 1 个文件 + 启动，成功并能在 ARCHIVE 看到两条任务
+- [ ] ARCHIVE 左右两栏：选历史任务，右侧产物阅读器显示内容
+- [ ] 故意触发错误（空 prompt 发送 / 改坏 token），alert 显示深红边矩形
+- [ ] 视觉整体：米底 / 黑字 / serif / 0 圆角 / 无阴影 / 红绿克制
