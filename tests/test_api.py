@@ -314,6 +314,17 @@ def test_console_worker_config_modal_shows_backend_type_read_only():
     assert "BACKEND TYPE" in html
 
 
+def test_console_fetches_pipeline_runs_and_events():
+    console = Path(__file__).parents[1] / "web" / "console.html"
+    html = console.read_text(encoding="utf-8")
+
+    assert "refreshRuns" in html
+    assert "selectRun" in html
+    assert "selectedRunEvents" in html
+    assert "/api/runs" in html
+    assert "/api/runs/${runId}/events" in html
+
+
 def test_api_lists_workers_with_token(tmp_path):
     client = build_client(tmp_path)
 

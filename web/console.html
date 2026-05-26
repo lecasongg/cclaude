@@ -199,6 +199,62 @@
           <section>
             <div class="flex items-center justify-between">
               <div>
+                <div class="br-label">PIPELINE RUNS</div>
+                <h3 class="br-h3 mt-1">任务书流水线</h3>
+              </div>
+              <button @click="refreshRuns" class="br-btn !py-1">[ 刷新 RUNS ]</button>
+            </div>
+            <div class="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+              <div class="space-y-3">
+                <template x-for="run in runs" :key="run.run_id">
+                  <article @click="selectRun(run)" class="br-card-tight cursor-pointer" :class="selectedRun && selectedRun.run_id === run.run_id ? 'border-[3px]' : ''">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <p class="br-label truncate" x-text="run.run_id"></p>
+                        <h4 class="br-h3 mt-1 truncate" x-text="run.title"></h4>
+                      </div>
+                      <span :class="brStatusClass(run.status)" x-text="`[ ${run.status.toUpperCase()} ]`"></span>
+                    </div>
+                  </article>
+                </template>
+                <p x-show="runs.length === 0" class="br-mono">— 暂无任务书流水线 —</p>
+              </div>
+              <div class="br-card-tight min-h-48">
+                <template x-if="selectedRun">
+                  <div class="space-y-4">
+                    <div>
+                      <div class="br-label">SELECTED RUN</div>
+                      <h4 class="br-h3 mt-1" x-text="selectedRun.title"></h4>
+                      <p class="br-mono mt-1" x-text="selectedRun.run_id"></p>
+                    </div>
+                    <div class="space-y-2">
+                      <template x-for="step in selectedRun.steps || []" :key="step.step_id">
+                        <div class="border-t-[1.5px] border-[var(--ink)] pt-2">
+                          <div class="flex items-center justify-between gap-3">
+                            <span class="br-mono" x-text="`${step.step_id} · ${step.agent_id}`"></span>
+                            <span :class="brStatusClass(step.status)" x-text="step.status"></span>
+                          </div>
+                          <p class="text-sm text-[var(--ink-soft)] mt-1" x-text="step.objective"></p>
+                        </div>
+                      </template>
+                    </div>
+                    <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
+                      <div class="br-label">RUN EVENTS</div>
+                      <template x-for="event in selectedRunEvents" :key="event.event_id">
+                        <p class="br-mono mt-2" x-text="`${event.type} · ${event.agent_id || '-'} · ${event.step_id || '-'}`"></p>
+                      </template>
+                      <p x-show="selectedRunEvents.length === 0" class="br-mono mt-2">— 暂无事件 —</p>
+                    </div>
+                  </div>
+                </template>
+                <p x-show="!selectedRun" class="br-mono">— 选择一个 run 查看 step 和事件 —</p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div class="flex items-center justify-between">
+              <div>
                 <div class="br-label">PIPELINE</div>
                 <h3 class="br-h3 mt-1">牛马流水线</h3>
               </div>
@@ -456,6 +512,9 @@
         health: {},
         workers: [],
         tasks: [],
+        runs: [],
+        selectedRun: null,
+        selectedRunEvents: [],
         selectedTask: null,
         artifactContent: '',
         selectedWorker: 'niuma-1',
@@ -516,7 +575,7 @@
           if (this.isRefreshing) return;
           this.isRefreshing = true;
           try {
-            await Promise.all([this.refreshHealth(), this.refreshWorkers(), this.refreshTasks()]);
+            await Promise.all([this.refreshHealth(), this.refreshWorkers(), this.refreshTasks(), this.refreshRuns()]);
           } catch (error) {
             this.health = {};
             this.showAlert('error', `刷新失败：${error.message}`);
@@ -541,6 +600,27 @@
           if (!this.selectedTask && this.tasks.length) {
             this.selectTask(this.tasks[0]);
           }
+        },
+        async refreshRuns() {
+          const body = await this.requestJson('/api/runs');
+          this.runs = body.runs || [];
+          if (this.selectedRun) {
+            const current = this.runs.find((run) => run.run_id === this.selectedRun.run_id);
+            if (current) {
+              await this.selectRun(current);
+            }
+          } else if (this.runs.length) {
+            await this.selectRun(this.runs[0]);
+          }
+        },
+        async selectRun(run) {
+          const body = await this.requestJson(`/api/runs/${run.run_id}`);
+          this.selectedRun = {...(body.run || run), steps: body.steps || []};
+          await this.refreshRunEvents(run.run_id);
+        },
+        async refreshRunEvents(runId) {
+          const body = await this.requestJson(`/api/runs/${runId}/events`);
+          this.selectedRunEvents = body.events || [];
         },
         toggleAutoRefresh() {
           this.autoRefresh = !this.autoRefresh;
@@ -788,8 +868,10 @@
         brStatusClass(status) {
           if (status === 'succeeded') return 'br-tag-success';
           if (status === 'failed') return 'br-tag-failed';
+          if (status === 'blocked') return 'br-tag-failed';
           if (status === 'running') return 'br-tag-on';
           if (status === 'idle') return 'br-tag-muted';
+          if (status === 'queued') return 'br-tag-muted';
           return 'br-tag';
         },
         showAlert(type, message) {
