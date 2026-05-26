@@ -318,13 +318,19 @@ def test_console_fetches_pipeline_runs_and_events():
     console = Path(__file__).parents[1] / "web" / "console.html"
     html = console.read_text(encoding="utf-8")
 
+    assert "Marvis AI Factory" in html
+    assert "token: 'local-token'" in html
     assert "refreshRuns" in html
     assert "selectRun" in html
     assert "startTaskbookRun" in html
     assert "taskbookPath" in html
     assert "selectedRunEvents" in html
+    assert "runArtifacts" in html
+    assert "loadRunArtifact" in html
+    assert "selectedRunArtifactContent" in html
     assert "/api/runs" in html
     assert "/api/runs/${runId}/events" in html
+    assert "/api/runs/${runId}/artifacts" in html
 
 
 def test_api_lists_workers_with_token(tmp_path):

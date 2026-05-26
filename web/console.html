@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hermes Local Agent Factory</title>
+  <title>Marvis AI Factory Console</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <style type="text/tailwindcss">
@@ -48,7 +48,7 @@
   <main x-data="factoryConsole()" x-init="init()" class="min-h-screen flex">
     <!-- 左侧垂直窄条 -->
     <aside class="w-8 shrink-0 border-r-[1.5px] border-[var(--ink)] flex items-start justify-center pt-6 sticky top-0 h-screen">
-      <div class="font-mono text-[10px] uppercase tracking-[3px] text-[var(--ink)]" style="writing-mode: vertical-rl; transform: rotate(180deg);">NIUMA · WORKSHOP · N°01</div>
+      <div class="font-mono text-[10px] uppercase tracking-[3px] text-[var(--ink)]" style="writing-mode: vertical-rl; transform: rotate(180deg);">MARVIS · FACTORY · V0.3</div>
     </aside>
 
     <!-- 右侧主区 -->
@@ -57,9 +57,9 @@
       <header class="sticky top-0 z-30 bg-[var(--paper)] border-b-[1.5px] border-[var(--ink)] px-8 pt-6 pb-4">
         <div class="flex items-end justify-between gap-6">
           <div>
-            <div class="br-label">N°01 · LOCAL AGENT WORKSHOP</div>
-            <h1 class="br-h1 mt-2">本地牛马工厂.</h1>
-            <p class="br-mono mt-2">逆向 / 编写 / 交付 — 一条流水线</p>
+            <div class="br-label">MARVIS AI FACTORY</div>
+            <h1 class="br-h1 mt-2">Marvis AI Factory.</h1>
+            <p class="br-mono mt-2">旧系统改造 · 任务书流水线 · 文件级产物握手</p>
           </div>
           <div class="flex flex-col items-end gap-2">
             <div class="br-mono" x-text="new Date().toISOString().slice(0,10)"></div>
@@ -77,9 +77,9 @@
 
         <!-- 标签栏 -->
         <nav class="flex gap-1 mt-4 border-t-[1.5px] border-[var(--ink)] pt-3">
-          <button @click="setActiveTab('dispatch')" :class="activeTab === 'dispatch' ? 'br-tab-active' : 'br-tab'">[ DISPATCH ]</button>
           <button @click="setActiveTab('pipeline')" :class="activeTab === 'pipeline' ? 'br-tab-active' : 'br-tab'">[ PIPELINE ]</button>
-          <button @click="setActiveTab('archive')" :class="activeTab === 'archive' ? 'br-tab-active' : 'br-tab'">[ ARCHIVE ]</button>
+          <button @click="setActiveTab('dispatch')" :class="activeTab === 'dispatch' ? 'br-tab-active' : 'br-tab'">[ DISPATCH ]</button>
+          <button @click="setActiveTab('archive')" :class="activeTab === 'archive' ? 'br-tab-active' : 'br-tab'">[ ARTIFACTS ]</button>
         </nav>
       </header>
 
@@ -248,6 +248,16 @@
                         <p class="br-mono mt-2" x-text="`${event.type} · ${event.agent_id || '-'} · ${event.step_id || '-'}`"></p>
                       </template>
                       <p x-show="selectedRunEvents.length === 0" class="br-mono mt-2">— 暂无事件 —</p>
+                    </div>
+                    <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
+                      <div class="br-label">RUN ARTIFACTS</div>
+                      <div class="mt-2 space-y-2">
+                        <template x-for="artifact in runArtifacts" :key="artifact.path">
+                          <button @click="loadRunArtifact(artifact)" class="block w-full text-left br-mono hover:text-[var(--accent)]" x-text="`${artifact.path} · ${formatBytes(artifact.size)}`"></button>
+                        </template>
+                        <p x-show="runArtifacts.length === 0" class="br-mono">— 暂无产物 —</p>
+                      </div>
+                      <pre x-show="selectedRunArtifactContent" class="mt-3 max-h-64 overflow-auto whitespace-pre-wrap border-t-[1.5px] border-[var(--ink)] pt-3 text-sm leading-6 text-[var(--ink-soft)]" x-text="selectedRunArtifactContent"></pre>
                     </div>
                   </div>
                 </template>
@@ -512,13 +522,15 @@
     function factoryConsole() {
       return {
         baseUrl: 'http://127.0.0.1:8846',
-        token: 'change-me-local-token',
+        token: 'local-token',
         health: {},
         workers: [],
         tasks: [],
         runs: [],
         selectedRun: null,
         selectedRunEvents: [],
+        runArtifacts: [],
+        selectedRunArtifactContent: '',
         selectedTask: null,
         artifactContent: '',
         selectedWorker: 'niuma-1',
@@ -622,11 +634,22 @@
         async selectRun(run) {
           const body = await this.requestJson(`/api/runs/${run.run_id}`);
           this.selectedRun = {...(body.run || run), steps: body.steps || []};
-          await this.refreshRunEvents(run.run_id);
+          this.selectedRunArtifactContent = '';
+          await Promise.all([this.refreshRunEvents(run.run_id), this.refreshRunArtifacts(run.run_id)]);
         },
         async refreshRunEvents(runId) {
           const body = await this.requestJson(`/api/runs/${runId}/events`);
           this.selectedRunEvents = body.events || [];
+        },
+        async refreshRunArtifacts(runId) {
+          const body = await this.requestJson(`/api/runs/${runId}/artifacts`);
+          this.runArtifacts = body.artifacts || [];
+        },
+        async loadRunArtifact(artifact) {
+          if (!this.selectedRun || !artifact) return;
+          const runId = this.selectedRun.run_id;
+          const body = await this.requestJson(`/api/runs/${runId}/artifacts/${artifact.path}`);
+          this.selectedRunArtifactContent = body.content || '';
         },
         async startTaskbookRun() {
           if (this.isStartingRun || !this.taskbookPath.trim()) return;
