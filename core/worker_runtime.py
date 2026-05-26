@@ -82,7 +82,6 @@ class OpenAICompatibleWorkerBackend:
 
     def configure_api_url(self, base_url: str | None = None) -> None:
         self.api_url = self.completion_url(base_url)
-        self.configure_api_url()
 
     async def run(self, prompt: str, config: WorkerConfig) -> str:
         api_key = os.environ.get(config.api_key_env)
