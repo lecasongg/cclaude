@@ -46,9 +46,7 @@ def load_factory_config(path: str | Path) -> FactoryConfig:
 
 def _load_worker_config(worker_data: dict) -> WorkerConfig:
     worker = WorkerConfig(**worker_data)
-    if "backend_type" not in worker_data:
-        worker.__dict__.pop("backend_type", None)
-        worker.__dict__.pop("backend_options", None)
+    worker.backend_configured = "backend_type" in worker_data
     return worker
 
 

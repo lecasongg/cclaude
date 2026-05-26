@@ -20,6 +20,7 @@ def test_worker_config_defaults_backend_type_to_claude_cli():
     )
     assert config.backend_type == "claude_cli"
     assert config.backend_options == {}
+    assert config.backend_configured is True
 
 
 def test_load_factory_config_preserves_worker_isolation(tmp_path):
@@ -67,7 +68,9 @@ def test_load_factory_config_preserves_worker_isolation(tmp_path):
     assert config.workers[0].profile_dir != config.workers[1].profile_dir
     assert config.workers[0].workspace_dir != config.workers[1].workspace_dir
     assert config.workers[0].skills_dir != config.workers[1].skills_dir
-    assert "backend_type" not in config.workers[0].__dict__
+    assert config.workers[0].backend_type == "claude_cli"
+    assert config.workers[0].backend_options == {}
+    assert config.workers[0].backend_configured is False
 
 
 def test_load_factory_config_preserves_explicit_worker_backend_type(tmp_path):
@@ -100,7 +103,7 @@ def test_load_factory_config_preserves_explicit_worker_backend_type(tmp_path):
 
     assert config.workers[0].backend_type == "claude_cli"
     assert config.workers[0].backend_options == {"timeout_seconds": 1800}
-    assert "backend_type" in config.workers[0].__dict__
+    assert config.workers[0].backend_configured is True
 
 
 def test_load_factory_config_rejects_duplicate_worker_ids(tmp_path):

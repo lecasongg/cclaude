@@ -26,6 +26,7 @@ class WorkerConfig:
     enabled: bool = True
     backend_type: str = "claude_cli"
     backend_options: dict = field(default_factory=dict)
+    backend_configured: bool = True
 
 
 @dataclass

@@ -15,7 +15,7 @@ from agent_factory.core.worker_runtime import WorkerRuntime, default_mock_comman
 
 
 def apply_legacy_runtime_backend(worker: WorkerConfig, runtime_mode: str) -> WorkerConfig:
-    if "backend_type" in worker.__dict__:
+    if worker.backend_configured:
         return worker
     worker.backend_options = {}
     if runtime_mode == "mock-inline":
