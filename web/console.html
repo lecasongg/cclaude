@@ -265,76 +265,6 @@
             </div>
           </section>
 
-    <section class="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-      <div class="panel">
-        <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p class="font-mono text-xs uppercase tracking-[0.25em] text-zinc-500">History</p>
-            <h2 class="mt-1 text-xl font-medium">任务历史</h2>
-          </div>
-          <div class="grid gap-2 md:grid-cols-2">
-            <select x-model="taskFilter.worker" class="field py-1.5">
-              <option class="bg-zinc-950" value="all">全部工位</option>
-              <template x-for="worker in workers" :key="worker.worker_id">
-                <option class="bg-zinc-950" :value="worker.worker_id" x-text="worker.worker_id"></option>
-              </template>
-            </select>
-            <select x-model="taskFilter.status" class="field py-1.5">
-              <option class="bg-zinc-950" value="all">全部状态</option>
-              <option class="bg-zinc-950" value="succeeded">succeeded</option>
-              <option class="bg-zinc-950" value="failed">failed</option>
-              <option class="bg-zinc-950" value="running">running</option>
-              <option class="bg-zinc-950" value="pending">pending</option>
-            </select>
-          </div>
-        </div>
-        <div class="mt-5 max-h-[560px] space-y-3 overflow-auto pr-1">
-          <template x-for="task in filteredTasks()" :key="task.task_id">
-            <button @click="selectTask(task)" class="w-full rounded-2xl border p-4 text-left transition" :class="selectedTask && selectedTask.task_id === task.task_id ? 'border-indigo-400 bg-indigo-500/10' : 'border-white/10 bg-black/30 hover:border-white/20'">
-              <div class="flex items-center justify-between gap-3">
-                <span class="font-medium" x-text="task.worker_id"></span>
-                <span class="rounded-full px-2 py-1 font-mono text-xs" :class="statusClass(task.status)" x-text="task.status"></span>
-              </div>
-              <p class="mt-2 line-clamp-2 text-sm leading-6 text-zinc-400" x-text="task.prompt"></p>
-              <p class="mt-3 font-mono text-xs text-zinc-600" x-text="task.task_id"></p>
-            </button>
-          </template>
-          <p x-show="filteredTasks().length === 0" class="rounded-2xl border border-white/10 bg-black/30 p-6 text-center text-sm text-zinc-500">暂无匹配任务。</p>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="font-mono text-xs uppercase tracking-[0.25em] text-zinc-500">Artifact</p>
-            <h2 class="mt-1 text-xl font-medium">产物阅读器</h2>
-          </div>
-          <button @click="copyArtifact" :disabled="!artifactText()" class="btn-secondary">复制产物</button>
-        </div>
-        <template x-if="selectedTask">
-          <div class="mt-5 space-y-4">
-            <div class="panel-soft">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="chip" x-text="selectedTask.worker_id"></span>
-                <span class="chip" x-text="selectedTask.status"></span>
-                <span class="chip" x-show="selectedTask.parent_task_id">有上游任务</span>
-              </div>
-              <p class="mt-3 font-mono text-xs text-zinc-500" x-text="selectedTask.task_id"></p>
-              <p class="mt-3 text-sm leading-6 text-zinc-300" x-text="selectedTask.prompt"></p>
-              <p class="mt-3 text-sm text-red-300" x-show="selectedTask.error" x-text="selectedTask.error"></p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <template x-for="artifactId in selectedTask.artifact_ids" :key="artifactId">
-                <button @click="loadArtifact(artifactId)" class="rounded-lg border border-indigo-400/40 bg-indigo-500/10 px-3 py-2 font-mono text-xs text-indigo-200 hover:bg-indigo-500/20" x-text="artifactId"></button>
-              </template>
-            </div>
-            <pre class="max-h-[620px] overflow-auto whitespace-pre-wrap rounded-2xl border border-white/10 bg-black/50 p-5 text-sm leading-7 text-zinc-200" x-text="artifactText() || '这个任务还没有产物。'"></pre>
-          </div>
-        </template>
-        <p x-show="!selectedTask" class="mt-5 rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-sm text-zinc-500">选择左侧任务查看结果和 artifact。</p>
-      </div>
-    </section>
-
     <section class="panel">
       <div class="flex items-center justify-between">
         <div>
@@ -359,11 +289,83 @@
           <!-- ↑↑↑ 旧的 section 全部包在 PIPELINE 标签下 ↑↑↑ -->
         </section>
 
-        <!-- ARCHIVE（暂时空）-->
-        <section x-show="activeTab === 'archive'" class="space-y-6">
-          <h2 class="br-h2">档案 · ARCHIVE</h2>
-          <div class="br-divider"></div>
-          <p class="br-mono">（暂留空，下个任务填充）</p>
+        <!-- ARCHIVE -->
+        <section x-show="activeTab === 'archive'" class="space-y-4">
+          <div>
+            <h2 class="br-h2">档案 · ARCHIVE</h2>
+            <div class="br-divider"></div>
+          </div>
+          <div class="grid gap-5 grid-cols-[1fr_1.4fr]">
+            <!-- 左：任务历史 -->
+            <div>
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="br-label">HISTORY</div>
+                  <h3 class="br-h3 mt-1">任务历史</h3>
+                </div>
+                <div class="flex gap-2">
+                  <select x-model="taskFilter.worker" class="br-input-mono !py-1 !w-36">
+                    <option value="all">全部工位</option>
+                    <template x-for="worker in workers" :key="worker.worker_id">
+                      <option :value="worker.worker_id" x-text="worker.worker_id"></option>
+                    </template>
+                  </select>
+                  <select x-model="taskFilter.status" class="br-input-mono !py-1 !w-36">
+                    <option value="all">全部状态</option>
+                    <option value="succeeded">succeeded</option>
+                    <option value="failed">failed</option>
+                    <option value="running">running</option>
+                    <option value="pending">pending</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-4 max-h-[640px] overflow-auto space-y-2 pr-1">
+                <template x-for="task in filteredTasks()" :key="task.task_id">
+                  <button @click="selectTask(task)" class="w-full text-left br-card-tight" :class="selectedTask && selectedTask.task_id === task.task_id ? 'border-[3px]' : ''">
+                    <div class="flex items-center justify-between">
+                      <span class="br-h3" x-text="task.worker_id"></span>
+                      <span :class="brStatusClass(task.status)" x-text="`[ ${task.status.toUpperCase()} ]`"></span>
+                    </div>
+                    <p class="mt-2 text-sm line-clamp-2 text-[var(--ink-soft)]" x-text="task.prompt"></p>
+                    <p class="mt-2 br-mono" x-text="task.task_id"></p>
+                  </button>
+                </template>
+                <p x-show="filteredTasks().length === 0" class="br-card-tight text-center text-[var(--muted)]">— 暂无匹配任务 —</p>
+              </div>
+            </div>
+
+            <!-- 右：产物阅读器 -->
+            <div>
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="br-label">ARTIFACT</div>
+                  <h3 class="br-h3 mt-1">产物阅读器</h3>
+                </div>
+                <button @click="copyArtifact" :disabled="!artifactText()" class="br-btn !py-1">[ 复制产物 ]</button>
+              </div>
+              <template x-if="selectedTask">
+                <div class="mt-4 space-y-3">
+                  <div class="br-card-tight space-y-2">
+                    <div class="flex flex-wrap gap-2">
+                      <span class="br-tag" x-text="selectedTask.worker_id"></span>
+                      <span :class="brStatusClass(selectedTask.status)" x-text="`[ ${selectedTask.status.toUpperCase()} ]`"></span>
+                      <span class="br-tag" x-show="selectedTask.parent_task_id">[ HAS UPSTREAM ]</span>
+                    </div>
+                    <p class="br-mono" x-text="selectedTask.task_id"></p>
+                    <p class="text-sm text-[var(--ink-soft)]" x-text="selectedTask.prompt"></p>
+                    <p class="text-sm text-[var(--accent)]" x-show="selectedTask.error" x-text="selectedTask.error"></p>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <template x-for="artifactId in selectedTask.artifact_ids" :key="artifactId">
+                      <button @click="loadArtifact(artifactId)" class="br-btn !py-1" x-text="artifactId"></button>
+                    </template>
+                  </div>
+                  <pre class="max-h-[640px] overflow-auto whitespace-pre-wrap br-card-tight font-mono text-sm leading-7" x-text="artifactText() || '— 这个任务还没有产物 —'"></pre>
+                </div>
+              </template>
+              <p x-show="!selectedTask" class="mt-4 br-card-tight text-center text-[var(--muted)]">— 选择左侧任务查看结果 —</p>
+            </div>
+          </div>
         </section>
       </div>
     </div>
