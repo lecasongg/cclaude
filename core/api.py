@@ -48,6 +48,10 @@ class TaskBookPathRequest(BaseModel):
     taskbook_path: str
 
 
+class TaskBookSaveRequest(BaseModel):
+    content: str
+
+
 class ComplianceRunRequest(BaseModel):
     suite_path: str
     mode: str = "quick"
@@ -218,6 +222,14 @@ def create_app(
         for worker in workers:
             resource_manager.register_agent(worker.worker_id, display_name=worker.display_name)
 
+    def taskbooks_root() -> Path:
+        return (pipeline_workspace_root or Path.cwd()) / "taskbooks"
+
+    def resolve_taskbook_filename(filename: str) -> Path:
+        if "/" in filename or "\\" in filename or not filename.endswith((".yml", ".yaml")):
+            raise HTTPException(status_code=404, detail="taskbook not found")
+        return taskbooks_root() / filename
+
     @app.get("/api/health")
     async def health(x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
@@ -269,6 +281,38 @@ def create_app(
                 for step in taskbook.steps
             ],
         }
+
+    @app.get("/api/taskbooks")
+    async def list_taskbooks(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        root = taskbooks_root()
+        root.mkdir(parents=True, exist_ok=True)
+        taskbooks = [
+            {"filename": path.name, "path": str(path), "size": path.stat().st_size}
+            for path in sorted(root.iterdir())
+            if path.is_file() and path.suffix in {".yml", ".yaml"}
+        ]
+        return {"taskbooks": taskbooks}
+
+    @app.get("/api/taskbooks/{filename}")
+    async def read_taskbook(filename: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        path = resolve_taskbook_filename(filename)
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="taskbook not found")
+        return {"filename": filename, "path": str(path), "content": path.read_text(encoding="utf-8")}
+
+    @app.put("/api/taskbooks/{filename}")
+    async def save_taskbook(filename: str, request: TaskBookSaveRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        path = resolve_taskbook_filename(filename)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(request.content, encoding="utf-8")
+        try:
+            taskbook = load_taskbook(path)
+        except (TaskBookError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"filename": filename, "path": str(path), "title": taskbook.title, "execution_order": taskbook.execution_order()}
 
     @app.post("/api/compliance/run")
     async def run_compliance(request: ComplianceRunRequest, x_hermes_token: str | None = Header(default=None)):

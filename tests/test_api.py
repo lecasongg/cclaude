@@ -677,6 +677,46 @@ steps:
     assert response.json()["execution_order"] == ["reverse-login"]
 
 
+def test_api_lists_reads_and_saves_taskbooks(tmp_path):
+    taskbooks_dir = tmp_path / "taskbooks"
+    taskbooks_dir.mkdir()
+    existing = taskbooks_dir / "legacy.yml"
+    existing.write_text(
+        """
+title: 登录模块改造
+objective: 输出登录模块逆向文档
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: 逆向登录模块
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+    bus = TaskBus(["niuma-1"])
+    artifacts = ArtifactStore(tmp_path)
+    config = worker_config("niuma-1")
+    supervisor = HermesSupervisor(bus, artifacts, {"niuma-1": WorkerRuntime(config, bus, artifacts, FakeWorkerBackend("清单"))})
+    app = create_app(supervisor, bus, [config], SecurityGate("local-token"), pipeline_workspace_root=tmp_path)
+    client = TestClient(app)
+
+    listed = client.get("/api/taskbooks", headers={"x-hermes-token": "local-token"})
+    read = client.get("/api/taskbooks/legacy.yml", headers={"x-hermes-token": "local-token"})
+    saved = client.put(
+        "/api/taskbooks/new.yml",
+        headers={"x-hermes-token": "local-token"},
+        json={"content": existing.read_text(encoding="utf-8").replace("登录模块改造", "新模块改造")},
+    )
+
+    assert listed.status_code == 200
+    assert listed.json()["taskbooks"][0]["filename"] == "legacy.yml"
+    assert read.status_code == 200
+    assert "登录模块改造" in read.json()["content"]
+    assert saved.status_code == 200
+    assert (taskbooks_dir / "new.yml").exists()
+
+
 def test_api_run_injects_source_path_context_into_worker_prompt(tmp_path):
     bus = TaskBus(["niuma-1"])
     artifacts = ArtifactStore(tmp_path / "worker-artifacts")
