@@ -38,6 +38,11 @@ class FilePathRequest(BaseModel):
 
 class TaskBookRunRequest(BaseModel):
     taskbook_path: str
+    source_path: str | None = None
+
+
+class TaskBookPathRequest(BaseModel):
+    taskbook_path: str
 
 
 REQUIRED_DOCUMENT_WORKER_ID = "niuma-1"
@@ -231,6 +236,28 @@ def create_app(
             loaded_files.append((uploaded.filename, content.decode("utf-8", errors="replace"), len(content)))
         return build_file_prompt(loaded_files)
 
+    @app.post("/api/taskbooks/lint")
+    async def lint_taskbook(request: TaskBookPathRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        try:
+            taskbook = load_taskbook(request.taskbook_path)
+        except (TaskBookError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {
+            "title": taskbook.title,
+            "objective": taskbook.objective,
+            "execution_order": taskbook.execution_order(),
+            "steps": [
+                {
+                    "step_id": step.step_id,
+                    "agent": step.agent,
+                    "objective": step.objective,
+                    "depends_on": step.depends_on,
+                }
+                for step in taskbook.steps
+            ],
+        }
+
     @app.get("/api/workers/{worker_id}/installed-documents")
     async def get_installed_documents(worker_id: str, x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
@@ -297,12 +324,15 @@ def create_app(
             taskbook = load_taskbook(request.taskbook_path)
         except (TaskBookError, OSError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        source_context = ""
+        if request.source_path:
+            source_context = read_local_files(request.source_path)["prompt"]
         ensure_workers_registered_for_pipeline()
         executor = PipelineExecutor(
             resource_manager=resource_manager,
             event_log=event_log,
             workspace_root=pipeline_workspace_root or Path.cwd(),
-            step_runner=WorkerRuntimeStepRunner(supervisor.runtimes),
+            step_runner=WorkerRuntimeStepRunner(supervisor.runtimes, global_context=source_context),
         )
         run_id = await asyncio.to_thread(executor.run, taskbook)
         return {

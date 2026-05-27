@@ -599,3 +599,78 @@ steps:
     )
     assert artifact_response.status_code == 200
     assert artifact_response.json() == {"path": artifact_id, "content": "功能清单"}
+
+
+def test_api_lints_taskbook_path(tmp_path):
+    client = build_client(tmp_path)
+    taskbook_path = tmp_path / "login.yml"
+    taskbook_path.write_text(
+        """
+title: 登录模块改造
+objective: 输出登录模块逆向文档
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: 逆向登录模块
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+
+    response = client.post(
+        "/api/taskbooks/lint",
+        headers={"x-hermes-token": "local-token"},
+        json={"taskbook_path": str(taskbook_path)},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "登录模块改造"
+    assert response.json()["execution_order"] == ["reverse-login"]
+
+
+def test_api_run_injects_source_path_context_into_worker_prompt(tmp_path):
+    bus = TaskBus(["niuma-1"])
+    artifacts = ArtifactStore(tmp_path / "worker-artifacts")
+    backend = FakeWorkerBackend("功能清单")
+    config = worker_config("niuma-1")
+    supervisor = HermesSupervisor(bus, artifacts, {"niuma-1": WorkerRuntime(config, bus, artifacts, backend)})
+    resource_manager = ResourceManager(tmp_path / "marvis.db")
+    event_log = EventLog(tmp_path / "events")
+    source = tmp_path / "login.jsp"
+    source.write_text("<form>登录</form>", encoding="utf-8")
+    taskbook_path = tmp_path / "login.yml"
+    taskbook_path.write_text(
+        """
+title: 登录模块改造
+objective: 输出登录模块逆向文档
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: 逆向登录模块
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+    app = create_app(
+        supervisor,
+        bus,
+        [config],
+        SecurityGate("local-token"),
+        resource_manager=resource_manager,
+        event_log=event_log,
+        pipeline_workspace_root=tmp_path,
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/runs",
+        headers={"x-hermes-token": "local-token"},
+        json={"taskbook_path": str(taskbook_path), "source_path": str(source)},
+    )
+
+    assert response.status_code == 200
+    assert "## Source Context" in backend.calls[0][0]
+    assert "login.jsp" in backend.calls[0][0]
+    assert "<form>登录</form>" in backend.calls[0][0]
