@@ -1000,7 +1000,18 @@ assert:
 """,
         encoding="utf-8",
     )
-    client = build_client(tmp_path)
+    bus = TaskBus(["niuma-1"])
+    artifacts = ArtifactStore(tmp_path / "worker-artifacts")
+    config = worker_config("niuma-1")
+    supervisor = HermesSupervisor(bus, artifacts, {"niuma-1": WorkerRuntime(config, bus, artifacts, FakeWorkerBackend("compliance output"))})
+    app = create_app(
+        supervisor,
+        bus,
+        [config],
+        SecurityGate("local-token"),
+        pipeline_workspace_root=tmp_path,
+    )
+    client = TestClient(app)
 
     response = client.post(
         "/api/compliance/run",
@@ -1012,6 +1023,9 @@ assert:
     assert response.json()["success"] is True
     assert response.json()["cases"][0]["name"] == "legacy-login"
     assert response.json()["cases"][0]["status"] == "passed"
+    report_path = Path(response.json()["report_path"])
+    assert report_path.exists()
+    assert report_path.parent == tmp_path / "artifacts" / "compliance"
 
 
 def test_api_runs_model_compliance_suite_through_workers(tmp_path):

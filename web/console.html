@@ -571,7 +571,7 @@
               body: JSON.stringify({suite_path: this.complianceSuitePath, mode: this.complianceMode})
             });
             this.complianceResult = body;
-            this.notify(body.success ? 'Compliance passed' : 'Compliance failed');
+            this.notify(body.success ? `Compliance passed · ${body.report_path || 'report saved'}` : `Compliance failed · ${body.report_path || 'report saved'}`);
           } catch (error) {
             this.notifyError(error);
           } finally {

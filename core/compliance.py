@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timezone
 from hashlib import sha256
+import json
 from pathlib import Path
 from typing import Any
 
@@ -18,16 +20,37 @@ class ComplianceResult:
     success: bool
     errors: list[str] = field(default_factory=list)
     cases: list[dict[str, Any]] = field(default_factory=list)
+    suite_path: str = ""
+    mode: str = "quick"
+    workspace_root: str = ""
+    report_path: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "success": self.success,
+            "errors": self.errors,
+            "cases": self.cases,
+            "suite_path": self.suite_path,
+            "mode": self.mode,
+            "workspace_root": self.workspace_root,
+            "report_path": self.report_path,
+        }
 
 
 class ComplianceSuite:
     def __init__(self, root: str | Path):
         self.root = Path(root)
 
-    def run_quick(self, workspace_root: str | Path) -> ComplianceResult:
-        return self.run_with_runner(workspace_root, _mock_step_runner)
+    def run_quick(self, workspace_root: str | Path, report_dir: str | Path | None = None) -> ComplianceResult:
+        return self.run_with_runner(workspace_root, _mock_step_runner, mode="quick", report_dir=report_dir)
 
-    def run_with_runner(self, workspace_root: str | Path, step_runner) -> ComplianceResult:
+    def run_with_runner(
+        self,
+        workspace_root: str | Path,
+        step_runner,
+        mode: str = "model",
+        report_dir: str | Path | None = None,
+    ) -> ComplianceResult:
         workspace_root = Path(workspace_root)
         errors: list[str] = []
         cases: list[dict[str, Any]] = []
@@ -42,7 +65,18 @@ class ComplianceSuite:
                     "errors": case_errors,
                 }
             )
-        return ComplianceResult(success=not errors, errors=errors, cases=cases)
+        result = ComplianceResult(
+            success=not errors,
+            errors=errors,
+            cases=cases,
+            suite_path=str(self.root),
+            mode=mode,
+            workspace_root=str(workspace_root),
+        )
+        if report_dir:
+            report_path = write_compliance_report(result, report_dir)
+            result = replace(result, report_path=str(report_path))
+        return result
 
     def _run_taskbook_case(self, taskbook_path: Path, workspace_root: Path, step_runner) -> list[str]:
         taskbook = load_taskbook(taskbook_path)
@@ -65,6 +99,18 @@ class ComplianceSuite:
 
 def _mock_step_runner(context: StepExecutionContext) -> dict[str, str]:
     return {output_path: f"mock output for {context.step.step_id}" for output_path in context.output_paths}
+
+
+def write_compliance_report(result: ComplianceResult, report_dir: str | Path) -> Path:
+    report_dir = Path(report_dir)
+    report_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    status = "passed" if result.success else "failed"
+    path = report_dir / f"compliance-{result.mode}-{timestamp}-{status}.json"
+    body = result.to_dict()
+    body["report_path"] = str(path)
+    path.write_text(json.dumps(body, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
 
 
 def _load_expected(path: Path) -> dict[str, Any]:

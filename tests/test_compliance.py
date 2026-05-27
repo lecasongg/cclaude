@@ -1,4 +1,5 @@
 import textwrap
+import json
 
 import marvisctl
 from agent_factory.core.compliance import ComplianceSuite
@@ -17,6 +18,21 @@ def test_compliance_quick_suite_runs_taskbook_and_asserts_outputs(tmp_path):
     assert result.cases[0]["errors"] == []
 
 
+def test_compliance_quick_suite_writes_report(tmp_path):
+    suite_root = _write_suite(tmp_path)
+    report_dir = tmp_path / "reports"
+
+    result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace", report_dir=report_dir)
+
+    report_path = __import__("pathlib").Path(result.report_path)
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert result.success is True
+    assert report_path.exists()
+    assert report["success"] is True
+    assert report["mode"] == "quick"
+    assert report["cases"][0]["name"] == "legacy-login"
+
+
 def test_compliance_quick_suite_reports_failed_assertion(tmp_path):
     suite_root = _write_suite(tmp_path, expected_output="artifacts/runs/{run_id}/missing.md")
 
@@ -29,10 +45,14 @@ def test_compliance_quick_suite_reports_failed_assertion(tmp_path):
 
 def test_marvisctl_runs_quick_compliance_suite(tmp_path, capsys):
     suite_root = _write_suite(tmp_path)
+    report_dir = tmp_path / "reports"
 
-    assert marvisctl.main(["compliance", "run", "--suite", str(suite_root), "--mode", "quick"]) == 0
+    assert marvisctl.main(["compliance", "run", "--suite", str(suite_root), "--mode", "quick", "--report-dir", str(report_dir)]) == 0
 
-    assert "compliance ok (quick)" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "compliance ok (quick)" in output
+    assert "report:" in output
+    assert list(report_dir.glob("compliance-quick-*-passed.json"))
 
 
 def test_marvisctl_runs_model_compliance_suite_with_configured_backend(tmp_path, capsys):

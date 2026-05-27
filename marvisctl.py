@@ -83,6 +83,7 @@ def _build_parser() -> argparse.ArgumentParser:
     compliance_run.add_argument("--mode", choices=["quick", "model"], default="quick")
     _add_config_arg(compliance_run)
     compliance_run.add_argument("--workspace")
+    compliance_run.add_argument("--report-dir")
     compliance_run.set_defaults(handler=_compliance_run)
 
     artifact = subparsers.add_parser("artifact")
@@ -164,9 +165,10 @@ def _taskbook_dry_run(args: argparse.Namespace) -> int:
 
 def _compliance_run(args: argparse.Namespace) -> int:
     workspace = args.workspace or tempfile.mkdtemp(prefix="marvis-compliance-")
+    report_dir = args.report_dir or str(Path(workspace) / "compliance-reports")
     suite = ComplianceSuite(args.suite)
     if args.mode == "quick":
-        result = suite.run_quick(workspace)
+        result = suite.run_quick(workspace, report_dir=report_dir)
     else:
         config_path = Path(_resolve_config_path(args.config))
         config = load_factory_config(config_path)
@@ -179,12 +181,14 @@ def _compliance_run(args: argparse.Namespace) -> int:
             worker.worker_id: WorkerRuntime(worker, bus, artifacts, build_backend(worker))
             for worker in workers
         }
-        result = suite.run_with_runner(workspace, WorkerRuntimeStepRunner(runtimes))
+        result = suite.run_with_runner(workspace, WorkerRuntimeStepRunner(runtimes), mode=args.mode, report_dir=report_dir)
     if result.success:
         print(f"compliance ok ({args.mode})")
+        print(f"report: {result.report_path}")
         return 0
     for error in result.errors:
         print(error, file=sys.stderr)
+    print(f"report: {result.report_path}", file=sys.stderr)
     return 1
 
 

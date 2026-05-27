@@ -341,19 +341,18 @@ def create_app(
         if not suite_path.exists():
             raise HTTPException(status_code=404, detail="suite not found")
         workspace_root = (pipeline_workspace_root or Path.cwd()) / ".tmp" / "compliance-runs"
+        report_dir = (pipeline_workspace_root or Path.cwd()) / "artifacts" / "compliance"
         if request.mode == "quick":
-            result = ComplianceSuite(suite_path).run_quick(workspace_root)
+            result = ComplianceSuite(suite_path).run_quick(workspace_root, report_dir=report_dir)
         else:
             result = await asyncio.to_thread(
                 ComplianceSuite(suite_path).run_with_runner,
                 workspace_root,
                 WorkerRuntimeStepRunner(supervisor.runtimes),
+                request.mode,
+                report_dir,
             )
-        return {
-            "success": result.success,
-            "errors": result.errors,
-            "cases": result.cases,
-        }
+        return result.to_dict()
 
     @app.get("/api/workers/{worker_id}/installed-documents")
     async def get_installed_documents(worker_id: str, x_hermes_token: str | None = Header(default=None)):
