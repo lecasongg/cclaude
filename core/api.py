@@ -19,6 +19,7 @@ from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
 from agent_factory.core.taskbook import TaskBookError, load_taskbook
 from agent_factory.core.worker_runtime import ClaudeCliWorkerBackend, CodexCliWorkerBackend, FakeWorkerBackend, OpenAICompatibleWorkerBackend, SubprocessWorkerBackend
+from agent_factory.core.worker_health import check_worker_health
 from agent_factory.core.worker_step_runner import WorkerRuntimeStepRunner
 
 
@@ -298,6 +299,14 @@ def create_app(
         if not any(worker.worker_id == worker_id for worker in workers):
             raise HTTPException(status_code=404, detail="worker not found")
         return {"worker_id": worker_id, "installed_documents": document_status(worker_documents(worker_id))}
+
+    @app.get("/api/workers/{worker_id}/health")
+    async def get_worker_health(worker_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        worker = next((candidate for candidate in workers if candidate.worker_id == worker_id), None)
+        if worker is None:
+            raise HTTPException(status_code=404, detail="worker not found")
+        return check_worker_health(worker)
 
     @app.post("/api/workers/{worker_id}/installed-documents/{kind}")
     async def install_document(worker_id: str, kind: str, file: UploadFile = File(...), x_hermes_token: str | None = Header(default=None)):

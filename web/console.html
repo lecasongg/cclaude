@@ -79,6 +79,7 @@
         <nav class="flex gap-1 mt-4 border-t-[1.5px] border-[var(--ink)] pt-3">
           <button @click="setActiveTab('pipeline')" :class="activeTab === 'pipeline' ? 'br-tab-active' : 'br-tab'">[ PIPELINE ]</button>
           <button @click="setActiveTab('compliance')" :class="activeTab === 'compliance' ? 'br-tab-active' : 'br-tab'">[ COMPLIANCE ]</button>
+          <button @click="setActiveTab('workers')" :class="activeTab === 'workers' ? 'br-tab-active' : 'br-tab'">[ WORKERS ]</button>
           <button @click="setActiveTab('dispatch')" :class="activeTab === 'dispatch' ? 'br-tab-active' : 'br-tab'">[ DISPATCH ]</button>
           <button @click="setActiveTab('archive')" :class="activeTab === 'archive' ? 'br-tab-active' : 'br-tab'">[ ARTIFACTS ]</button>
         </nav>
@@ -417,6 +418,47 @@
           </div>
         </section>
 
+        <!-- WORKERS -->
+        <section x-show="activeTab === 'workers'" class="space-y-6">
+          <div>
+            <h2 class="br-h2">工位 · WORKERS</h2>
+            <div class="br-divider"></div>
+          </div>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <template x-for="worker in workers" :key="worker.worker_id">
+              <article class="br-card space-y-3">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <div class="br-label" x-text="worker.worker_id"></div>
+                    <h3 class="br-h3 mt-1" x-text="worker.display_name"></h3>
+                    <p class="br-mono mt-1" x-text="`${worker.backend_type} · ${worker.model}`"></p>
+                  </div>
+                  <button @click="refreshWorkerHealth(worker.worker_id)" class="br-btn !py-1">[ HEALTH ]</button>
+                </div>
+                <div class="br-rule"></div>
+                <template x-if="workerHealth[worker.worker_id]">
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="br-label">STATUS</span>
+                      <span :class="workerHealth[worker.worker_id].status === 'ok' ? 'br-tag-success' : 'br-tag-failed'" x-text="workerHealth[worker.worker_id].status"></span>
+                    </div>
+                    <template x-for="check in workerHealth[worker.worker_id].checks" :key="check.name">
+                      <div class="flex items-start justify-between gap-3 border-t-[1px] border-[var(--ink)] pt-2">
+                        <div>
+                          <p class="br-mono" x-text="check.name"></p>
+                          <p class="br-mono mt-1 break-all" x-text="check.message"></p>
+                        </div>
+                        <span :class="check.status === 'passed' ? 'br-tag-success' : check.status === 'failed' ? 'br-tag-failed' : 'br-tag'" x-text="check.status"></span>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+                <p x-show="!workerHealth[worker.worker_id]" class="br-mono">— 点击 HEALTH 检查工位 —</p>
+              </article>
+            </template>
+          </div>
+        </section>
+
         <!-- ARCHIVE -->
         <section x-show="activeTab === 'archive'" class="space-y-4">
           <div>
@@ -607,6 +649,7 @@
         complianceSuitePath: 'D:\\codex\\cclaude\\tests\\compliance',
         complianceMode: 'quick',
         complianceResult: null,
+        workerHealth: {},
         filePath: '',
         fileContext: {files: [], prompt: ''},
         nextInstruction: '根据上游逆向分析清单，编写可交付的需求文档。',
@@ -638,7 +681,7 @@
         },
         async init() {
           const saved = localStorage.getItem('niuma.activeTab');
-          if (saved === 'dispatch' || saved === 'pipeline' || saved === 'archive' || saved === 'compliance') {
+          if (saved === 'dispatch' || saved === 'pipeline' || saved === 'archive' || saved === 'compliance' || saved === 'workers') {
             this.activeTab = saved;
           }
           document.addEventListener('keydown', (e) => {
@@ -683,6 +726,10 @@
           if (!this.workers.find((worker) => worker.worker_id === this.selectedWorker) && this.workers.length) {
             this.selectedWorker = this.workers[0].worker_id;
           }
+        },
+        async refreshWorkerHealth(workerId) {
+          const body = await this.requestJson(`/api/workers/${workerId}/health`);
+          this.workerHealth = {...this.workerHealth, [workerId]: body};
         },
         async refreshTasks() {
           const body = await this.requestJson('/api/tasks');

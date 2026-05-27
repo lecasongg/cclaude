@@ -352,6 +352,9 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "complianceMode" in html
     assert "runCompliance" in html
     assert "complianceResult" in html
+    assert "workerHealth" in html
+    assert "refreshWorkerHealth" in html
+    assert "/api/workers/${workerId}/health" in html
     assert "/api/compliance/run" in html
     assert "/api/runs" in html
     assert "/api/runs/${runId}/events" in html
@@ -407,6 +410,17 @@ def test_api_lists_workers_with_token(tmp_path):
             },
         },
     ]
+
+
+def test_api_exposes_worker_health(tmp_path, monkeypatch):
+    monkeypatch.setenv("NIUMA_1_API_KEY", "sk-test")
+    client = build_client(tmp_path)
+
+    response = client.get("/api/workers/niuma-1/health", headers={"x-hermes-token": "local-token"})
+
+    assert response.status_code == 200
+    assert response.json()["worker_id"] == "niuma-1"
+    assert "checks" in response.json()
 
 
 def test_api_updates_worker_runtime_config_without_exposing_key(tmp_path, monkeypatch):
