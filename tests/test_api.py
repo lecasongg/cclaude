@@ -348,6 +348,10 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "selectedRunArtifactContent" in html
     assert "selectedRunQuality" in html
     assert "refreshRunQuality" in html
+    assert "complianceSuitePath" in html
+    assert "runCompliance" in html
+    assert "complianceResult" in html
+    assert "/api/compliance/run" in html
     assert "/api/runs" in html
     assert "/api/runs/${runId}/events" in html
     assert "/api/runs/${runId}/artifacts" in html

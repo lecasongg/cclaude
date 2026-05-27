@@ -78,6 +78,7 @@
         <!-- 标签栏 -->
         <nav class="flex gap-1 mt-4 border-t-[1.5px] border-[var(--ink)] pt-3">
           <button @click="setActiveTab('pipeline')" :class="activeTab === 'pipeline' ? 'br-tab-active' : 'br-tab'">[ PIPELINE ]</button>
+          <button @click="setActiveTab('compliance')" :class="activeTab === 'compliance' ? 'br-tab-active' : 'br-tab'">[ COMPLIANCE ]</button>
           <button @click="setActiveTab('dispatch')" :class="activeTab === 'dispatch' ? 'br-tab-active' : 'br-tab'">[ DISPATCH ]</button>
           <button @click="setActiveTab('archive')" :class="activeTab === 'archive' ? 'br-tab-active' : 'br-tab'">[ ARTIFACTS ]</button>
         </nav>
@@ -374,6 +375,44 @@
           <!-- ↑↑↑ 旧的 section 全部包在 PIPELINE 标签下 ↑↑↑ -->
         </section>
 
+        <!-- COMPLIANCE -->
+        <section x-show="activeTab === 'compliance'" class="space-y-6 max-w-4xl">
+          <div>
+            <h2 class="br-h2">验厂 · COMPLIANCE</h2>
+            <div class="br-divider"></div>
+          </div>
+          <div class="br-card space-y-4">
+            <div>
+              <div class="br-label">QUICK SUITE</div>
+              <p class="br-mono mt-1">不调用真实模型，验证任务书、调度、依赖、产物和断言契约。</p>
+            </div>
+            <div class="grid grid-cols-[1fr_auto] gap-2">
+              <input x-model="complianceSuitePath" class="br-input-mono" placeholder="D:\\codex\\cclaude\\tests\\compliance">
+              <button @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" class="br-btn-primary" x-text="isRunningCompliance ? '验厂中...' : '[ RUN QUICK ]'"></button>
+            </div>
+          </div>
+          <div x-show="complianceResult" class="br-card space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="br-label">RESULT</div>
+                <h3 class="br-h3 mt-1" x-text="complianceResult && complianceResult.success ? '通过' : '失败'"></h3>
+              </div>
+              <span :class="complianceResult && complianceResult.success ? 'br-tag-success' : 'br-tag-failed'" x-text="complianceResult && complianceResult.success ? '[ PASSED ]' : '[ FAILED ]'"></span>
+            </div>
+            <template x-for="caseItem in (complianceResult ? complianceResult.cases : [])" :key="caseItem.name">
+              <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
+                <div class="flex items-center justify-between">
+                  <span class="br-mono" x-text="caseItem.name"></span>
+                  <span :class="caseItem.status === 'passed' ? 'br-tag-success' : 'br-tag-failed'" x-text="caseItem.status"></span>
+                </div>
+                <template x-for="error in caseItem.errors" :key="error">
+                  <p class="br-mono mt-2 text-[var(--accent)]" x-text="error"></p>
+                </template>
+              </div>
+            </template>
+          </div>
+        </section>
+
         <!-- ARCHIVE -->
         <section x-show="activeTab === 'archive'" class="space-y-4">
           <div>
@@ -561,6 +600,8 @@
         taskbookPath: '',
         sourcePath: '',
         taskbookLint: '',
+        complianceSuitePath: 'D:\\codex\\cclaude\\tests\\compliance',
+        complianceResult: null,
         filePath: '',
         fileContext: {files: [], prompt: ''},
         nextInstruction: '根据上游逆向分析清单，编写可交付的需求文档。',
@@ -581,6 +622,7 @@
         isChaining: false,
         isStartingRun: false,
         isLintingTaskbook: false,
+        isRunningCompliance: false,
         isSavingConfig: false,
         isInstallingDocument: false,
         isLoadingFileContext: false,
@@ -591,7 +633,7 @@
         },
         async init() {
           const saved = localStorage.getItem('niuma.activeTab');
-          if (saved === 'dispatch' || saved === 'pipeline' || saved === 'archive') {
+          if (saved === 'dispatch' || saved === 'pipeline' || saved === 'archive' || saved === 'compliance') {
             this.activeTab = saved;
           }
           document.addEventListener('keydown', (e) => {
@@ -719,6 +761,25 @@
             this.record('error', error.message);
           } finally {
             this.isStartingRun = false;
+          }
+        },
+        async runCompliance() {
+          if (this.isRunningCompliance || !this.complianceSuitePath.trim()) return;
+          this.isRunningCompliance = true;
+          this.alert = null;
+          try {
+            const body = await this.requestJson('/api/compliance/run', {
+              method: 'POST',
+              body: JSON.stringify({suite_path: this.complianceSuitePath, mode: 'quick'})
+            });
+            this.complianceResult = body;
+            this.record('compliance', `${body.success ? 'PASSED' : 'FAILED'} · ${body.cases.length} cases`);
+            this.showAlert(body.success ? 'success' : 'error', body.success ? '验厂通过。' : '验厂失败，请查看 case 明细。');
+          } catch (error) {
+            this.showAlert('error', `验厂请求失败：${error.message}`);
+            this.record('error', error.message);
+          } finally {
+            this.isRunningCompliance = false;
           }
         },
         toggleAutoRefresh() {
