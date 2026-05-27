@@ -346,9 +346,12 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "runArtifacts" in html
     assert "loadRunArtifact" in html
     assert "selectedRunArtifactContent" in html
+    assert "selectedRunQuality" in html
+    assert "refreshRunQuality" in html
     assert "/api/runs" in html
     assert "/api/runs/${runId}/events" in html
     assert "/api/runs/${runId}/artifacts" in html
+    assert "/api/runs/${runId}/quality" in html
 
 
 def test_api_lists_workers_with_token(tmp_path):

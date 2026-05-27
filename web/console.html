@@ -246,6 +246,24 @@
                       </template>
                     </div>
                     <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
+                      <div class="flex items-center justify-between gap-3">
+                        <div class="br-label">QUALITY CHECKS</div>
+                        <span class="br-mono" x-text="selectedRunQuality ? `PASS ${selectedRunQuality.summary.passed} · FAIL ${selectedRunQuality.summary.failed}` : '—'"></span>
+                      </div>
+                      <template x-if="selectedRunQuality">
+                        <div class="mt-2 space-y-2">
+                          <template x-for="step in selectedRunQuality.steps" :key="step.step_id">
+                            <div class="border-t-[1px] border-[var(--ink)] pt-2">
+                              <p class="br-mono" x-text="step.step_id"></p>
+                              <template x-for="check in step.checks" :key="`${step.step_id}-${check.type}-${check.path || check.term || check.text}`">
+                                <p class="br-mono mt-1" :class="check.status === 'passed' ? 'text-[var(--success)]' : 'text-[var(--accent)]'" x-text="`${check.status.toUpperCase()} · ${check.type} · ${check.term || check.path || check.text || ''}`"></p>
+                              </template>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+                    </div>
+                    <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
                       <div class="br-label">RUN EVENTS</div>
                       <template x-for="event in selectedRunEvents" :key="event.event_id">
                         <p class="br-mono mt-2" x-text="`${event.type} · ${event.agent_id || '-'} · ${event.step_id || '-'}`"></p>
@@ -532,6 +550,7 @@
         runs: [],
         selectedRun: null,
         selectedRunEvents: [],
+        selectedRunQuality: null,
         runArtifacts: [],
         selectedRunArtifactContent: '',
         selectedTask: null,
@@ -641,11 +660,14 @@
           const body = await this.requestJson(`/api/runs/${run.run_id}`);
           this.selectedRun = {...(body.run || run), steps: body.steps || []};
           this.selectedRunArtifactContent = '';
-          await Promise.all([this.refreshRunEvents(run.run_id), this.refreshRunArtifacts(run.run_id)]);
+          await Promise.all([this.refreshRunEvents(run.run_id), this.refreshRunArtifacts(run.run_id), this.refreshRunQuality(run.run_id)]);
         },
         async refreshRunEvents(runId) {
           const body = await this.requestJson(`/api/runs/${runId}/events`);
           this.selectedRunEvents = body.events || [];
+        },
+        async refreshRunQuality(runId) {
+          this.selectedRunQuality = await this.requestJson(`/api/runs/${runId}/quality`);
         },
         async refreshRunArtifacts(runId) {
           const body = await this.requestJson(`/api/runs/${runId}/artifacts`);
