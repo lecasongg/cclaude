@@ -41,7 +41,8 @@ def test_repository_compliance_suite_runs(tmp_path):
     result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace")
 
     assert result.success is True
-    assert result.cases[0]["status"] == "passed"
+    assert {case["name"] for case in result.cases} == {"legacy-login", "legacy-modernization"}
+    assert all(case["status"] == "passed" for case in result.cases)
 
 
 def test_compliance_suite_can_run_with_custom_step_runner(tmp_path):
@@ -58,7 +59,49 @@ def test_compliance_suite_can_run_with_custom_step_runner(tmp_path):
     assert calls == ["reverse-login"]
 
 
-def _write_suite(tmp_path, expected_output="artifacts/runs/{run_id}/reverse-login/function-list.md"):
+def test_compliance_asserts_output_content_contains(tmp_path):
+    suite_root = _write_suite(tmp_path, output_contains=["real worker output"])
+
+    def runner(context: StepExecutionContext) -> dict[str, str]:
+        return {output_path: "wrong content" for output_path in context.output_paths}
+
+    result = ComplianceSuite(suite_root).run_with_runner(tmp_path / "workspace", runner)
+
+    assert result.success is False
+    assert "missing expected content" in result.errors[0]
+
+
+def test_compliance_asserts_dependency_order(tmp_path):
+    suite_root = _write_two_step_suite(tmp_path, depends_after={"write-requirements": ["reverse-login"]})
+
+    result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace")
+
+    assert result.success is True
+
+
+def test_compliance_asserts_forbidden_paths_are_unchanged(tmp_path):
+    suite_root = _write_suite(tmp_path, forbidden_modified=["shared/references/login.jsp"])
+    workspace = tmp_path / "workspace"
+    protected = workspace / "legacy-login" / "shared" / "references" / "login.jsp"
+    protected.parent.mkdir(parents=True)
+    protected.write_text("original", encoding="utf-8")
+
+    def runner(context: StepExecutionContext) -> dict[str, str]:
+        protected.write_text("modified", encoding="utf-8")
+        return {output_path: "real worker output" for output_path in context.output_paths}
+
+    result = ComplianceSuite(suite_root).run_with_runner(workspace, runner)
+
+    assert result.success is False
+    assert "forbidden path modified" in result.errors[0]
+
+
+def _write_suite(
+    tmp_path,
+    expected_output="artifacts/runs/{run_id}/reverse-login/function-list.md",
+    output_contains=None,
+    forbidden_modified=None,
+):
     suite_root = tmp_path / "suite"
     (suite_root / "taskbooks").mkdir(parents=True)
     (suite_root / "expected").mkdir(parents=True)
@@ -77,6 +120,14 @@ def _write_suite(tmp_path, expected_output="artifacts/runs/{run_id}/reverse-logi
         ),
         encoding="utf-8",
     )
+    contains_yaml = ""
+    if output_contains:
+        contains_yaml = "\n                  output_contains:\n" + "".join(
+            f"                    - path: {expected_output}\n                      text: {text}\n" for text in output_contains
+        )
+    forbidden_yaml = ""
+    if forbidden_modified:
+        forbidden_yaml = "\n              forbidden_modified:\n" + "".join(f"                - {path}\n" for path in forbidden_modified)
     (suite_root / "expected" / "legacy-login.assert.yml").write_text(
         textwrap.dedent(
             f"""
@@ -86,7 +137,57 @@ def _write_suite(tmp_path, expected_output="artifacts/runs/{run_id}/reverse-logi
                 reverse-login:
                   status: succeeded
                   output_exists:
-                    - {expected_output}
+                    - {expected_output}{contains_yaml}{forbidden_yaml}
+            """
+        ),
+        encoding="utf-8",
+    )
+    return suite_root
+
+
+def _write_two_step_suite(tmp_path, depends_after=None):
+    suite_root = tmp_path / "suite"
+    (suite_root / "taskbooks").mkdir(parents=True)
+    (suite_root / "expected").mkdir(parents=True)
+    (suite_root / "taskbooks" / "legacy-login.yml").write_text(
+        textwrap.dedent(
+            """
+            title: 登录模块改造
+            objective: 输出登录模块逆向文档和需求文档
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: 逆向登录模块
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+              - id: write-requirements
+                agent: niuma-2
+                depends_on:
+                  - reverse-login
+                objective: 编写需求文档
+                inputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+                outputs:
+                  - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+            """
+        ),
+        encoding="utf-8",
+    )
+    depends_yaml = ""
+    if depends_after:
+        depends_yaml = "\n              depends_after:\n" + "".join(
+            f"                {step_id}: [{', '.join(dependencies)}]\n" for step_id, dependencies in depends_after.items()
+        )
+    (suite_root / "expected" / "legacy-login.assert.yml").write_text(
+        textwrap.dedent(
+            f"""
+            assert:
+              run_status: succeeded
+              steps:
+                reverse-login:
+                  status: succeeded
+                write-requirements:
+                  status: succeeded{depends_yaml}
             """
         ),
         encoding="utf-8",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
@@ -57,8 +58,9 @@ class ComplianceSuite:
             workspace_root=workspace_root,
             step_runner=step_runner,
         )
+        protected_snapshot = _snapshot_forbidden_paths(workspace_root, expected.get("forbidden_modified", []))
         run_id = executor.run(taskbook)
-        return _assert_expected(taskbook, expected, manager, workspace_root, run_id)
+        return _assert_expected(taskbook, expected, manager, workspace_root, run_id, protected_snapshot)
 
 
 def _mock_step_runner(context: StepExecutionContext) -> dict[str, str]:
@@ -78,6 +80,7 @@ def _assert_expected(
     manager: ResourceManager,
     workspace_root: Path,
     run_id: str,
+    protected_snapshot: dict[str, str | None] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     expected_run_status = expected.get("run_status")
@@ -94,9 +97,42 @@ def _assert_expected(
             resolved = workspace_root / output_path.replace("{run_id}", run_id)
             if not resolved.exists():
                 errors.append(f"missing expected output for step {step_id}: {resolved}")
+        for content_expected in step_expected.get("output_contains", []):
+            output_path = content_expected.get("path", "") if isinstance(content_expected, dict) else ""
+            expected_text = content_expected.get("text", "") if isinstance(content_expected, dict) else str(content_expected)
+            resolved = workspace_root / output_path.replace("{run_id}", run_id)
+            if not resolved.exists():
+                errors.append(f"missing expected output for content assertion on step {step_id}: {resolved}")
+                continue
+            if expected_text not in resolved.read_text(encoding="utf-8", errors="replace"):
+                errors.append(f"missing expected content for step {step_id}: {expected_text}")
+        for dependency in step_expected.get("depends_after", []):
+            dependency_step = manager.get_step_run(run_id, dependency)
+            if step["updated_at"] <= dependency_step["updated_at"]:
+                errors.append(f"expected step {step_id} after {dependency}")
 
     known_steps = {step.step_id for step in taskbook.steps}
     for step_id in expected_steps:
         if step_id not in known_steps:
             errors.append(f"expected unknown step: {step_id}")
+    for step_id, dependencies in expected.get("depends_after", {}).items():
+        step = manager.get_step_run(run_id, step_id)
+        for dependency in dependencies:
+            dependency_step = manager.get_step_run(run_id, dependency)
+            if step["updated_at"] <= dependency_step["updated_at"]:
+                errors.append(f"expected step {step_id} after {dependency}")
+    for relative_path, before_hash in (protected_snapshot or {}).items():
+        after_hash = _file_hash(workspace_root / relative_path)
+        if after_hash != before_hash:
+            errors.append(f"forbidden path modified: {relative_path}")
     return errors
+
+
+def _snapshot_forbidden_paths(workspace_root: Path, paths: list[str]) -> dict[str, str | None]:
+    return {path: _file_hash(workspace_root / path) for path in paths}
+
+
+def _file_hash(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    return sha256(path.read_bytes()).hexdigest()
