@@ -384,6 +384,10 @@ def test_console_has_taskbook_studio_editor():
     assert "selectedTaskbookFilename" in html
     assert "taskbookEditorContent" in html
     assert "refreshTaskbooks" in html
+    assert "legacyModernizationDraft" in html
+    assert "LEGACY FLOW" in html
+    assert "reverse-module" in html
+    assert "write-test-plan" in html
     assert "loadTaskbook" in html
     assert "saveTaskbook" in html
     assert "/api/taskbooks/${filename}" in html
