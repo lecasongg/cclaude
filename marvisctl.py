@@ -25,6 +25,7 @@ from agent_factory.core.run_manifest import build_run_manifest
 from agent_factory.core.task_bus import TaskBus
 from agent_factory.core.taskbook import TaskBookError, load_taskbook
 from agent_factory.core.worker_runtime import WorkerRuntime
+from agent_factory.core.worker_health import summarize_worker_health
 from agent_factory.core.worker_step_runner import WorkerRuntimeStepRunner
 
 
@@ -43,6 +44,7 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     doctor = subparsers.add_parser("doctor")
+    _add_config_arg(doctor)
     doctor.set_defaults(handler=_doctor)
 
     config = subparsers.add_parser("config")
@@ -97,10 +99,24 @@ def _add_config_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--config", default="")
 
 
-def _doctor(_args: argparse.Namespace) -> int:
+def _doctor(args: argparse.Namespace) -> int:
     print(f"python: {sys.version.split()[0]}")
     print(f"codex: {shutil.which('codex') or 'not found'}")
     print(f"claude: {shutil.which('claude') or shutil.which('claude.cmd') or 'not found'}")
+    config_path = Path(_resolve_config_path(args.config))
+    if config_path.exists():
+        config = load_factory_config(config_path)
+        runtime_config = load_runtime_config(config_path.parent / "runtime_config.json")
+        apply_runtime_config(config, runtime_config)
+        health = summarize_worker_health([worker for worker in config.workers if worker.enabled])["summary"]
+        print(
+            "workers: "
+            f"{health['ok']}/{health['total']} ok, "
+            f"missing_api_key={health['missing_api_key']}, "
+            f"missing_base_url={health['missing_base_url']}, "
+            f"path_warnings={health['path_warnings']}, "
+            f"backend_command_warnings={health['backend_command_warnings']}"
+        )
     return 0
 
 

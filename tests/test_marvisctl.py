@@ -28,6 +28,41 @@ def test_marvisctl_agent_list(tmp_path, capsys):
     assert "niuma-1" in capsys.readouterr().out
 
 
+def test_marvisctl_doctor_reports_worker_health_summary(tmp_path, capsys, monkeypatch):
+    config_path = tmp_path / "factory_config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "workers": [
+                    {
+                        "worker_id": "niuma-1",
+                        "display_name": "niuma-1",
+                        "provider": "openai",
+                        "model": "deepseek-v4-pro",
+                        "api_key_env": "NIUMA_1_API_KEY",
+                        "profile_dir": str(tmp_path / "missing-profile"),
+                        "workspace_dir": str(tmp_path / "missing-workspace"),
+                        "skills_dir": str(tmp_path / "missing-skills"),
+                        "backend_type": "fake",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("NIUMA_1_API_KEY", raising=False)
+
+    assert marvisctl.main(["doctor", "--config", str(config_path)]) == 0
+
+    output = capsys.readouterr().out
+    assert "python:" in output
+    assert "workers: 0/1 ok" in output
+    assert "missing_api_key=1" in output
+    assert "path_warnings=1" in output
+
+
 def test_marvisctl_reads_factory_config_shape(tmp_path, capsys):
     config_path = tmp_path / "factory_config.example.json"
     config_path.write_text(
