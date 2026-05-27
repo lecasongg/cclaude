@@ -7,6 +7,10 @@ from agent_factory.core.pipeline_executor import StepExecutionContext
 from agent_factory.core.worker_runtime import WorkerRuntime
 
 
+MAX_CONTEXT_CHARS = 40000
+MAX_INPUT_FILE_CHARS = 30000
+
+
 class WorkerRuntimeStepRunner:
     def __init__(self, runtimes: dict[str, WorkerRuntime], global_context: str = ""):
         self.runtimes = runtimes
@@ -40,12 +44,12 @@ class WorkerRuntimeStepRunner:
             for path, content in context.input_files.items():
                 parts.append(f"### {path}")
                 parts.append("```")
-                parts.append(content)
+                parts.append(_truncate_text(content, MAX_INPUT_FILE_CHARS))
                 parts.append("```")
         if self.global_context:
             parts.append("")
             parts.append("## Source Context")
-            parts.append(self.global_context)
+            parts.append(_truncate_text(self.global_context, MAX_CONTEXT_CHARS))
         if context.step.self_check:
             parts.extend(["", "## Self Check", *[f"- {item}" for item in context.step.self_check]])
         parts.extend(
@@ -75,3 +79,10 @@ def _run_blocking(awaitable):
     except RuntimeError:
         return asyncio.run(awaitable)
     raise RuntimeError("WorkerRuntimeStepRunner cannot run inside an active event loop; run it in a worker thread")
+
+
+def _truncate_text(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    omitted = len(text) - limit
+    return f"{text[:limit]}\n\n[TRUNCATED] omitted {omitted} characters to keep the worker prompt within relay limits."

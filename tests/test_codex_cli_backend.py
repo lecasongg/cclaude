@@ -145,6 +145,22 @@ async def test_codex_cli_backend_reports_json_event_error_before_stderr_noise(tm
 
 
 @pytest.mark.asyncio
+async def test_codex_cli_backend_decodes_gbk_stderr_for_chinese_cli_errors(tmp_path, monkeypatch):
+    config = make_config(tmp_path)
+
+    async def fake_create_subprocess_exec(*args, **kwargs):
+        process = AsyncMock()
+        process.communicate.return_value = (b"", "请求体太大".encode("gbk"))
+        process.returncode = 1
+        return process
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create_subprocess_exec)
+
+    with pytest.raises(RuntimeError, match="请求体太大"):
+        await CodexCliWorkerBackend().run("hi", config)
+
+
+@pytest.mark.asyncio
 async def test_codex_cli_backend_kills_on_timeout(tmp_path, monkeypatch):
     config = make_config(tmp_path)
     killed = {"called": False}

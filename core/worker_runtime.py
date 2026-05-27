@@ -207,7 +207,7 @@ class ClaudeCliWorkerBackend:
         event_lines = _write_event_stream(stdout_text, events_path)
 
         if process.returncode != 0:
-            detail = stderr.decode("utf-8", errors="replace").strip()
+            detail = _decode_process_output(stderr).strip()
             if not detail:
                 detail = _event_error_detail(event_lines)
             raise RuntimeError(f"claude CLI exited {process.returncode}: {detail[:400]}")
@@ -307,7 +307,7 @@ class CodexCliWorkerBackend:
         event_lines = _write_event_stream(stdout_text, events_path)
 
         if process.returncode != 0:
-            detail = _codex_event_error_detail(event_lines) or stderr.decode("utf-8", errors="replace").strip() or stdout_text[-1000:].strip()
+            detail = _codex_event_error_detail(event_lines) or _decode_process_output(stderr).strip() or stdout_text[-1000:].strip()
             raise RuntimeError(f"codex CLI exited {process.returncode}: {detail[:400]}")
 
         if output_path.exists():
@@ -359,6 +359,22 @@ def _write_event_stream(stdout_text: str, events_path: Path) -> list[str]:
         for line in event_lines:
             events_file.write(line + "\n")
     return event_lines
+
+
+def _decode_process_output(data: bytes) -> str:
+    if not data:
+        return ""
+    decoded = data.decode("utf-8", errors="replace")
+    if "\ufffd" not in decoded:
+        return decoded
+    for encoding in ("gbk", "gb18030", "cp936"):
+        try:
+            fallback = data.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+        if fallback.count("\ufffd") < decoded.count("\ufffd"):
+            return fallback
+    return decoded
 
 
 def _event_error_detail(event_lines: list[str]) -> str:
