@@ -157,3 +157,14 @@ def test_repository_sample_taskbooks_are_valid():
     assert sample_paths
     for path in sample_paths:
         load_taskbook(path)
+
+
+def test_legacy_module_modernization_template_covers_reverse_docs_and_tests():
+    taskbook_path = Path(__file__).parents[1] / "taskbooks" / "legacy-module-modernization.yml"
+
+    taskbook = load_taskbook(taskbook_path)
+
+    assert taskbook.execution_order() == ["reverse-module", "write-requirements", "write-test-plan"]
+    assert taskbook.step("write-requirements").inputs[0].path == "artifacts/runs/{run_id}/reverse-module/function-list.md"
+    assert taskbook.step("write-test-plan").inputs[0].path == "artifacts/runs/{run_id}/write-requirements/requirements.md"
+    assert taskbook.step("write-test-plan").outputs[0].path == "artifacts/runs/{run_id}/write-test-plan/test-plan.md"

@@ -1,0 +1,66 @@
+taskbook_version: 1
+title: 老系统模块改造：逆向到需求到测试
+objective: >
+  面向旧系统改造团队，把一个 JSP/JS/SQL/Java 模块从源代码逆向分析，
+  转换成可评审的需求文档，再生成可执行的测试计划。所有阶段通过文件级产物握手。
+
+agents:
+  - id: niuma-1
+    role: legacy-reverse-engineer
+  - id: niuma-2
+    role: requirements-writer
+  - id: niuma-2
+    role: test-plan-writer
+
+steps:
+  - id: reverse-module
+    agent: niuma-1
+    objective: >
+      阅读用户提供的旧系统模块材料，输出功能清单、入口文件、关键字段、SQL/接口依赖、
+      页面跳转、异常分支、权限判断和待确认问题。不要编造没有证据的业务规则。
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-module/function-list.md
+    self_check:
+      - 必须包含功能清单
+      - 必须包含入口文件或代码线索
+      - 必须包含数据字段或 SQL 依赖
+      - 不确定信息必须标注“待确认”
+
+  - id: write-requirements
+    agent: niuma-2
+    depends_on:
+      - reverse-module
+    objective: >
+      读取逆向产物，生成需求文档。需求文档必须包含业务目标、用户角色、主流程、
+      异常流程、字段说明、权限/审计要求、验收标准和待确认问题。
+    inputs:
+      - path: artifacts/runs/{run_id}/reverse-module/function-list.md
+    outputs:
+      - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+    self_check:
+      - 必须包含主流程
+      - 必须包含异常流程
+      - 必须包含验收标准
+      - 必须保留待确认问题
+
+  - id: write-test-plan
+    agent: niuma-2
+    depends_on:
+      - write-requirements
+    objective: >
+      读取需求文档，生成测试计划。测试计划必须覆盖正向用例、异常用例、字段校验、
+      权限边界、回归风险、测试数据和通过/失败判定。
+    inputs:
+      - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+    outputs:
+      - path: artifacts/runs/{run_id}/write-test-plan/test-plan.md
+    self_check:
+      - 必须覆盖正向用例
+      - 必须覆盖异常用例
+      - 必须包含测试数据
+      - 必须包含通过/失败判定
+
+constraints:
+  - 不得修改用户提供的源代码和 shared/references 下的材料
+  - 所有产物必须写入 artifacts/runs/{run_id}
+  - 不确定的信息必须标注“待确认”
