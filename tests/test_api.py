@@ -362,6 +362,21 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "/api/runs/${runId}/quality" in html
 
 
+def test_console_has_taskbook_studio_editor():
+    console = Path(__file__).parents[1] / "web" / "console.html"
+    html = console.read_text(encoding="utf-8")
+
+    assert "TASKBOOK STUDIO" in html
+    assert "taskbooks: []" in html
+    assert "selectedTaskbookFilename" in html
+    assert "taskbookEditorContent" in html
+    assert "refreshTaskbooks" in html
+    assert "loadTaskbook" in html
+    assert "saveTaskbook" in html
+    assert "/api/taskbooks/${filename}" in html
+    assert "/api/taskbooks" in html
+
+
 def test_api_lists_workers_with_token(tmp_path):
     client = build_client(tmp_path)
 

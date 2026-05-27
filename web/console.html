@@ -198,6 +198,41 @@
             </div>
           </section>
 
+          <section class="br-card space-y-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="br-label">TASKBOOK STUDIO</div>
+                <h3 class="br-h3 mt-1">任务书工作台</h3>
+              </div>
+              <button @click="refreshTaskbooks" :disabled="isLoadingTaskbooks" class="br-btn !py-1" x-text="isLoadingTaskbooks ? '[ LOADING ]' : '[ RELOAD ]'"></button>
+            </div>
+            <div class="grid gap-4 lg:grid-cols-[280px_1fr]">
+              <div class="space-y-3">
+                <template x-for="item in taskbooks" :key="item.filename">
+                  <button @click="loadTaskbook(item.filename)" class="br-card-tight w-full text-left" :class="selectedTaskbookFilename === item.filename ? 'border-[3px]' : ''">
+                    <span class="br-label block truncate" x-text="item.filename"></span>
+                    <span class="br-mono mt-1 block truncate" x-text="item.path"></span>
+                  </button>
+                </template>
+                <p x-show="taskbooks.length === 0" class="br-mono">暂无任务书</p>
+                <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
+                  <input x-model="selectedTaskbookFilename" placeholder="new-taskbook.yml" class="br-input-mono">
+                  <button @click="newTaskbookDraft" class="br-btn mt-2 w-full">[ NEW DRAFT ]</button>
+                </div>
+              </div>
+              <div class="space-y-3">
+                <textarea x-model="taskbookEditorContent" rows="16" class="br-textarea font-mono" placeholder="title: ..."></textarea>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="br-mono" x-text="selectedTaskbookPath || '选择或新建一个 taskbook'"></p>
+                  <div class="flex gap-2">
+                    <button @click="useEditedTaskbook" :disabled="!selectedTaskbookPath" class="br-btn">[ USE ]</button>
+                    <button @click="saveTaskbook" :disabled="isSavingTaskbook || !selectedTaskbookFilename.trim() || !taskbookEditorContent.trim()" class="br-btn-primary" x-text="isSavingTaskbook ? '[ SAVING ]' : '[ SAVE ]'"></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section>
             <div class="flex items-center justify-between">
               <div>
@@ -638,6 +673,10 @@
         selectedRunQuality: null,
         runArtifacts: [],
         selectedRunArtifactContent: '',
+        taskbooks: [],
+        selectedTaskbookFilename: '',
+        selectedTaskbookPath: '',
+        taskbookEditorContent: '',
         selectedTask: null,
         artifactContent: '',
         selectedWorker: 'niuma-1',
@@ -670,6 +709,8 @@
         isChaining: false,
         isStartingRun: false,
         isLintingTaskbook: false,
+        isLoadingTaskbooks: false,
+        isSavingTaskbook: false,
         isRunningCompliance: false,
         isSavingConfig: false,
         isInstallingDocument: false,
@@ -708,7 +749,7 @@
           if (this.isRefreshing) return;
           this.isRefreshing = true;
           try {
-            await Promise.all([this.refreshHealth(), this.refreshWorkers(), this.refreshTasks(), this.refreshRuns()]);
+            await Promise.all([this.refreshHealth(), this.refreshWorkers(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks()]);
           } catch (error) {
             this.health = {};
             this.showAlert('error', `刷新失败：${error.message}`);
@@ -766,6 +807,74 @@
         async refreshRunArtifacts(runId) {
           const body = await this.requestJson(`/api/runs/${runId}/artifacts`);
           this.runArtifacts = body.artifacts || [];
+        },
+        async refreshTaskbooks() {
+          this.isLoadingTaskbooks = true;
+          try {
+            const body = await this.requestJson('/api/taskbooks');
+            this.taskbooks = body.taskbooks || [];
+            if (!this.selectedTaskbookFilename && this.taskbooks.length) {
+              await this.loadTaskbook(this.taskbooks[0].filename);
+            }
+          } catch (error) {
+            this.record('error', error.message);
+          } finally {
+            this.isLoadingTaskbooks = false;
+          }
+        },
+        async loadTaskbook(filename) {
+          if (!filename) return;
+          const body = await this.requestJson(`/api/taskbooks/${filename}`);
+          this.selectedTaskbookFilename = body.filename;
+          this.selectedTaskbookPath = body.path;
+          this.taskbookEditorContent = body.content || '';
+          this.taskbookPath = body.path;
+          this.taskbookLint = '';
+        },
+        newTaskbookDraft() {
+          if (!this.selectedTaskbookFilename.trim()) {
+            this.selectedTaskbookFilename = 'new-taskbook.yml';
+          }
+          this.selectedTaskbookPath = '';
+          this.taskbookEditorContent = [
+            'title: 新任务书',
+            'objective: 描述这条流水线的交付目标',
+            'steps:',
+            '  - id: reverse-module',
+            '    agent: niuma-1',
+            '    objective: 逆向分析旧系统模块',
+            '    outputs:',
+            '      - path: artifacts/runs/{run_id}/reverse-module/function-list.md'
+          ].join('\n');
+        },
+        async saveTaskbook() {
+          if (this.isSavingTaskbook || !this.selectedTaskbookFilename.trim() || !this.taskbookEditorContent.trim()) return;
+          this.isSavingTaskbook = true;
+          this.alert = null;
+          try {
+            const filename = this.selectedTaskbookFilename.trim();
+            const body = await this.requestJson(`/api/taskbooks/${filename}`, {
+              method: 'PUT',
+              body: JSON.stringify({content: this.taskbookEditorContent})
+            });
+            this.selectedTaskbookFilename = body.filename;
+            this.selectedTaskbookPath = body.path;
+            this.taskbookPath = body.path;
+            this.taskbookLint = JSON.stringify({title: body.title, execution_order: body.execution_order}, null, 2);
+            await this.refreshTaskbooks();
+            this.record('taskbook', `${body.filename} 路 saved`);
+            this.showAlert('success', `任务书已保存：${body.filename}`);
+          } catch (error) {
+            this.showAlert('error', `保存任务书失败：${error.message}`);
+            this.record('error', error.message);
+          } finally {
+            this.isSavingTaskbook = false;
+          }
+        },
+        useEditedTaskbook() {
+          if (!this.selectedTaskbookPath) return;
+          this.taskbookPath = this.selectedTaskbookPath;
+          this.record('taskbook', `使用任务书：${this.selectedTaskbookFilename}`);
         },
         async loadRunArtifact(artifact) {
           if (!this.selectedRun || !artifact) return;
