@@ -156,6 +156,8 @@ class ResourceManager:
         agent_id: str,
         objective: str,
         depends_on: list[str] | None = None,
+        outputs: list[str] | None = None,
+        self_check: list[str] | None = None,
     ) -> None:
         self._ensure_pipeline_run(run_id)
         self._ensure_agent(agent_id)
@@ -163,10 +165,20 @@ class ResourceManager:
         with self._db:
             self._db.execute(
                 """
-                insert into step_runs(run_id, step_id, agent_id, objective, status, depends_on_json, created_at, updated_at)
-                values(?, ?, ?, ?, 'queued', ?, ?, ?)
+                insert into step_runs(run_id, step_id, agent_id, objective, status, depends_on_json, outputs_json, self_check_json, created_at, updated_at)
+                values(?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?)
                 """,
-                (run_id, step_id, agent_id, objective, json.dumps(depends_on or [], ensure_ascii=False), now, now),
+                (
+                    run_id,
+                    step_id,
+                    agent_id,
+                    objective,
+                    json.dumps(depends_on or [], ensure_ascii=False),
+                    json.dumps(outputs or [], ensure_ascii=False),
+                    json.dumps(self_check or [], ensure_ascii=False),
+                    now,
+                    now,
+                ),
             )
 
     def get_step_run(self, run_id: str, step_id: str) -> dict:
@@ -176,6 +188,8 @@ class ResourceManager:
         )
         step = dict(row)
         step["depends_on"] = json.loads(step.pop("depends_on_json"))
+        step["outputs"] = json.loads(step.pop("outputs_json"))
+        step["self_check"] = json.loads(step.pop("self_check_json"))
         return step
 
     def list_step_runs(self, run_id: str) -> list[dict]:
@@ -188,6 +202,8 @@ class ResourceManager:
         for row in rows:
             step = dict(row)
             step["depends_on"] = json.loads(step.pop("depends_on_json"))
+            step["outputs"] = json.loads(step.pop("outputs_json"))
+            step["self_check"] = json.loads(step.pop("self_check_json"))
             steps.append(step)
         return steps
 
@@ -250,6 +266,8 @@ class ResourceManager:
                   objective text not null,
                   status text not null,
                   depends_on_json text not null default '[]',
+                  outputs_json text not null default '[]',
+                  self_check_json text not null default '[]',
                   created_at real not null,
                   updated_at real not null,
                   primary key(run_id, step_id),
@@ -258,6 +276,13 @@ class ResourceManager:
                 );
                 """
             )
+            self._ensure_column("step_runs", "outputs_json", "text not null default '[]'")
+            self._ensure_column("step_runs", "self_check_json", "text not null default '[]'")
+
+    def _ensure_column(self, table: str, column: str, definition: str) -> None:
+        columns = {row["name"] for row in self._db.execute(f"pragma table_info({table})").fetchall()}
+        if column not in columns:
+            self._db.execute(f"alter table {table} add column {column} {definition}")
 
     def _ensure_agent(self, agent_id: str) -> None:
         self._fetch_one("select agent_id from agents where agent_id = ?", (agent_id,))

@@ -51,6 +51,8 @@ class PipelineExecutor:
                     agent_id=step.agent,
                     objective=step.objective,
                     depends_on=step.depends_on,
+                    outputs=[item.path for item in step.outputs],
+                    self_check=step.self_check,
                 )
 
             self.resource_manager.update_pipeline_status(run_id, "running")

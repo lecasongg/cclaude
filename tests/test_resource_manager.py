@@ -52,6 +52,8 @@ def test_resource_manager_persists_pipeline_and_step_state(tmp_path):
         agent_id="niuma-1",
         objective="逆向登录模块",
         depends_on=[],
+        outputs=["artifacts/runs/{run_id}/reverse-login/function-list.md"],
+        self_check=["必须包含功能清单"],
     )
     manager.update_step_status(run_id, "reverse-login", "running")
     manager.update_pipeline_status(run_id, "running")
@@ -66,6 +68,8 @@ def test_resource_manager_persists_pipeline_and_step_state(tmp_path):
     assert step["objective"] == "逆向登录模块"
     assert step["status"] == "running"
     assert step["depends_on"] == []
+    assert step["outputs"] == ["artifacts/runs/{run_id}/reverse-login/function-list.md"]
+    assert step["self_check"] == ["必须包含功能清单"]
 
 
 def test_resource_manager_lists_available_agents(tmp_path):

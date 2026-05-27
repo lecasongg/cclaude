@@ -11,6 +11,7 @@ from agent_factory.core.config import save_runtime_config
 from agent_factory.core.event_log import EventLog
 from agent_factory.core.models import TaskRecord, WorkerConfig
 from agent_factory.core.pipeline_executor import PipelineExecutor
+from agent_factory.core.quality import evaluate_run_quality
 from agent_factory.core.resource_manager import ResourceManager, ResourceManagerError
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
@@ -387,6 +388,17 @@ def create_app(
         if event_log is None:
             return {"events": []}
         return {"events": event_log.read_events(run_id)}
+
+    @app.get("/api/runs/{run_id}/quality")
+    async def get_run_quality(run_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        try:
+            resource_manager.get_pipeline_run(run_id)
+        except ResourceManagerError as exc:
+            raise HTTPException(status_code=404, detail="run not found") from exc
+        return evaluate_run_quality(resource_manager, pipeline_workspace_root or Path.cwd(), run_id)
 
     @app.get("/api/artifacts/{worker_id}/{task_id}/{filename}")
     async def read_artifact(worker_id: str, task_id: str, filename: str, x_hermes_token: str | None = Header(default=None)):

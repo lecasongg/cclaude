@@ -618,6 +618,14 @@ steps:
     assert artifact_response.status_code == 200
     assert artifact_response.json() == {"path": artifact_id, "content": "功能清单"}
 
+    quality_response = client.get(
+        f"/api/runs/{body['run']['run_id']}/quality",
+        headers={"x-hermes-token": "local-token"},
+    )
+    assert quality_response.status_code == 200
+    assert quality_response.json()["run_id"] == body["run"]["run_id"]
+    assert quality_response.json()["summary"]["failed"] == 0
+
 
 def test_api_lints_taskbook_path(tmp_path):
     client = build_client(tmp_path)
