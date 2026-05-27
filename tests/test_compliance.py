@@ -11,6 +11,9 @@ def test_compliance_quick_suite_runs_taskbook_and_asserts_outputs(tmp_path):
 
     assert result.success is True
     assert result.errors == []
+    assert result.cases[0]["name"] == "legacy-login"
+    assert result.cases[0]["status"] == "passed"
+    assert result.cases[0]["errors"] == []
 
 
 def test_compliance_quick_suite_reports_failed_assertion(tmp_path):
@@ -20,6 +23,7 @@ def test_compliance_quick_suite_reports_failed_assertion(tmp_path):
 
     assert result.success is False
     assert "missing expected output" in result.errors[0]
+    assert result.cases[0]["status"] == "failed"
 
 
 def test_marvisctl_runs_quick_compliance_suite(tmp_path, capsys):
@@ -28,6 +32,15 @@ def test_marvisctl_runs_quick_compliance_suite(tmp_path, capsys):
     assert marvisctl.main(["compliance", "run", "--suite", str(suite_root), "--mode", "quick"]) == 0
 
     assert "compliance ok" in capsys.readouterr().out
+
+
+def test_repository_compliance_suite_runs(tmp_path):
+    suite_root = __import__("pathlib").Path(__file__).parents[1] / "tests" / "compliance"
+
+    result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace")
+
+    assert result.success is True
+    assert result.cases[0]["status"] == "passed"
 
 
 def _write_suite(tmp_path, expected_output="artifacts/runs/{run_id}/reverse-login/function-list.md"):

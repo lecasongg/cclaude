@@ -8,6 +8,7 @@ from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from agent_factory.core.config import save_runtime_config
+from agent_factory.core.compliance import ComplianceSuite
 from agent_factory.core.event_log import EventLog
 from agent_factory.core.models import TaskRecord, WorkerConfig
 from agent_factory.core.pipeline_executor import PipelineExecutor
@@ -44,6 +45,11 @@ class TaskBookRunRequest(BaseModel):
 
 class TaskBookPathRequest(BaseModel):
     taskbook_path: str
+
+
+class ComplianceRunRequest(BaseModel):
+    suite_path: str
+    mode: str = "quick"
 
 
 REQUIRED_DOCUMENT_WORKER_ID = "niuma-1"
@@ -261,6 +267,22 @@ def create_app(
                 }
                 for step in taskbook.steps
             ],
+        }
+
+    @app.post("/api/compliance/run")
+    async def run_compliance(request: ComplianceRunRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if request.mode != "quick":
+            raise HTTPException(status_code=400, detail="only quick compliance is supported")
+        suite_path = Path(normalize_user_path(request.suite_path))
+        if not suite_path.exists():
+            raise HTTPException(status_code=404, detail="suite not found")
+        workspace_root = (pipeline_workspace_root or Path.cwd()) / ".tmp" / "compliance-runs"
+        result = ComplianceSuite(suite_path).run_quick(workspace_root)
+        return {
+            "success": result.success,
+            "errors": result.errors,
+            "cases": result.cases,
         }
 
     @app.get("/api/workers/{worker_id}/installed-documents")

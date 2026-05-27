@@ -1,0 +1,11 @@
+assert:
+  run_status: succeeded
+  steps:
+    reverse-login:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/reverse-login/function-list.md
+    write-requirements:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/write-requirements/requirements.md

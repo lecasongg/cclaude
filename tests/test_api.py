@@ -703,3 +703,46 @@ steps:
     assert "## Source Context" in backend.calls[0][0]
     assert "login.jsp" in backend.calls[0][0]
     assert "<form>登录</form>" in backend.calls[0][0]
+
+
+def test_api_runs_quick_compliance_suite(tmp_path):
+    suite_root = tmp_path / "suite"
+    (suite_root / "taskbooks").mkdir(parents=True)
+    (suite_root / "expected").mkdir()
+    (suite_root / "taskbooks" / "legacy-login.yml").write_text(
+        """
+title: 登录模块改造
+objective: 输出登录模块逆向文档
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: 逆向登录模块
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+    (suite_root / "expected" / "legacy-login.assert.yml").write_text(
+        """
+assert:
+  run_status: succeeded
+  steps:
+    reverse-login:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+    client = build_client(tmp_path)
+
+    response = client.post(
+        "/api/compliance/run",
+        headers={"x-hermes-token": "local-token"},
+        json={"suite_path": str(suite_root), "mode": "quick"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    assert response.json()["cases"][0]["name"] == "legacy-login"
+    assert response.json()["cases"][0]["status"] == "passed"

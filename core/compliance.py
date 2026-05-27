@@ -16,6 +16,7 @@ from agent_factory.core.taskbook import TaskBook, load_taskbook
 class ComplianceResult:
     success: bool
     errors: list[str] = field(default_factory=list)
+    cases: list[dict[str, Any]] = field(default_factory=list)
 
 
 class ComplianceSuite:
@@ -25,9 +26,19 @@ class ComplianceSuite:
     def run_quick(self, workspace_root: str | Path) -> ComplianceResult:
         workspace_root = Path(workspace_root)
         errors: list[str] = []
+        cases: list[dict[str, Any]] = []
         for taskbook_path in sorted((self.root / "taskbooks").glob("*.yml")):
-            errors.extend(self._run_taskbook_case(taskbook_path, workspace_root / taskbook_path.stem))
-        return ComplianceResult(success=not errors, errors=errors)
+            case_errors = self._run_taskbook_case(taskbook_path, workspace_root / taskbook_path.stem)
+            errors.extend(case_errors)
+            cases.append(
+                {
+                    "name": taskbook_path.stem,
+                    "taskbook_path": str(taskbook_path),
+                    "status": "failed" if case_errors else "passed",
+                    "errors": case_errors,
+                }
+            )
+        return ComplianceResult(success=not errors, errors=errors, cases=cases)
 
     def _run_taskbook_case(self, taskbook_path: Path, workspace_root: Path) -> list[str]:
         taskbook = load_taskbook(taskbook_path)
