@@ -15,11 +15,17 @@ if "agent_factory" not in sys.modules:
     sys.modules["agent_factory"] = pkg
 
 from agent_factory.core.compliance import ComplianceSuite
+from agent_factory.core.artifacts import ArtifactStore
+from agent_factory.core.backends import build_backend
+from agent_factory.core.config import apply_runtime_config, load_factory_config, load_runtime_config
 from agent_factory.core.config_registry import ConfigRegistryError, load_config_registry
 from agent_factory.core.event_log import EventLog
 from agent_factory.core.resource_manager import ResourceManager
 from agent_factory.core.run_manifest import build_run_manifest
+from agent_factory.core.task_bus import TaskBus
 from agent_factory.core.taskbook import TaskBookError, load_taskbook
+from agent_factory.core.worker_runtime import WorkerRuntime
+from agent_factory.core.worker_step_runner import WorkerRuntimeStepRunner
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -72,7 +78,8 @@ def _build_parser() -> argparse.ArgumentParser:
     compliance_subparsers = compliance.add_subparsers(dest="compliance_command", required=True)
     compliance_run = compliance_subparsers.add_parser("run")
     compliance_run.add_argument("--suite", required=True)
-    compliance_run.add_argument("--mode", choices=["quick"], default="quick")
+    compliance_run.add_argument("--mode", choices=["quick", "model"], default="quick")
+    _add_config_arg(compliance_run)
     compliance_run.add_argument("--workspace")
     compliance_run.set_defaults(handler=_compliance_run)
 
@@ -141,9 +148,24 @@ def _taskbook_dry_run(args: argparse.Namespace) -> int:
 
 def _compliance_run(args: argparse.Namespace) -> int:
     workspace = args.workspace or tempfile.mkdtemp(prefix="marvis-compliance-")
-    result = ComplianceSuite(args.suite).run_quick(workspace)
+    suite = ComplianceSuite(args.suite)
+    if args.mode == "quick":
+        result = suite.run_quick(workspace)
+    else:
+        config_path = Path(_resolve_config_path(args.config))
+        config = load_factory_config(config_path)
+        runtime_config = load_runtime_config(config_path.parent / "runtime_config.json")
+        apply_runtime_config(config, runtime_config)
+        workers = [worker for worker in config.workers if worker.enabled]
+        bus = TaskBus([worker.worker_id for worker in workers])
+        artifacts = ArtifactStore(Path(workspace) / "worker-artifacts")
+        runtimes = {
+            worker.worker_id: WorkerRuntime(worker, bus, artifacts, build_backend(worker))
+            for worker in workers
+        }
+        result = suite.run_with_runner(workspace, WorkerRuntimeStepRunner(runtimes))
     if result.success:
-        print("compliance ok")
+        print(f"compliance ok ({args.mode})")
         return 0
     for error in result.errors:
         print(error, file=sys.stderr)

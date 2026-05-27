@@ -32,7 +32,43 @@ def test_marvisctl_runs_quick_compliance_suite(tmp_path, capsys):
 
     assert marvisctl.main(["compliance", "run", "--suite", str(suite_root), "--mode", "quick"]) == 0
 
-    assert "compliance ok" in capsys.readouterr().out
+    assert "compliance ok (quick)" in capsys.readouterr().out
+
+
+def test_marvisctl_runs_model_compliance_suite_with_configured_backend(tmp_path, capsys):
+    suite_root = _write_suite(tmp_path, output_contains=["model compliance output"])
+    config_path = tmp_path / "factory_config.json"
+    config_path.write_text(
+        textwrap.dedent(
+            """
+            {
+              "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+              "runtime_mode": "mock-inline",
+              "workers": [
+                {
+                  "worker_id": "niuma-1",
+                  "display_name": "niuma-1",
+                  "provider": "test",
+                  "model": "fake-model",
+                  "api_key_env": "NIUMA_1_API_KEY",
+                  "profile_dir": "profiles/niuma-1",
+                  "workspace_dir": "workspaces/niuma-1",
+                  "skills_dir": "skills/niuma-1",
+                  "backend_type": "fake",
+                  "backend_options": {"response_text": "model compliance output"}
+                }
+              ]
+            }
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    assert marvisctl.main(
+        ["compliance", "run", "--suite", str(suite_root), "--mode", "model", "--config", str(config_path)]
+    ) == 0
+
+    assert "compliance ok (model)" in capsys.readouterr().out
 
 
 def test_repository_compliance_suite_runs(tmp_path):
