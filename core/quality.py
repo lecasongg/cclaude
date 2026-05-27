@@ -49,18 +49,33 @@ def evaluate_run_quality(manager: ResourceManager, workspace_root: str | Path, r
             else:
                 failed += 1
 
+        step_passed = sum(1 for check in checks if check["status"] == "passed")
+        step_failed = sum(1 for check in checks if check["status"] == "failed")
         steps.append(
             {
                 "step_id": step["step_id"],
                 "agent_id": step["agent_id"],
                 "status": step["status"],
+                "summary": {
+                    "passed": step_passed,
+                    "failed": step_failed,
+                    "total": step_passed + step_failed,
+                },
                 "checks": checks,
             }
         )
 
+    total = passed + failed
+    score = round((passed / total) * 100) if total else 100
     return {
         "run_id": run_id,
-        "summary": {"passed": passed, "failed": failed},
+        "summary": {
+            "passed": passed,
+            "failed": failed,
+            "total": total,
+            "score": score,
+            "status": "passed" if failed == 0 else "failed",
+        },
         "steps": steps,
     }
 

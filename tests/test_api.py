@@ -353,6 +353,9 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "selectedRunEvents" in html
     assert "selectedRunArtifactContent" in html
     assert "selectedRunQuality" in html
+    assert "Quality Gate" in html
+    assert "qualityScoreLabel" in html
+    assert "openQualityStep" in html
     assert "refreshTaskbooks" in html
     assert "selectedTaskbookFilename" in html
     assert "selectedTaskbookPath" in html

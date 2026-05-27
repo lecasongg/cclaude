@@ -142,7 +142,7 @@
 
       <article class="room control"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content control-content"><section class="glass"><div class="desk">主 Agent<br>独立<br>办公室</div><div class="control-note"><b>调度室</b><br><span x-text="`正在调度 ${runs.length} 条流水线、${workers.length} 个工位与 ${tasks.length} 个任务。`"></span></div></section><section class="buttons"><button class="industrial" @click="lintTaskbook" :disabled="isLintingTaskbook || !taskbookPath.trim()" x-text="isLintingTaskbook ? 'LINTING' : 'LINT'"></button><button class="industrial dark" @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button><button class="industrial" @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" x-text="isRunningCompliance ? 'RUNNING' : 'COMPLIANCE'"></button><button class="industrial" @click="refreshRuns">RUNS</button></section><section class="board"><input class="field-iso" x-model="taskbookPath" placeholder="taskbook path"><input class="field-iso" x-model="sourcePath" placeholder="source path or directory"><div class="board-row"><span>Selected Worker</span><b x-text="selectedWorker"></b></div><div class="board-row"><span>Selected TaskBook</span><b x-text="selectedTaskbookFilename || 'NONE'"></b></div><div class="board-row"><span>Compliance</span><b x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></b></div></section></div></article>
 
-      <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><template x-for="artifact in runArtifacts" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifact.path"></button></template><div x-show="runArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">Artifact Preview</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">Compliance</div><div x-show="complianceResult"><template x-for="caseItem in (complianceResult ? complianceResult.cases : [])" :key="caseItem.name"><div class="assertion" :class="caseItem.status === 'passed' ? 'ok' : 'fail'" x-text="caseItem.name + ' · ' + caseItem.status"></div></template></div><div x-show="!complianceResult" class="assertion">断言测试集待运行</div></section></div></article>
+      <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><template x-for="artifact in runArtifacts" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifact.path"></button></template><div x-show="runArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">Artifact Preview</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">Quality Gate</div><div class="assertion" :class="qualityPassed() ? 'ok' : 'fail'"><b x-text="qualityScoreLabel()"></b><br><span x-text="qualitySummaryLabel()"></span></div><template x-for="step in qualitySteps()" :key="step.step_id"><div class="assertion" :class="step.summary && step.summary.failed ? 'fail' : 'ok'" @click="openQualityStep(step)"><b x-text="step.step_id"></b><br><span x-text="`${step.summary.passed}/${step.summary.total} checks passed`"></span></div></template><div x-show="complianceResult" class="assertion" :class="complianceResult && complianceResult.success ? 'ok' : 'fail'" x-text="complianceSummary()"></div><div x-show="!selectedRunQuality && !complianceResult" class="assertion">断言测试集待运行</div></section></div></article>
 
       <aside class="log-strip"><section class="log-panel"><div class="room-title">Step Timeline / Run Log</div><div class="log-list"><template x-for="step in selectedRunSteps()" :key="step.step_id"><div class="log-line"><b x-text="step.step_id"></b> · <span x-text="step.status"></span> · <span x-text="step.objective"></span></div></template><template x-for="event in selectedRunEvents.slice(0, 8)" :key="event.event_id"><div class="log-line" x-text="`${event.time || ''} · ${event.type}`"></div></template></div></section></aside>
 
@@ -641,7 +641,39 @@
         },
         complianceSummary() {
           if (!this.complianceResult) return 'suite idle';
-          return `${this.complianceResult.cases.length} cases`;
+          const failed = this.complianceResult.cases.filter((item) => item.status !== 'passed').length;
+          return `${this.complianceResult.cases.length} cases · ${failed} failed`;
+        },
+        qualitySteps() {
+          return this.selectedRunQuality && this.selectedRunQuality.steps ? this.selectedRunQuality.steps : [];
+        },
+        qualityPassed() {
+          return !this.selectedRunQuality || !this.selectedRunQuality.summary || this.selectedRunQuality.summary.failed === 0;
+        },
+        qualityScoreLabel() {
+          if (!this.selectedRunQuality || !this.selectedRunQuality.summary) return 'QUALITY IDLE';
+          return `${this.selectedRunQuality.summary.score}% · ${this.selectedRunQuality.summary.status.toUpperCase()}`;
+        },
+        qualitySummaryLabel() {
+          if (!this.selectedRunQuality || !this.selectedRunQuality.summary) return 'waiting for selected run';
+          const summary = this.selectedRunQuality.summary;
+          return `${summary.passed}/${summary.total} checks passed`;
+        },
+        openQualityStep(step) {
+          this.drawerTitle = `QUALITY · ${step.step_id}`;
+          this.drawerSubtitle = `${step.summary.passed}/${step.summary.total} checks passed`;
+          this.drawerHtml = `
+            <div class="space-y-2">
+              ${(step.checks || []).map((check) => `
+                <div class="mini-metric">
+                  <span>${this.escapeHtml(check.type || 'check')}</span>
+                  <strong class="!text-base">${this.escapeHtml(check.status || '')}</strong>
+                  <em>${this.escapeHtml(check.path || check.term || check.text || '')}</em>
+                </div>
+              `).join('')}
+            </div>
+          `;
+          this.drawerOpen = true;
         },
         currentTaskPrompt(worker) {
           const task = this.tasks.find((candidate) => candidate.task_id === worker.current_task_id);
