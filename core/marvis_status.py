@@ -9,8 +9,80 @@ from agent_factory.core.task_bus import TaskBus
 from agent_factory.core.worker_health import summarize_worker_health
 
 
-BLUEPRINT_PROGRESS_PERCENT = 68
 BLUEPRINT_TARGET_PERCENT = 80
+
+CAPABILITY_LEDGER = [
+    {
+        "key": "worker-runtime",
+        "status": "ready",
+        "evidence": "Claude CLI, Codex CLI, OpenAI-compatible and fake backends",
+        "weight": 10,
+        "earned": 10,
+    },
+    {
+        "key": "taskbook-pipeline",
+        "status": "ready",
+        "evidence": "TaskBook lint, dependency order and pipeline execution",
+        "weight": 12,
+        "earned": 12,
+    },
+    {
+        "key": "file-handoff",
+        "status": "ready",
+        "evidence": "Step outputs are indexed as file-level artifacts",
+        "weight": 10,
+        "earned": 10,
+    },
+    {
+        "key": "quality-gate",
+        "status": "ready",
+        "evidence": "Per-step self-check terms and run quality summary",
+        "weight": 10,
+        "earned": 10,
+    },
+    {
+        "key": "correction-rerun",
+        "status": "ready",
+        "evidence": "Rerun from a selected step with correction context",
+        "weight": 8,
+        "earned": 8,
+    },
+    {
+        "key": "run-manifest",
+        "status": "ready",
+        "evidence": "Structured production manifest for each run",
+        "weight": 8,
+        "earned": 8,
+    },
+    {
+        "key": "compliance-suite",
+        "status": "ready",
+        "evidence": "Quick/model compliance modes plus persisted compliance reports",
+        "weight": 12,
+        "earned": 12,
+    },
+    {
+        "key": "factory-console-ui",
+        "status": "partial",
+        "evidence": "2.5D factory floor control room with live API wiring",
+        "weight": 12,
+        "earned": 8,
+    },
+    {
+        "key": "agent-isolation",
+        "status": "partial",
+        "evidence": "Per-worker workspace/profile/skills paths; stronger sandbox policy pending",
+        "weight": 8,
+        "earned": 4,
+    },
+    {
+        "key": "multi-module-migration",
+        "status": "planned",
+        "evidence": "Migration/code-change loops after reverse -> docs -> tests",
+        "weight": 10,
+        "earned": 0,
+    },
+]
 
 
 def build_marvis_status(
@@ -29,7 +101,7 @@ def build_marvis_status(
             "blueprint_version": "v0.3",
             "stage": "factory-floor prototype",
             "primary_scenario": "legacy-system modernization",
-            "progress_percent": BLUEPRINT_PROGRESS_PERCENT,
+            "progress_percent": blueprint_progress_percent(),
             "target_percent": BLUEPRINT_TARGET_PERCENT,
         },
         "metrics": {
@@ -42,24 +114,15 @@ def build_marvis_status(
             "runs_blocked": _count_status(runs, "blocked"),
             "runtime_config_persistence": runtime_config_path is not None,
         },
-        "capabilities": [
-            _capability("worker-runtime", "ready", "Claude CLI, Codex CLI, OpenAI-compatible and fake backends"),
-            _capability("taskbook-pipeline", "ready", "TaskBook lint, dependency order and pipeline execution"),
-            _capability("file-handoff", "ready", "Step outputs are indexed as file-level artifacts"),
-            _capability("quality-gate", "ready", "Per-step self-check terms and run quality summary"),
-            _capability("correction-rerun", "ready", "Rerun from a selected step with correction context"),
-            _capability("run-manifest", "ready", "Structured production manifest for each run"),
-            _capability("compliance-suite", "ready", "Quick and model compliance modes"),
-            _capability("factory-console-ui", "partial", "2.5D factory floor control room with live API wiring"),
-            _capability("agent-isolation", "partial", "Per-worker workspace/profile/skills paths; stronger sandbox policy pending"),
-            _capability("multi-module-migration", "planned", "Migration/code-change loops after reverse -> docs -> tests"),
-        ],
+        "capabilities": [dict(item) for item in CAPABILITY_LEDGER],
         "risks": _risks(worker_health["summary"]),
     }
 
 
-def _capability(key: str, status: str, evidence: str) -> dict[str, str]:
-    return {"key": key, "status": status, "evidence": evidence}
+def blueprint_progress_percent() -> int:
+    total = sum(item["weight"] for item in CAPABILITY_LEDGER)
+    earned = sum(item["earned"] for item in CAPABILITY_LEDGER)
+    return round((earned / total) * 100) if total else 0
 
 
 def _count_status(rows: list[dict[str, Any]], status: str) -> int:

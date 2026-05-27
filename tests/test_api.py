@@ -4,6 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from agent_factory.core.marvis_status import blueprint_progress_percent
 from agent_factory.core.api import create_app
 from agent_factory.core.artifacts import ArtifactStore
 from agent_factory.core.event_log import EventLog
@@ -89,7 +90,7 @@ def test_api_reports_marvis_factory_status(tmp_path):
     body = response.json()
     assert body["product"]["name"] == "Marvis AI Factory Console"
     assert body["product"]["primary_scenario"] == "legacy-system modernization"
-    assert body["product"]["progress_percent"] == 68
+    assert body["product"]["progress_percent"] == blueprint_progress_percent()
     assert body["metrics"]["workers_total"] == 2
     assert {capability["key"] for capability in body["capabilities"]} >= {"taskbook-pipeline", "factory-console-ui"}
 
