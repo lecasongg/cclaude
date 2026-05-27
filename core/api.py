@@ -535,6 +535,32 @@ def create_app(
             raise HTTPException(status_code=404, detail="run not found") from exc
         return evaluate_run_quality(resource_manager, pipeline_workspace_root or Path.cwd(), run_id)
 
+    @app.get("/api/runs/{run_id}/manifest")
+    async def get_run_manifest(run_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        try:
+            run = resource_manager.get_pipeline_run(run_id)
+            steps = resource_manager.list_step_runs(run_id)
+        except ResourceManagerError as exc:
+            raise HTTPException(status_code=404, detail="run not found") from exc
+        workspace_root = pipeline_workspace_root or Path.cwd()
+        run_root = workspace_root / "artifacts" / "runs" / run_id
+        artifacts = []
+        if run_root.exists():
+            for path in sorted(run_root.rglob("*")):
+                if path.is_file():
+                    artifacts.append({"path": path.relative_to(workspace_root).as_posix(), "size": path.stat().st_size})
+        return {
+            "manifest_version": 1,
+            "run": run,
+            "steps": steps,
+            "artifacts": artifacts,
+            "quality": evaluate_run_quality(resource_manager, workspace_root, run_id),
+            "events": event_log.read_events(run_id) if event_log is not None else [],
+        }
+
     @app.get("/api/artifacts/{worker_id}/{task_id}/{filename}")
     async def read_artifact(worker_id: str, task_id: str, filename: str, x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)

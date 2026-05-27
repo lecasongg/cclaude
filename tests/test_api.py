@@ -373,6 +373,8 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "/api/runs/${runId}/events" in html
     assert "/api/runs/${runId}/artifacts" in html
     assert "/api/runs/${runId}/quality" in html
+    assert "openRunManifest" in html
+    assert "/api/runs/${this.selectedRun.run_id}/manifest" in html
 
 
 def test_console_has_taskbook_studio_editor():
@@ -680,6 +682,25 @@ steps:
     assert quality_response.status_code == 200
     assert quality_response.json()["run_id"] == body["run"]["run_id"]
     assert quality_response.json()["summary"]["failed"] == 0
+
+    manifest_response = client.get(
+        f"/api/runs/{body['run']['run_id']}/manifest",
+        headers={"x-hermes-token": "local-token"},
+    )
+    assert manifest_response.status_code == 200
+    manifest = manifest_response.json()
+    assert manifest["manifest_version"] == 1
+    assert manifest["run"]["run_id"] == body["run"]["run_id"]
+    assert manifest["steps"][0]["step_id"] == "reverse-login"
+    assert manifest["artifacts"][0]["path"] == artifact_id
+    assert manifest["quality"]["summary"]["failed"] == 0
+    assert [event["type"] for event in manifest["events"]] == [
+        "run_created",
+        "step_started",
+        "artifact_written",
+        "step_succeeded",
+        "run_succeeded",
+    ]
 
 
 def test_api_lints_taskbook_path(tmp_path):
