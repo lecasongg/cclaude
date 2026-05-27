@@ -68,3 +68,34 @@ def test_worker_step_runner_includes_input_file_content_in_prompt(tmp_path):
     assert input_path in prompt
     assert "功能清单：登录、登出" in prompt
     assert output_path in prompt
+
+
+def test_worker_step_runner_includes_global_source_context(tmp_path):
+    bus = TaskBus(["niuma-1"])
+    artifacts = ArtifactStore(tmp_path / "artifacts")
+    backend = FakeWorkerBackend("功能清单")
+    runtime = WorkerRuntime(worker_config("niuma-1"), bus, artifacts, backend)
+    output_path = str(tmp_path / "artifacts" / "runs" / "run-1" / "reverse-login" / "function-list.md")
+
+    WorkerRuntimeStepRunner(
+        {"niuma-1": runtime},
+        global_context="源文件：login.jsp\n<form>登录</form>",
+    )(
+        StepExecutionContext(
+            run_id="run-1",
+            step=TaskBookStep(
+                step_id="reverse-login",
+                agent="niuma-1",
+                objective="逆向登录模块",
+                outputs=[TaskBookPath("artifacts/runs/{run_id}/reverse-login/function-list.md")],
+            ),
+            input_paths=[],
+            output_paths=[output_path],
+            input_files={},
+        )
+    )
+
+    prompt = backend.calls[0][0]
+    assert "## Source Context" in prompt
+    assert "login.jsp" in prompt
+    assert "<form>登录</form>" in prompt

@@ -8,8 +8,9 @@ from agent_factory.core.worker_runtime import WorkerRuntime
 
 
 class WorkerRuntimeStepRunner:
-    def __init__(self, runtimes: dict[str, WorkerRuntime]):
+    def __init__(self, runtimes: dict[str, WorkerRuntime], global_context: str = ""):
         self.runtimes = runtimes
+        self.global_context = global_context
 
     def __call__(self, context: StepExecutionContext) -> dict[str, str]:
         runtime = self.runtimes.get(context.step.agent)
@@ -41,6 +42,10 @@ class WorkerRuntimeStepRunner:
                 parts.append("```")
                 parts.append(content)
                 parts.append("```")
+        if self.global_context:
+            parts.append("")
+            parts.append("## Source Context")
+            parts.append(self.global_context)
         if context.step.self_check:
             parts.extend(["", "## Self Check", *[f"- {item}" for item in context.step.self_check]])
         parts.extend(
