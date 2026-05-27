@@ -81,6 +81,7 @@ def build_app(config_path: str | Path):
     )
 
     @app.get("/")
+    @app.get("/console")
     async def console():
         return FileResponse(config_path.parent / "web" / "console.html")
 
