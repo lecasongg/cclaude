@@ -56,6 +56,7 @@ def build_app(config_path: str | Path):
     bus = TaskBus(worker_ids)
     artifacts = ArtifactStore(config_path.parent / "artifacts")
     resource_manager = ResourceManager(config_path.parent / "marvis.db")
+    resource_manager.reconcile_on_startup()
     event_log = EventLog(config_path.parent / "events")
     runtimes = {
         worker.worker_id: WorkerRuntime(

@@ -219,6 +219,55 @@ class ResourceManager:
                 (status, time(), run_id, step_id),
             )
 
+    def reconcile_on_startup(self) -> dict:
+        """Move uncertain in-flight state to blocked after a server restart.
+
+        The current P0 runtime executes steps synchronously. If the API server
+        restarts while a run is marked running/reserved, we cannot prove the
+        external worker process is still healthy, so the safest recovery state
+        is blocked with leases released. Users can inspect artifacts/events and
+        rerun once the correction/rerun flow exists.
+        """
+        now = time()
+        with self._db:
+            active_leases = self._db.execute(
+                "select lease_id from leases where released_at is null"
+            ).fetchall()
+            blocked_steps = self._db.execute(
+                """
+                update step_runs
+                set status = 'blocked', updated_at = ?
+                where status in ('queued', 'reserved', 'running', 'waiting')
+                """,
+                (now,),
+            ).rowcount
+            blocked_runs = self._db.execute(
+                """
+                update pipeline_runs
+                set status = 'blocked', updated_at = ?
+                where status in ('queued', 'reserved', 'running', 'waiting')
+                """,
+                (now,),
+            ).rowcount
+            self._db.execute(
+                "update leases set released_at = ? where released_at is null",
+                (now,),
+            )
+            reset_agents = self._db.execute(
+                """
+                update agent_state
+                set status = 'idle', current_run_id = '', current_step_id = '', updated_at = ?
+                where status in ('reserved', 'running', 'waiting', 'blocked')
+                """,
+                (now,),
+            ).rowcount
+        return {
+            "released_leases": len(active_leases),
+            "blocked_runs": blocked_runs,
+            "blocked_steps": blocked_steps,
+            "reset_agents": reset_agents,
+        }
+
     def _initialize_schema(self) -> None:
         with self._db:
             self._db.executescript(

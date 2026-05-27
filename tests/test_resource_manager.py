@@ -81,3 +81,36 @@ def test_resource_manager_lists_available_agents(tmp_path):
     available = manager.list_available_agents()
 
     assert [agent["agent_id"] for agent in available] == ["niuma-2"]
+
+
+def test_resource_manager_reconciles_uncertain_state_after_restart(tmp_path):
+    db_path = tmp_path / "marvis.db"
+    manager = ResourceManager(db_path)
+    manager.register_agent("niuma-1", display_name="牛马1")
+    run_id = manager.create_pipeline_run("老系统登录模块改造")
+    manager.create_step_run(
+        run_id,
+        step_id="reverse-login",
+        agent_id="niuma-1",
+        objective="逆向登录模块",
+        outputs=["artifacts/runs/{run_id}/reverse-login/function-list.md"],
+    )
+    lease_id = manager.acquire_lease("niuma-1", run_id=run_id, owner="scheduler-a")
+    manager.update_pipeline_status(run_id, "running")
+    manager.update_step_status(run_id, "reverse-login", "running")
+
+    reopened = ResourceManager(db_path)
+    summary = reopened.reconcile_on_startup()
+
+    assert summary == {
+        "released_leases": 1,
+        "blocked_runs": 1,
+        "blocked_steps": 1,
+        "reset_agents": 1,
+    }
+    assert reopened.get_pipeline_run(run_id)["status"] == "blocked"
+    assert reopened.get_step_run(run_id, "reverse-login")["status"] == "blocked"
+    assert reopened.get_agent_state("niuma-1")["status"] == "idle"
+
+    next_lease_id = reopened.acquire_lease("niuma-1", run_id="run-2", owner="scheduler-b")
+    assert next_lease_id != lease_id

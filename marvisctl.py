@@ -5,6 +5,7 @@ import json
 import shutil
 import sys
 import tempfile
+from pathlib import Path
 
 from agent_factory.core.compliance import ComplianceSuite
 from agent_factory.core.config_registry import ConfigRegistryError, load_config_registry
@@ -69,7 +70,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _add_config_arg(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--config", default="agents.json")
+    parser.add_argument("--config", default="")
 
 
 def _doctor(_args: argparse.Namespace) -> int:
@@ -80,19 +81,19 @@ def _doctor(_args: argparse.Namespace) -> int:
 
 
 def _config_validate(args: argparse.Namespace) -> int:
-    load_config_registry(args.config)
+    load_config_registry(_resolve_config_path(args.config))
     print("config ok")
     return 0
 
 
 def _config_render(args: argparse.Namespace) -> int:
-    registry = load_config_registry(args.config)
+    registry = load_config_registry(_resolve_config_path(args.config))
     print(json.dumps(registry.render_agent(args.agent_id), ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
 
 def _agent_list(args: argparse.Namespace) -> int:
-    registry = load_config_registry(args.config)
+    registry = load_config_registry(_resolve_config_path(args.config))
     for agent_id in sorted(registry.agents):
         rendered = registry.render_agent(agent_id)
         print(f"{agent_id}\t{rendered.get('display_name', '')}\t{rendered.get('model', '')}")
@@ -102,7 +103,7 @@ def _agent_list(args: argparse.Namespace) -> int:
 def _agent_check(args: argparse.Namespace) -> int:
     if not args.all:
         raise ConfigRegistryError("agent check requires --all in this version")
-    registry = load_config_registry(args.config)
+    registry = load_config_registry(_resolve_config_path(args.config))
     for agent_id in sorted(registry.agents):
         registry.render_agent(agent_id)
     print("agents ok")
@@ -130,6 +131,16 @@ def _compliance_run(args: argparse.Namespace) -> int:
     for error in result.errors:
         print(error, file=sys.stderr)
     return 1
+
+
+def _resolve_config_path(config: str) -> str:
+    if config:
+        return config
+    for name in ("agents.json", "factory_config.json", "factory_config.example.json", "config.example.json"):
+        path = Path(name)
+        if path.exists():
+            return str(path)
+    return "agents.json"
 
 
 if __name__ == "__main__":

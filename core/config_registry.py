@@ -19,11 +19,32 @@ class ConfigRegistry:
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> "ConfigRegistry":
+        if "workers" in data and "agents" not in data:
+            return cls.from_factory_config(data)
         return cls(
             defaults=copy.deepcopy(data.get("defaults", {})),
             templates=copy.deepcopy(data.get("templates", {})),
             agents=_normalize_agents(data.get("agents", {})),
         )
+
+    @classmethod
+    def from_factory_config(cls, data: dict[str, Any]) -> "ConfigRegistry":
+        defaults = {
+            "backend_type": data.get("runtime_mode", ""),
+        }
+        agents: dict[str, dict[str, Any]] = {}
+        for worker in data.get("workers", []):
+            if not isinstance(worker, dict):
+                raise ConfigRegistryError("worker entries must be objects")
+            agent_id = worker.get("worker_id")
+            if not agent_id:
+                raise ConfigRegistryError("worker entry missing worker_id")
+            if agent_id in agents:
+                raise ConfigRegistryError(f"duplicate agent_id: {agent_id}")
+            agent_data = copy.deepcopy(worker)
+            agent_data.pop("worker_id", None)
+            agents[agent_id] = agent_data
+        return cls(defaults=defaults, templates={}, agents=agents)
 
     def render_agent(self, agent_id: str, run_overrides: dict[str, Any] | None = None) -> dict[str, Any]:
         if agent_id not in self.agents:

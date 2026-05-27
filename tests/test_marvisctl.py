@@ -25,6 +25,62 @@ def test_marvisctl_agent_list(tmp_path, capsys):
     assert "niuma-1" in capsys.readouterr().out
 
 
+def test_marvisctl_reads_factory_config_shape(tmp_path, capsys):
+    config_path = tmp_path / "factory_config.example.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "runtime_mode": "claude-cli",
+                "workers": [
+                    {
+                        "worker_id": "niuma-1",
+                        "display_name": "牛马1",
+                        "provider": "anthropic",
+                        "model": "claude-sonnet-4-6",
+                        "api_key_env": "NIUMA_1_API_KEY",
+                        "backend_type": "claude_cli",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    assert marvisctl.main(["config", "render", "niuma-1", "--config", str(config_path)]) == 0
+
+    rendered = json.loads(capsys.readouterr().out)
+    assert rendered["worker_id"] == "niuma-1"
+    assert rendered["display_name"] == "牛马1"
+    assert rendered["backend_type"] == "claude_cli"
+
+
+def test_marvisctl_defaults_to_factory_config_when_agents_json_is_absent(tmp_path, monkeypatch, capsys):
+    config_path = tmp_path / "factory_config.example.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "workers": [
+                    {
+                        "worker_id": "niuma-1",
+                        "display_name": "牛马1",
+                        "provider": "anthropic",
+                        "model": "claude-sonnet-4-6",
+                        "api_key_env": "NIUMA_1_API_KEY",
+                    }
+                ]
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    assert marvisctl.main(["agent", "list"]) == 0
+
+    assert "niuma-1" in capsys.readouterr().out
+
+
 def test_marvisctl_taskbook_lint_reports_success(tmp_path, capsys):
     taskbook_path = tmp_path / "login.yml"
     taskbook_path.write_text(
