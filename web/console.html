@@ -130,6 +130,7 @@
       <div class="corridor c1"></div><div class="corridor c2"></div><div class="corridor c3"></div>
 
       <article class="room workshop" :class="selectedWorker ? 'selected' : ''"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content workshop-list">
+        <section class="bay" @click="openWorkerHealthCenter()"><div class="bench"><div class="bench-top"></div><div class="bench-side"></div><div class="bench-front"></div></div><div class="bay-head"><span><i class="lamp" :class="workerHealthLamp()"></i> CONFIG CENTER</span><span x-text="workerHealthSummaryLabel()"></span></div><div class="bay-copy" x-text="workerHealthRiskLabel()"></div><div class="meters"><span class="meter" x-text="`${workerHealthSummary.summary ? workerHealthSummary.summary.ok : 0} OK`"></span><span class="meter" x-text="`${workerHealthSummary.summary ? workerHealthSummary.summary.missing_api_key : 0} NO KEY`"></span><span class="meter" x-text="`${workerHealthSummary.summary ? workerHealthSummary.summary.path_warnings : 0} PATH`"></span></div></section>
         <template x-for="worker in workers.slice(0, 4)" :key="worker.worker_id"><section class="bay" @click="selectWorker(worker.worker_id)"><div class="bench"><div class="bench-top"></div><div class="bench-side"></div><div class="bench-front"></div></div><div class="bay-head"><span><i class="lamp" :class="lampClass(worker.status)"></i> <span x-text="worker.display_name"></span></span><span x-text="worker.status"></span></div><div class="bay-copy" x-text="worker.worker_id + ' · ' + (worker.role || 'agent bay')"></div><div class="meters"><span class="meter" x-text="worker.backend_type || 'backend'"></span><span class="meter" x-text="worker.model || 'model'"></span><span class="meter" x-text="worker.api_key_configured ? 'KEY OK' : 'NO KEY'"></span></div></section></template>
       </div></article>
 
@@ -171,6 +172,7 @@
         token: 'local-token',
         health: {},
         workers: [],
+        workerHealthSummary: {summary: null, workers: []},
         tasks: [],
         runs: [],
         taskbooks: [],
@@ -253,7 +255,7 @@
           if (this.isRefreshing) return;
           this.isRefreshing = true;
           try {
-            await Promise.all([this.refreshHealth(), this.refreshWorkers(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks()]);
+            await Promise.all([this.refreshHealth(), this.refreshWorkers(), this.refreshWorkerHealthSummary(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks()]);
             this.notify('Factory sync complete');
           } catch (error) {
             this.notifyError(error);
@@ -342,6 +344,9 @@
           if (step.outputs && step.outputs.length) {
             await this.loadArtifactByPath(step.outputs[0]);
           }
+        },
+        async refreshWorkerHealthSummary() {
+          this.workerHealthSummary = await this.requestJson('/api/workers/health-summary');
         },
         async rerunSelectedStep() {
           if (this.isRerunningStep || !this.selectedRun || !this.selectedStep) return;
@@ -746,6 +751,40 @@
         },
         workersWithKeys() {
           return this.workers.filter((worker) => worker.api_key_configured).length;
+        },
+        workerHealthSummaryLabel() {
+          const summary = this.workerHealthSummary.summary;
+          if (!summary) return 'loading';
+          return `${summary.ok}/${summary.total} OK`;
+        },
+        workerHealthRiskLabel() {
+          const summary = this.workerHealthSummary.summary;
+          if (!summary) return 'checking worker configuration';
+          return `missing key ${summary.missing_api_key} · base url ${summary.missing_base_url} · command ${summary.backend_command_warnings}`;
+        },
+        workerHealthLamp() {
+          const summary = this.workerHealthSummary.summary;
+          if (!summary) return 'idle';
+          return summary.warning ? 'failed' : 'ok';
+        },
+        openWorkerHealthCenter() {
+          const summary = this.workerHealthSummary.summary || {};
+          const workers = this.workerHealthSummary.workers || [];
+          this.drawerTitle = 'CONFIG CENTER · WORKER HEALTH';
+          this.drawerSubtitle = `${summary.ok || 0}/${summary.total || 0} workers ready`;
+          this.drawerHtml = `
+            <div class="space-y-3">
+              <div class="mini-metric"><span>Fleet</span><strong class="!text-base">${summary.ok || 0}/${summary.total || 0} OK</strong><em>missing key ${summary.missing_api_key || 0} · base url ${summary.missing_base_url || 0}</em></div>
+              ${workers.map((worker) => `
+                <div class="mini-metric">
+                  <span>${this.escapeHtml(worker.worker_id)}</span>
+                  <strong class="!text-base">${this.escapeHtml(worker.status)}</strong>
+                  <em>${this.escapeHtml(worker.checks.filter((check) => check.status !== 'passed').map((check) => `${check.name}: ${check.message}`).join(' · ') || 'ready')}</em>
+                </div>
+              `).join('')}
+            </div>
+          `;
+          this.drawerOpen = true;
         },
         runningRuns() {
           return this.runs.filter((run) => run.status === 'running').length;

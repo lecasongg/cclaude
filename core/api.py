@@ -20,7 +20,7 @@ from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
 from agent_factory.core.taskbook import TaskBookError, load_taskbook
 from agent_factory.core.worker_runtime import ClaudeCliWorkerBackend, CodexCliWorkerBackend, FakeWorkerBackend, OpenAICompatibleWorkerBackend, SubprocessWorkerBackend
-from agent_factory.core.worker_health import check_worker_health
+from agent_factory.core.worker_health import check_worker_health, summarize_worker_health
 from agent_factory.core.worker_step_runner import WorkerRuntimeStepRunner
 
 
@@ -252,6 +252,11 @@ def create_app(
     async def list_workers(x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
         return {"workers": [worker_to_dict(worker) for worker in workers]}
+
+    @app.get("/api/workers/health-summary")
+    async def get_workers_health_summary(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        return summarize_worker_health(workers)
 
     @app.post("/api/file-context/path")
     async def file_context_from_path(request: FilePathRequest, x_hermes_token: str | None = Header(default=None)):

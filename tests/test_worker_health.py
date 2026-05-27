@@ -1,7 +1,7 @@
 import os
 
 from agent_factory.core.models import WorkerConfig
-from agent_factory.core.worker_health import check_worker_health
+from agent_factory.core.worker_health import check_worker_health, summarize_worker_health
 
 
 def make_config(**overrides):
@@ -55,3 +55,38 @@ def test_worker_health_marks_missing_base_url_for_cli_backends(monkeypatch, tmp_
 
     assert health["status"] == "warning"
     assert any(check["name"] == "base_url" and check["status"] == "failed" for check in health["checks"])
+
+
+def test_worker_health_summary_counts_fleet_risks(monkeypatch, tmp_path):
+    monkeypatch.delenv("NIUMA_1_API_KEY", raising=False)
+    monkeypatch.setenv("NIUMA_2_API_KEY", "sk-test")
+    healthy_workspace = tmp_path / "workspace"
+    healthy_profile = tmp_path / "profile"
+    healthy_skills = tmp_path / "skills"
+    for path in (healthy_workspace, healthy_profile, healthy_skills):
+        path.mkdir()
+
+    summary = summarize_worker_health(
+        [
+            make_config(
+                workspace_dir=str(tmp_path / "missing-workspace"),
+                profile_dir=str(tmp_path / "missing-profile"),
+                skills_dir=str(tmp_path / "missing-skills"),
+            ),
+            make_config(
+                worker_id="niuma-2",
+                api_key_env="NIUMA_2_API_KEY",
+                backend_type="fake",
+                base_url="",
+                workspace_dir=str(healthy_workspace),
+                profile_dir=str(healthy_profile),
+                skills_dir=str(healthy_skills),
+            ),
+        ]
+    )
+
+    assert summary["summary"]["total"] == 2
+    assert summary["summary"]["ok"] == 1
+    assert summary["summary"]["warning"] == 1
+    assert summary["summary"]["missing_api_key"] == 1
+    assert summary["summary"]["path_warnings"] == 1

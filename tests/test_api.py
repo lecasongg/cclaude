@@ -358,6 +358,9 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "openQualityStep" in html
     assert "artifactLabel" in html
     assert "notifyError" in html
+    assert "CONFIG CENTER" in html
+    assert "refreshWorkerHealthSummary" in html
+    assert "/api/workers/health-summary" in html
     assert "Factory sync complete" in html
     assert "Compliance passed" in html
     assert "refreshTaskbooks" in html
@@ -459,6 +462,19 @@ def test_api_exposes_worker_health(tmp_path, monkeypatch):
     assert response.status_code == 200
     assert response.json()["worker_id"] == "niuma-1"
     assert "checks" in response.json()
+
+
+def test_api_exposes_worker_health_summary(tmp_path, monkeypatch):
+    monkeypatch.setenv("NIUMA_1_API_KEY", "sk-test")
+    monkeypatch.delenv("NIUMA_2_API_KEY", raising=False)
+    client = build_client(tmp_path)
+
+    response = client.get("/api/workers/health-summary", headers={"x-hermes-token": "local-token"})
+
+    assert response.status_code == 200
+    assert response.json()["summary"]["total"] == 2
+    assert response.json()["summary"]["missing_api_key"] == 1
+    assert {worker["worker_id"] for worker in response.json()["workers"]} == {"niuma-1", "niuma-2"}
 
 
 def test_api_updates_worker_runtime_config_without_exposing_key(tmp_path, monkeypatch):
