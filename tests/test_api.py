@@ -349,6 +349,7 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "selectedRunQuality" in html
     assert "refreshRunQuality" in html
     assert "complianceSuitePath" in html
+    assert "complianceMode" in html
     assert "runCompliance" in html
     assert "complianceResult" in html
     assert "/api/compliance/run" in html
@@ -750,3 +751,57 @@ assert:
     assert response.json()["success"] is True
     assert response.json()["cases"][0]["name"] == "legacy-login"
     assert response.json()["cases"][0]["status"] == "passed"
+
+
+def test_api_runs_model_compliance_suite_through_workers(tmp_path):
+    suite_root = tmp_path / "suite"
+    (suite_root / "taskbooks").mkdir(parents=True)
+    (suite_root / "expected").mkdir()
+    (suite_root / "taskbooks" / "legacy-login.yml").write_text(
+        """
+title: 登录模块改造
+objective: 输出登录模块逆向文档
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: 逆向登录模块
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+    (suite_root / "expected" / "legacy-login.assert.yml").write_text(
+        """
+assert:
+  run_status: succeeded
+  steps:
+    reverse-login:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+    bus = TaskBus(["niuma-1"])
+    artifacts = ArtifactStore(tmp_path / "worker-artifacts")
+    backend = FakeWorkerBackend("model compliance output")
+    config = worker_config("niuma-1")
+    supervisor = HermesSupervisor(bus, artifacts, {"niuma-1": WorkerRuntime(config, bus, artifacts, backend)})
+    app = create_app(
+        supervisor,
+        bus,
+        [config],
+        SecurityGate("local-token"),
+        pipeline_workspace_root=tmp_path,
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/compliance/run",
+        headers={"x-hermes-token": "local-token"},
+        json={"suite_path": str(suite_root), "mode": "model"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    assert "逆向登录模块" in backend.calls[0][0]

@@ -272,13 +272,20 @@ def create_app(
     @app.post("/api/compliance/run")
     async def run_compliance(request: ComplianceRunRequest, x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
-        if request.mode != "quick":
-            raise HTTPException(status_code=400, detail="only quick compliance is supported")
+        if request.mode not in {"quick", "model"}:
+            raise HTTPException(status_code=400, detail="unsupported compliance mode")
         suite_path = Path(normalize_user_path(request.suite_path))
         if not suite_path.exists():
             raise HTTPException(status_code=404, detail="suite not found")
         workspace_root = (pipeline_workspace_root or Path.cwd()) / ".tmp" / "compliance-runs"
-        result = ComplianceSuite(suite_path).run_quick(workspace_root)
+        if request.mode == "quick":
+            result = ComplianceSuite(suite_path).run_quick(workspace_root)
+        else:
+            result = await asyncio.to_thread(
+                ComplianceSuite(suite_path).run_with_runner,
+                workspace_root,
+                WorkerRuntimeStepRunner(supervisor.runtimes),
+            )
         return {
             "success": result.success,
             "errors": result.errors,

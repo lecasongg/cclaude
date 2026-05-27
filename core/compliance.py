@@ -24,11 +24,14 @@ class ComplianceSuite:
         self.root = Path(root)
 
     def run_quick(self, workspace_root: str | Path) -> ComplianceResult:
+        return self.run_with_runner(workspace_root, _mock_step_runner)
+
+    def run_with_runner(self, workspace_root: str | Path, step_runner) -> ComplianceResult:
         workspace_root = Path(workspace_root)
         errors: list[str] = []
         cases: list[dict[str, Any]] = []
         for taskbook_path in sorted((self.root / "taskbooks").glob("*.yml")):
-            case_errors = self._run_taskbook_case(taskbook_path, workspace_root / taskbook_path.stem)
+            case_errors = self._run_taskbook_case(taskbook_path, workspace_root / taskbook_path.stem, step_runner)
             errors.extend(case_errors)
             cases.append(
                 {
@@ -40,7 +43,7 @@ class ComplianceSuite:
             )
         return ComplianceResult(success=not errors, errors=errors, cases=cases)
 
-    def _run_taskbook_case(self, taskbook_path: Path, workspace_root: Path) -> list[str]:
+    def _run_taskbook_case(self, taskbook_path: Path, workspace_root: Path, step_runner) -> list[str]:
         taskbook = load_taskbook(taskbook_path)
         expected_path = self.root / "expected" / f"{taskbook_path.stem}.assert.yml"
         expected = _load_expected(expected_path)
@@ -52,7 +55,7 @@ class ComplianceSuite:
             resource_manager=manager,
             event_log=EventLog(workspace_root / "events"),
             workspace_root=workspace_root,
-            step_runner=_mock_step_runner,
+            step_runner=step_runner,
         )
         run_id = executor.run(taskbook)
         return _assert_expected(taskbook, expected, manager, workspace_root, run_id)

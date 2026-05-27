@@ -386,9 +386,13 @@
               <div class="br-label">QUICK SUITE</div>
               <p class="br-mono mt-1">不调用真实模型，验证任务书、调度、依赖、产物和断言契约。</p>
             </div>
-            <div class="grid grid-cols-[1fr_auto] gap-2">
+            <div class="grid gap-2 lg:grid-cols-[1fr_auto_auto]">
               <input x-model="complianceSuitePath" class="br-input-mono" placeholder="D:\\codex\\cclaude\\tests\\compliance">
-              <button @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" class="br-btn-primary" x-text="isRunningCompliance ? '验厂中...' : '[ RUN QUICK ]'"></button>
+              <select x-model="complianceMode" class="br-input-mono !w-40">
+                <option value="quick">quick</option>
+                <option value="model">model</option>
+              </select>
+              <button @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" class="br-btn-primary" x-text="isRunningCompliance ? '验厂中...' : `[ RUN ${complianceMode.toUpperCase()} ]`"></button>
             </div>
           </div>
           <div x-show="complianceResult" class="br-card space-y-4">
@@ -601,6 +605,7 @@
         sourcePath: '',
         taskbookLint: '',
         complianceSuitePath: 'D:\\codex\\cclaude\\tests\\compliance',
+        complianceMode: 'quick',
         complianceResult: null,
         filePath: '',
         fileContext: {files: [], prompt: ''},
@@ -770,7 +775,7 @@
           try {
             const body = await this.requestJson('/api/compliance/run', {
               method: 'POST',
-              body: JSON.stringify({suite_path: this.complianceSuitePath, mode: 'quick'})
+              body: JSON.stringify({suite_path: this.complianceSuitePath, mode: this.complianceMode})
             });
             this.complianceResult = body;
             this.record('compliance', `${body.success ? 'PASSED' : 'FAILED'} · ${body.cases.length} cases`);
