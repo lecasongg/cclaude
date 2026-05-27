@@ -359,6 +359,8 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "selectedStep" in html
     assert "correctionText" in html
     assert "rerunSelectedStep" in html
+    assert "selectedRun.taskbook_path" in html
+    assert "selectedRun.source_path" in html
     assert "/api/runs/${this.selectedRun.run_id}/steps/${this.selectedStep.step_id}/rerun" in html
     assert "drawerHtml" in html
     assert "/api/taskbooks/${filename}" in html
@@ -644,6 +646,7 @@ steps:
     assert response.status_code == 200
     body = response.json()
     assert body["run"]["status"] == "succeeded"
+    assert body["run"]["taskbook_path"] == str(taskbook_path)
     assert body["steps"][0]["status"] == "succeeded"
     output_path = tmp_path / "artifacts" / "runs" / body["run"]["run_id"] / "reverse-login" / "function-list.md"
     assert output_path.read_text(encoding="utf-8") == "功能清单"
@@ -841,6 +844,62 @@ steps:
     assert "## Correction For This Rerun" in backend.calls[-1][0]
     assert "parse JSP login guards" in backend.calls[-1][0]
     assert [event["type"] for event in body["events"] if event["type"] == "correction_added"] == ["correction_added"]
+
+
+def test_api_reruns_pipeline_step_using_saved_run_context(tmp_path):
+    bus = TaskBus(["niuma-1"])
+    artifacts = ArtifactStore(tmp_path / "worker-artifacts")
+    backend = FakeWorkerBackend("fixed function list")
+    config = worker_config("niuma-1")
+    supervisor = HermesSupervisor(bus, artifacts, {"niuma-1": WorkerRuntime(config, bus, artifacts, backend)})
+    resource_manager = ResourceManager(tmp_path / "marvis.db")
+    event_log = EventLog(tmp_path / "events")
+    source = tmp_path / "login.jsp"
+    source.write_text("<form>login</form>", encoding="utf-8")
+    taskbook_path = tmp_path / "login.yml"
+    taskbook_path.write_text(
+        """
+title: login module
+objective: reverse login module
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: reverse login
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+    app = create_app(
+        supervisor,
+        bus,
+        [config],
+        SecurityGate("local-token"),
+        resource_manager=resource_manager,
+        event_log=event_log,
+        pipeline_workspace_root=tmp_path,
+    )
+    client = TestClient(app)
+    run_response = client.post(
+        "/api/runs",
+        headers={"x-hermes-token": "local-token"},
+        json={"taskbook_path": str(taskbook_path), "source_path": str(source)},
+    )
+    run_id = run_response.json()["run"]["run_id"]
+    resource_manager.update_pipeline_status(run_id, "failed")
+    resource_manager.update_step_status(run_id, "reverse-login", "failed")
+
+    response = client.post(
+        f"/api/runs/{run_id}/steps/reverse-login/rerun",
+        headers={"x-hermes-token": "local-token"},
+        json={"correction": "use saved run context"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["run"]["status"] == "succeeded"
+    assert "## Source Context" in backend.calls[-1][0]
+    assert "login.jsp" in backend.calls[-1][0]
+    assert "use saved run context" in backend.calls[-1][0]
 
 
 def test_api_runs_quick_compliance_suite(tmp_path):

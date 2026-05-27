@@ -119,18 +119,30 @@ class ResourceManager:
                 (now, lease["agent_id"]),
             )
 
-    def create_pipeline_run(self, title: str) -> str:
+    def create_pipeline_run(self, title: str, taskbook_path: str = "", source_path: str = "") -> str:
         run_id = f"run-{uuid4().hex}"
         now = time()
         with self._db:
             self._db.execute(
                 """
-                insert into pipeline_runs(run_id, title, status, created_at, updated_at)
-                values(?, ?, 'queued', ?, ?)
+                insert into pipeline_runs(run_id, title, status, taskbook_path, source_path, created_at, updated_at)
+                values(?, ?, 'queued', ?, ?, ?, ?)
                 """,
-                (run_id, title, now, now),
+                (run_id, title, taskbook_path, source_path, now, now),
             )
         return run_id
+
+    def set_pipeline_run_context(self, run_id: str, taskbook_path: str = "", source_path: str = "") -> None:
+        self._ensure_pipeline_run(run_id)
+        with self._db:
+            self._db.execute(
+                """
+                update pipeline_runs
+                set taskbook_path = ?, source_path = ?, updated_at = ?
+                where run_id = ?
+                """,
+                (taskbook_path, source_path, time(), run_id),
+            )
 
     def get_pipeline_run(self, run_id: str) -> dict:
         return dict(self._fetch_one("select * from pipeline_runs where run_id = ?", (run_id,)))
@@ -304,6 +316,8 @@ class ResourceManager:
                   run_id text primary key,
                   title text not null,
                   status text not null,
+                  taskbook_path text not null default '',
+                  source_path text not null default '',
                   created_at real not null,
                   updated_at real not null
                 );
@@ -325,6 +339,8 @@ class ResourceManager:
                 );
                 """
             )
+            self._ensure_column("pipeline_runs", "taskbook_path", "text not null default ''")
+            self._ensure_column("pipeline_runs", "source_path", "text not null default ''")
             self._ensure_column("step_runs", "outputs_json", "text not null default '[]'")
             self._ensure_column("step_runs", "self_check_json", "text not null default '[]'")
 

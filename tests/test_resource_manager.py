@@ -72,6 +72,28 @@ def test_resource_manager_persists_pipeline_and_step_state(tmp_path):
     assert step["self_check"] == ["必须包含功能清单"]
 
 
+def test_resource_manager_persists_pipeline_run_context(tmp_path):
+    db_path = tmp_path / "marvis.db"
+    manager = ResourceManager(db_path)
+
+    run_id = manager.create_pipeline_run(
+        "login modernization",
+        taskbook_path="taskbooks/login.yml",
+        source_path="legacy/login.jsp",
+    )
+
+    reopened = ResourceManager(db_path)
+    run = reopened.get_pipeline_run(run_id)
+    assert run["taskbook_path"] == "taskbooks/login.yml"
+    assert run["source_path"] == "legacy/login.jsp"
+
+    reopened.set_pipeline_run_context(run_id, taskbook_path="taskbooks/updated.yml", source_path="")
+
+    updated = ResourceManager(db_path).get_pipeline_run(run_id)
+    assert updated["taskbook_path"] == "taskbooks/updated.yml"
+    assert updated["source_path"] == ""
+
+
 def test_resource_manager_lists_available_agents(tmp_path):
     manager = ResourceManager(tmp_path / "marvis.db")
     manager.register_agent("niuma-1", display_name="牛马1", tags=["jsp"])

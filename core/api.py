@@ -45,7 +45,7 @@ class TaskBookRunRequest(BaseModel):
 
 
 class StepRerunRequest(BaseModel):
-    taskbook_path: str
+    taskbook_path: str = ""
     source_path: str | None = None
     correction: str = ""
 
@@ -427,7 +427,12 @@ def create_app(
             workspace_root=pipeline_workspace_root or Path.cwd(),
             step_runner=WorkerRuntimeStepRunner(supervisor.runtimes, global_context=source_context),
         )
-        run_id = await asyncio.to_thread(executor.run, taskbook)
+        run_id = await asyncio.to_thread(
+            executor.run,
+            taskbook,
+            str(Path(normalize_user_path(request.taskbook_path))),
+            normalize_user_path(request.source_path) if request.source_path else "",
+        )
         return {
             "run": resource_manager.get_pipeline_run(run_id),
             "steps": resource_manager.list_step_runs(run_id),
@@ -444,16 +449,20 @@ def create_app(
         if resource_manager is None or event_log is None:
             raise HTTPException(status_code=400, detail="pipeline runtime not configured")
         try:
-            resource_manager.get_pipeline_run(run_id)
-            taskbook = load_taskbook(request.taskbook_path)
+            run = resource_manager.get_pipeline_run(run_id)
+            taskbook_path = request.taskbook_path or run.get("taskbook_path", "")
+            source_path = request.source_path if request.source_path is not None else run.get("source_path", "")
+            if not taskbook_path:
+                raise HTTPException(status_code=400, detail="taskbook_path required for rerun")
+            taskbook = load_taskbook(taskbook_path)
             taskbook.step(step_id)
         except ResourceManagerError as exc:
             raise HTTPException(status_code=404, detail="run not found") from exc
         except (TaskBookError, OSError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         source_context = ""
-        if request.source_path:
-            source_context = read_local_files(request.source_path)["prompt"]
+        if source_path:
+            source_context = read_local_files(source_path)["prompt"]
         ensure_workers_registered_for_pipeline()
         executor = PipelineExecutor(
             resource_manager=resource_manager,

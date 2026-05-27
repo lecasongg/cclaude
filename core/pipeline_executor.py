@@ -35,9 +35,17 @@ class PipelineExecutor:
         self.workspace_root = Path(workspace_root)
         self.step_runner = step_runner
 
-    def run(self, taskbook: TaskBook) -> str:
-        run_id = self.resource_manager.create_pipeline_run(taskbook.title)
-        self.event_log.write_event(run_id, "run_created", payload={"title": taskbook.title})
+    def run(self, taskbook: TaskBook, taskbook_path: str = "", source_path: str = "") -> str:
+        run_id = self.resource_manager.create_pipeline_run(
+            taskbook.title,
+            taskbook_path=taskbook_path,
+            source_path=source_path,
+        )
+        self.event_log.write_event(
+            run_id,
+            "run_created",
+            payload={"title": taskbook.title, "taskbook_path": taskbook_path, "source_path": source_path},
+        )
         leases = []
         steps_by_id = {step.step_id: step for step in taskbook.steps}
 

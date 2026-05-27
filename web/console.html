@@ -309,6 +309,8 @@
           const body = await this.requestJson(`/api/runs/${run.run_id}`);
           this.selectedRun = {...(body.run || run), steps: body.steps || []};
           this.selectedStep = this.selectedRun.steps && this.selectedRun.steps[0] ? this.selectedRun.steps[0] : null;
+          if (this.selectedRun.taskbook_path) this.taskbookPath = this.selectedRun.taskbook_path;
+          if (this.selectedRun.source_path) this.sourcePath = this.selectedRun.source_path;
           this.selectedRunArtifactContent = '';
           this.selectedRunArtifactPath = '';
           await Promise.all([this.refreshRunEvents(run.run_id), this.refreshRunArtifacts(run.run_id), this.refreshRunQuality(run.run_id)]);
@@ -337,13 +339,16 @@
           }
         },
         async rerunSelectedStep() {
-          if (this.isRerunningStep || !this.selectedRun || !this.selectedStep || !this.taskbookPath.trim()) return;
+          if (this.isRerunningStep || !this.selectedRun || !this.selectedStep) return;
           const correctionInput = document.getElementById('marvis-correction-input');
           this.correctionText = correctionInput ? correctionInput.value : this.correctionText;
           this.isRerunningStep = true;
           try {
-            const payload = {taskbook_path: this.taskbookPath, correction: this.correctionText};
-            if (this.sourcePath.trim()) payload.source_path = this.sourcePath;
+            const taskbookPath = this.selectedRun.taskbook_path || this.taskbookPath;
+            if (!taskbookPath.trim()) return;
+            const payload = {taskbook_path: taskbookPath, correction: this.correctionText};
+            const sourcePath = this.selectedRun.source_path || this.sourcePath;
+            if (sourcePath.trim()) payload.source_path = sourcePath;
             const body = await this.requestJson(`/api/runs/${this.selectedRun.run_id}/steps/${this.selectedStep.step_id}/rerun`, {
               method: 'POST',
               body: JSON.stringify(payload)
