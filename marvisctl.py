@@ -5,7 +5,14 @@ import json
 import shutil
 import sys
 import tempfile
+import types
 from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent
+if "agent_factory" not in sys.modules:
+    pkg = types.ModuleType("agent_factory")
+    pkg.__path__ = [str(_ROOT)]
+    sys.modules["agent_factory"] = pkg
 
 from agent_factory.core.compliance import ComplianceSuite
 from agent_factory.core.config_registry import ConfigRegistryError, load_config_registry

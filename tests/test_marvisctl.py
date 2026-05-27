@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 import textwrap
 
 import marvisctl
@@ -79,6 +81,18 @@ def test_marvisctl_defaults_to_factory_config_when_agents_json_is_absent(tmp_pat
     assert marvisctl.main(["agent", "list"]) == 0
 
     assert "niuma-1" in capsys.readouterr().out
+
+
+def test_marvisctl_script_runs_without_pytest_alias():
+    result = subprocess.run(
+        [sys.executable, "marvisctl.py", "agent", "list", "--config", "factory_config.example.json"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert "niuma-1" in result.stdout
 
 
 def test_marvisctl_taskbook_lint_reports_success(tmp_path, capsys):
