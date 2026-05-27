@@ -3,664 +3,359 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Marvis AI Factory Console</title>
+  <title>Marvis AI Factory Control Room</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <style type="text/tailwindcss">
     @layer base {
       :root {
-        --paper: #f4f1ea;
-        --ink: #111111;
-        --ink-soft: #3a3a3a;
-        --muted: #7a7468;
-        --accent: #b00020;
-        --success: #1f6b3a;
+        --paper: #f3f0e9;
+        --ink: #101010;
+        --ink-soft: #454545;
+        --muted: #7c766d;
+        --accent: #1857c8;
+        --accent-soft: #dfeaff;
+        --success: #127a4f;
+        --success-soft: #e5f5ec;
+        --warn: #b88516;
+        --warn-soft: #fbf2d9;
+        --danger: #a92424;
+        --danger-soft: #fae5e5;
+        --panel: #faf8f2;
       }
     }
     @layer components {
-      .br-card { @apply border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-4; }
-      .br-card-tight { @apply border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3; }
-      .br-divider { @apply border-t-[3px] border-double border-[var(--ink)] my-4; }
-      .br-rule { @apply border-t-[1.5px] border-[var(--ink)] my-3; }
-      .br-h1 { @apply text-3xl font-black tracking-tight text-[var(--ink)] md:text-4xl; font-family: Georgia, 'Songti SC', '宋体', serif; letter-spacing: -0.5px; }
-      .br-h2 { @apply text-xl font-black text-[var(--ink)]; font-family: Georgia, 'Songti SC', '宋体', serif; }
-      .br-h3 { @apply text-base font-bold text-[var(--ink)]; font-family: Georgia, 'Songti SC', '宋体', serif; }
-      .br-label { @apply font-mono text-[10px] uppercase tracking-[2px] text-[var(--ink-soft)]; }
-      .br-mono { @apply font-mono text-xs text-[var(--ink-soft)]; }
-      .br-tag { @apply inline-block border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--ink)]; }
-      .br-tag-on { @apply inline-block border-[1.5px] border-[var(--ink)] bg-[var(--ink)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--paper)]; }
-      .br-tag-success { @apply inline-block border-[1.5px] border-[var(--success)] bg-[var(--paper)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--success)]; }
-      .br-tag-failed { @apply inline-block border-[1.5px] border-[var(--accent)] bg-[var(--paper)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--accent)]; }
-      .br-tag-muted { @apply inline-block px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--muted)]; }
-      .br-btn { @apply inline-flex items-center justify-center border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-4 py-2 font-mono text-xs uppercase tracking-[1px] text-[var(--ink)] hover:bg-[var(--ink)] hover:text-[var(--paper)] disabled:cursor-not-allowed disabled:border-[var(--muted)] disabled:text-[var(--muted)] disabled:hover:bg-[var(--paper)]; transition: background-color 80ms, color 80ms; }
-      .br-btn-primary { @apply inline-flex items-center justify-center border-[1.5px] border-[var(--ink)] bg-[var(--ink)] px-4 py-2 font-mono text-xs uppercase tracking-[1px] text-[var(--paper)] hover:bg-[var(--paper)] hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:bg-[var(--muted)] disabled:border-[var(--muted)] disabled:hover:bg-[var(--muted)] disabled:hover:text-[var(--paper)]; transition: background-color 80ms, color 80ms; }
-      .br-input { @apply w-full bg-transparent border-0 border-b-[1.5px] border-[var(--ink)] px-1 py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-b-[3px]; font-family: Georgia, 'Songti SC', '宋体', serif; }
-      .br-input-mono { @apply w-full bg-transparent border-0 border-b-[1.5px] border-[var(--ink)] px-1 py-2 font-mono text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-b-[3px]; }
-      .br-textarea { @apply w-full border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[3px]; font-family: Georgia, 'Songti SC', '宋体', serif; resize: vertical; }
-      .br-tab { @apply inline-flex items-center px-4 py-2 font-mono text-xs uppercase tracking-[2px] text-[var(--ink-soft)] hover:text-[var(--ink)] cursor-pointer; }
-      .br-tab-active { @apply inline-flex items-center bg-[var(--ink)] px-4 py-2 font-mono text-xs uppercase tracking-[2px] text-[var(--paper)] cursor-default; }
-      .br-modal-mask { @apply fixed inset-0 z-40 flex items-center justify-center; background-color: rgba(244, 241, 234, 0.85); }
-      .br-modal { @apply relative z-50 max-w-[560px] w-[90vw] border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-6; }
+      .room-frame { @apply border-[1.5px] border-[var(--ink)] bg-[var(--panel)] shadow-[0_2px_0_#00000008]; }
+      .room-title { @apply font-black text-[var(--ink)] uppercase tracking-[1px]; font-family: Georgia, 'Songti SC', '宋体', serif; }
+      .room-sub { @apply font-mono text-[10px] uppercase tracking-[2px] text-[var(--muted)]; }
+      .mono { @apply font-mono text-xs text-[var(--ink-soft)]; }
+      .badge { @apply inline-flex items-center gap-1 border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--ink)]; }
+      .badge-success { @apply border-[var(--success)] bg-[var(--success-soft)] text-[var(--success)]; }
+      .badge-warn { @apply border-[var(--warn)] bg-[var(--warn-soft)] text-[var(--warn)]; }
+      .badge-danger { @apply border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger)]; }
+      .btn { @apply inline-flex items-center justify-center border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-3 py-2 font-mono text-xs uppercase tracking-[1px] text-[var(--ink)] hover:bg-[var(--ink)] hover:text-[var(--paper)] disabled:cursor-not-allowed disabled:text-[var(--muted)] disabled:hover:bg-[var(--paper)]; transition: background-color 80ms, color 80ms; }
+      .btn-primary { @apply inline-flex items-center justify-center border-[1.5px] border-[var(--ink)] bg-[var(--ink)] px-3 py-2 font-mono text-xs uppercase tracking-[1px] text-[var(--paper)] hover:bg-[var(--paper)] hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:bg-[var(--muted)] disabled:border-[var(--muted)] disabled:hover:text-[var(--paper)]; transition: background-color 80ms, color 80ms; }
+      .field { @apply w-full border-0 border-b-[1.5px] border-[var(--ink)] bg-transparent px-1 py-2 font-mono text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)]; }
+      .field-area { @apply w-full border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3 font-mono text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] resize-none; }
+      .mini-metric { @apply border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-3 py-2; }
+      .mini-metric span { @apply block font-mono text-[10px] uppercase tracking-[1.5px] text-[var(--muted)]; }
+      .mini-metric strong { @apply block mt-1 text-xl font-black text-[var(--ink)]; font-family: Georgia, 'Songti SC', '宋体', serif; }
+      .mini-metric em { @apply block mt-1 font-mono text-[10px] uppercase tracking-[1px] not-italic text-[var(--ink-soft)]; }
+      .lane { @apply border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3; }
+      .lane.selected { @apply border-[3px]; }
+      .chip { @apply inline-flex items-center gap-1 border-[1.5px] border-[var(--ink)] bg-[var(--panel)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--ink)]; }
+      .chip.running { @apply border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]; }
+      .chip.failed { @apply border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger)]; }
+      .chip.blocked { @apply border-[var(--warn)] bg-[var(--warn-soft)] text-[var(--warn)]; }
+      .chip.success { @apply border-[var(--success)] bg-[var(--success-soft)] text-[var(--success)]; }
+      .scrollbar-none::-webkit-scrollbar { width: 0; height: 0; }
+      .scrollbar-none { scrollbar-width: none; }
+      .drawer { @apply fixed right-0 top-0 z-40 h-full w-[420px] translate-x-full border-l-[1.5px] border-[var(--ink)] bg-[var(--panel)] shadow-[-6px_0_22px_rgba(0,0,0,0.08)] transition-transform duration-200; }
+      .drawer.open { @apply translate-x-0; }
+      .drawer-head { @apply flex items-center justify-between border-b-[1.5px] border-[var(--ink)] px-4 py-3; }
+      .drawer-body { @apply h-[calc(100%-52px)] overflow-auto px-4 py-4; }
+      .timeline-step { @apply border-t-[1px] border-[var(--ink)] pt-2; }
+      .timeline-step:first-child { @apply border-t-0 pt-0; }
     }
   </style>
 </head>
-<body class="min-h-screen bg-[var(--paper)] text-[var(--ink)] antialiased" style="font-family: Georgia, 'Songti SC', '宋体', serif;">
-  <main x-data="factoryConsole()" x-init="init()" class="min-h-screen flex">
-    <!-- 左侧垂直窄条 -->
-    <aside class="w-8 shrink-0 border-r-[1.5px] border-[var(--ink)] flex items-start justify-center pt-6 sticky top-0 h-screen">
-      <div class="font-mono text-[10px] uppercase tracking-[3px] text-[var(--ink)]" style="writing-mode: vertical-rl; transform: rotate(180deg);">MARVIS · FACTORY · V0.3</div>
-    </aside>
-
-    <!-- 右侧主区 -->
-    <div class="flex-1 min-w-0 flex flex-col">
-      <!-- 顶部报头 -->
-      <header class="sticky top-0 z-30 bg-[var(--paper)] border-b-[1.5px] border-[var(--ink)] px-8 pt-6 pb-4">
-        <div class="flex items-end justify-between gap-6">
-          <div>
-            <div class="br-label">MARVIS AI FACTORY</div>
-            <h1 class="br-h1 mt-2">Marvis AI Factory.</h1>
-            <p class="br-mono mt-2">旧系统改造 · 任务书流水线 · 文件级产物握手</p>
-          </div>
-          <div class="flex flex-col items-end gap-2">
-            <div class="br-mono" x-text="new Date().toISOString().slice(0,10)"></div>
-            <div class="flex gap-2">
-              <span class="br-tag" x-text="`SERVER · ${health.status === 'ok' ? 'ONLINE' : '...'}`"></span>
-              <span class="br-tag" x-text="`UNITS · ${workers.length}`"></span>
-            </div>
-            <div class="flex gap-2 items-center mt-1">
-              <input x-model="baseUrl" class="br-input-mono w-72 py-1" aria-label="Server URL">
-              <input x-model="token" type="password" class="br-input-mono w-44 py-1" aria-label="Hermes Token">
-              <button @click="refreshAll" :disabled="isRefreshing" class="br-btn-primary !py-1" x-text="isRefreshing ? '...' : '刷新'"></button>
-            </div>
+<body class="min-h-screen bg-[var(--paper)] text-[var(--ink)] antialiased">
+  <main x-data="factoryRoom()" x-init="init()" class="h-screen overflow-hidden">
+    <div class="grid h-full grid-rows-[58px_1fr_250px]">
+      <header class="room-frame border-x-0 border-t-0 flex items-center gap-3 px-4">
+        <div class="flex min-w-0 items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center border-[1.5px] border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)] font-black">M</div>
+          <div class="min-w-0">
+            <div class="room-title text-[15px]">Marvis AI Factory Console</div>
+            <div class="room-sub truncate">工厂屋顶掀开后的上帝视角总控图</div>
           </div>
         </div>
 
-        <!-- 标签栏 -->
-        <nav class="flex gap-1 mt-4 border-t-[1.5px] border-[var(--ink)] pt-3">
-          <button @click="setActiveTab('pipeline')" :class="activeTab === 'pipeline' ? 'br-tab-active' : 'br-tab'">[ PIPELINE ]</button>
-          <button @click="setActiveTab('compliance')" :class="activeTab === 'compliance' ? 'br-tab-active' : 'br-tab'">[ COMPLIANCE ]</button>
-          <button @click="setActiveTab('workers')" :class="activeTab === 'workers' ? 'br-tab-active' : 'br-tab'">[ WORKERS ]</button>
-          <button @click="setActiveTab('dispatch')" :class="activeTab === 'dispatch' ? 'br-tab-active' : 'br-tab'">[ DISPATCH ]</button>
-          <button @click="setActiveTab('archive')" :class="activeTab === 'archive' ? 'br-tab-active' : 'br-tab'">[ ARTIFACTS ]</button>
-        </nav>
+        <div class="grid flex-1 grid-cols-6 gap-2">
+          <div class="mini-metric"><span>Server</span><strong x-text="health.status === 'ok' ? 'ONLINE' : 'OFFLINE'"></strong><em x-text="baseUrl"></em></div>
+          <div class="mini-metric"><span>Workers</span><strong x-text="`${workers.length}`"></strong><em x-text="`${workersWithKeys()} keys`"></em></div>
+          <div class="mini-metric"><span>Runs</span><strong x-text="runs.length"></strong><em x-text="`${runningRuns()} running`"></em></div>
+          <div class="mini-metric"><span>Queue</span><strong x-text="tasks.length"></strong><em x-text="`${queuedTasks()} queued`"></em></div>
+          <div class="mini-metric"><span>Compliance</span><strong x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></strong><em x-text="complianceSummary()"></em></div>
+          <div class="mini-metric"><span>Active</span><strong x-text="selectedRun ? selectedRun.run_id.slice(0, 8) : 'NONE'"></strong><em x-text="selectedWorker"></em></div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input x-model="baseUrl" class="field w-56 py-1" aria-label="Server URL">
+          <input x-model="token" type="password" class="field w-40 py-1" aria-label="Hermes Token">
+          <button @click="refreshAll" :disabled="isRefreshing" class="btn-primary" x-text="isRefreshing ? '...' : 'REFRESH'"></button>
+        </div>
       </header>
 
-      <!-- Alert（重新设计为 brutalist）-->
-      <div x-show="alert" x-transition class="mx-8 mt-4 border-[1.5px] px-4 py-3 text-sm" :class="alert && alert.type === 'error' ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-[var(--ink)] text-[var(--ink)]'">
-        <div class="flex items-start justify-between gap-4">
-          <p x-text="alert ? alert.message : ''"></p>
-          <button @click="alert = null" class="br-mono hover:text-[var(--ink)]">[ × ]</button>
-        </div>
-      </div>
-
-      <!-- 内容区：三个标签 -->
-      <div class="flex-1 px-8 py-6">
-        <!-- DISPATCH -->
-        <section x-show="activeTab === 'dispatch'" class="space-y-8 max-w-3xl">
-          <div>
-            <h2 class="br-h2">派工 · DISPATCH</h2>
-            <div class="br-divider"></div>
+      <section class="grid min-h-0 grid-cols-[310px_minmax(0,1fr)_360px] gap-3 p-3">
+        <aside class="room-frame min-h-0 overflow-hidden">
+          <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
+            <div class="room-title text-[13px]">工位 / 车间区</div>
+            <div class="room-sub">workshops and agent bays</div>
           </div>
-
-          <!-- N°01 单工位派工 -->
-          <article class="space-y-3">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="br-label">N°01</div>
-                <h3 class="br-h3 mt-1">单工位派工</h3>
-              </div>
-              <span class="br-tag" x-text="selectedWorker"></span>
-            </div>
-            <select x-model="selectedWorker" class="br-input-mono">
+          <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none">
+            <div class="space-y-3">
               <template x-for="worker in workers" :key="worker.worker_id">
-                <option :value="worker.worker_id" x-text="`${worker.display_name} · ${worker.worker_id}`"></option>
-              </template>
-            </select>
-            <textarea x-model="prompt" rows="5" placeholder="给选中的牛马下达任务..." class="br-textarea"></textarea>
-            <div class="flex justify-end">
-              <button @click="delegateTask" :disabled="isDelegating || !prompt.trim()" class="br-btn-primary" x-text="isDelegating ? '派工中...' : '[ 发送任务 ]'"></button>
-            </div>
-          </article>
-
-          <div class="br-rule"></div>
-
-          <!-- N°02 链式派工 -->
-          <article class="space-y-3">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="br-label">N°02</div>
-                <h3 class="br-h3 mt-1">牛马1 → 牛马2 链式派工</h3>
-              </div>
-              <span class="br-tag">CHAIN</span>
-            </div>
-            <textarea x-model="chainPrompt" rows="4" placeholder="给牛马1的逆向分析任务..." class="br-textarea"></textarea>
-
-            <div class="br-card space-y-3">
-              <div>
-                <div class="br-label">FILE INPUT</div>
-                <p class="br-mono mt-1">可读本机路径，也可上传 JSP / JS / SQL / Java；系统先读正文再注入牛马1提示词。</p>
-              </div>
-              <div class="grid grid-cols-[1fr_auto] gap-2">
-                <input x-model="filePath" placeholder="D:\\project\\web\\user.jsp" class="br-input-mono">
-                <button @click="loadLocalPath" :disabled="isLoadingFileContext || !filePath.trim()" class="br-btn" x-text="isLoadingFileContext ? '读取中...' : '[ 读取路径 ]'"></button>
-              </div>
-              <input @change="uploadFiles" multiple type="file" class="br-input-mono file:mr-3 file:border-0 file:bg-[var(--ink)] file:px-3 file:py-1 file:text-[var(--paper)] file:font-mono file:text-xs file:uppercase">
-              <div x-show="fileContext.files.length" class="space-y-2 border-t-[1.5px] border-[var(--ink)] pt-3">
-                <div class="flex items-center justify-between">
-                  <p class="br-mono" x-text="`已载入 ${fileContext.files.length} 个文件`"></p>
-                  <button @click="clearFileContext" class="br-mono hover:text-[var(--accent)]">[ 清空 ]</button>
-                </div>
-                <template x-for="file in fileContext.files" :key="file.path">
-                  <p class="font-mono text-xs text-[var(--ink-soft)] truncate" x-text="`${file.path} · ${formatBytes(file.size)}`"></p>
-                </template>
-              </div>
-            </div>
-
-            <div>
-              <div class="br-label mb-2">NIUMA-2 INSTRUCTION</div>
-              <textarea x-model="nextInstruction" rows="3" class="br-textarea"></textarea>
-            </div>
-            <div class="flex justify-end">
-              <button @click="chainTask" :disabled="isChaining || !chainPrompt.trim()" class="br-btn-primary" x-text="isChaining ? '执行中...' : '[ 启动链式派工 ]'"></button>
-            </div>
-          </article>
-        </section>
-
-        <!-- PIPELINE（包住所有旧内容，先把页面跑起来）-->
-        <section x-show="activeTab === 'pipeline'" class="space-y-6">
-          <h2 class="br-h2">流水线 · PIPELINE</h2>
-          <div class="br-divider"></div>
-          <!-- ↓↓↓ 下面跟旧的所有 section ↓↓↓ -->
-
-          <section class="grid grid-cols-4 gap-3">
-            <div class="br-card-tight">
-              <div class="br-label">SERVER</div>
-              <div class="mt-3 flex items-center gap-2">
-                <span class="inline-block w-2 h-2" :class="health.status === 'ok' ? 'bg-[var(--success)]' : 'bg-[var(--accent)]'"></span>
-                <span class="br-h3" x-text="health.status === 'ok' ? 'ONLINE' : 'UNKNOWN'"></span>
-              </div>
-              <p class="br-mono mt-2 break-all" x-text="baseUrl"></p>
-            </div>
-            <div class="br-card-tight">
-              <div class="br-label">WORKERS</div>
-              <p class="br-h1 mt-3 !text-3xl" x-text="`${workers.length} / ${health.workers_total || workers.length}`"></p>
-              <p class="br-mono mt-2">已加载工位</p>
-            </div>
-            <div class="br-card-tight">
-              <div class="br-label">API KEYS</div>
-              <p class="br-h1 mt-3 !text-3xl" x-text="`${workersWithKeys()} / ${workers.length}`"></p>
-              <p class="br-mono mt-2">已配置密钥</p>
-            </div>
-            <div class="br-card-tight">
-              <div class="br-label">AUTO REFRESH</div>
-              <button @click="toggleAutoRefresh" class="br-btn mt-3 w-full" x-text="autoRefresh ? '[ AUTO · ON ]' : '[ AUTO · OFF ]'"></button>
-              <p class="br-mono mt-2">每 5 秒刷新</p>
-            </div>
-          </section>
-
-          <section class="br-card space-y-4">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="br-label">TASKBOOK STUDIO</div>
-                <h3 class="br-h3 mt-1">任务书工作台</h3>
-              </div>
-              <button @click="refreshTaskbooks" :disabled="isLoadingTaskbooks" class="br-btn !py-1" x-text="isLoadingTaskbooks ? '[ LOADING ]' : '[ RELOAD ]'"></button>
-            </div>
-            <div class="grid gap-4 lg:grid-cols-[280px_1fr]">
-              <div class="space-y-3">
-                <template x-for="item in taskbooks" :key="item.filename">
-                  <button @click="loadTaskbook(item.filename)" class="br-card-tight w-full text-left" :class="selectedTaskbookFilename === item.filename ? 'border-[3px]' : ''">
-                    <span class="br-label block truncate" x-text="item.filename"></span>
-                    <span class="br-mono mt-1 block truncate" x-text="item.path"></span>
-                  </button>
-                </template>
-                <p x-show="taskbooks.length === 0" class="br-mono">暂无任务书</p>
-                <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
-                  <input x-model="selectedTaskbookFilename" placeholder="new-taskbook.yml" class="br-input-mono">
-                  <button @click="newTaskbookDraft" class="br-btn mt-2 w-full">[ NEW DRAFT ]</button>
-                </div>
-              </div>
-              <div class="space-y-3">
-                <textarea x-model="taskbookEditorContent" rows="16" class="br-textarea font-mono" placeholder="title: ..."></textarea>
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="br-mono" x-text="selectedTaskbookPath || '选择或新建一个 taskbook'"></p>
-                  <div class="flex gap-2">
-                    <button @click="useEditedTaskbook" :disabled="!selectedTaskbookPath" class="br-btn">[ USE ]</button>
-                    <button @click="saveTaskbook" :disabled="isSavingTaskbook || !selectedTaskbookFilename.trim() || !taskbookEditorContent.trim()" class="br-btn-primary" x-text="isSavingTaskbook ? '[ SAVING ]' : '[ SAVE ]'"></button>
+                <article @click="selectWorker(worker.worker_id)" class="border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3 cursor-pointer" :class="selectedWorker === worker.worker_id ? 'border-[3px]' : ''">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                      <div class="room-title text-[12px] truncate" x-text="worker.display_name"></div>
+                      <div class="mono truncate" x-text="worker.worker_id + ' · ' + worker.role"></div>
+                    </div>
+                    <span class="chip" :class="brStatusClass(worker.status)" x-text="worker.status"></span>
                   </div>
+                  <div class="mt-3 grid grid-cols-2 gap-2">
+                    <div class="mini-metric"><span>Backend</span><strong class="!text-sm" x-text="worker.backend_type"></strong><em x-text="worker.model"></em></div>
+                    <div class="mini-metric"><span>Queue</span><strong class="!text-sm" x-text="worker.queue_depth"></strong><em x-text="worker.api_key_configured ? 'KEY OK' : 'NO KEY'"></em></div>
+                  </div>
+                  <div class="mt-2 text-[11px] text-[var(--ink-soft)] line-clamp-2" x-text="currentTaskPrompt(worker) || '空闲'"></div>
+                </article>
+              </template>
+            </div>
+          </div>
+        </aside>
+
+        <section class="min-h-0 overflow-hidden">
+          <div class="room-frame h-full overflow-hidden">
+            <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="room-title text-[13px]">多流水线总览</div>
+                  <div class="room-sub">one roof opened, multiple lines visible</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button class="btn tiny" @click="refreshRuns">RUNS</button>
+                  <button class="btn tiny" @click="runCompliance">COMPLIANCE</button>
                 </div>
               </div>
             </div>
-          </section>
-
-          <section>
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="br-label">PIPELINE RUNS</div>
-                <h3 class="br-h3 mt-1">任务书流水线</h3>
-              </div>
-              <button @click="refreshRuns" class="br-btn !py-1">[ 刷新 RUNS ]</button>
-            </div>
-            <div class="mt-4 grid gap-2 lg:grid-cols-[1fr_1fr_auto_auto]">
-              <input x-model="taskbookPath" placeholder="D:\\codex\\cclaude\\taskbooks\\legacy-login.yml" class="br-input-mono">
-              <input x-model="sourcePath" placeholder="源代码路径，可选：D:\\legacy\\login.jsp 或目录" class="br-input-mono">
-              <button @click="lintTaskbook" :disabled="isLintingTaskbook || !taskbookPath.trim()" class="br-btn" x-text="isLintingTaskbook ? '检查中...' : '[ LINT ]'"></button>
-              <button @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" class="br-btn-primary" x-text="isStartingRun ? '启动中...' : '[ 启动任务书 ]'"></button>
-            </div>
-            <pre x-show="taskbookLint" class="mt-3 overflow-auto whitespace-pre-wrap border-t-[1.5px] border-[var(--ink)] pt-3 text-sm leading-6 text-[var(--ink-soft)]" x-text="taskbookLint"></pre>
-            <div class="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-              <div class="space-y-3">
+            <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none">
+              <div class="grid gap-3">
                 <template x-for="run in runs" :key="run.run_id">
-                  <article @click="selectRun(run)" class="br-card-tight cursor-pointer" :class="selectedRun && selectedRun.run_id === run.run_id ? 'border-[3px]' : ''">
-                    <div class="flex items-start justify-between gap-3">
+                  <article class="lane" :class="selectedRun && selectedRun.run_id === run.run_id ? 'selected' : ''" @click="selectRun(run)">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
                       <div class="min-w-0">
-                        <p class="br-label truncate" x-text="run.run_id"></p>
-                        <h4 class="br-h3 mt-1 truncate" x-text="run.title"></h4>
+                        <div class="room-title text-[12px] truncate" x-text="run.title"></div>
+                        <div class="mono truncate" x-text="run.run_id"></div>
                       </div>
-                      <span :class="brStatusClass(run.status)" x-text="`[ ${run.status.toUpperCase()} ]`"></span>
+                      <div class="flex items-center gap-2">
+                        <span class="chip" :class="brStatusClass(run.status)" x-text="run.status"></span>
+                        <span class="chip" x-text="run.steps ? run.steps.length + ' STEPS' : '0 STEPS'"></span>
+                      </div>
                     </div>
-                  </article>
-                </template>
-                <p x-show="runs.length === 0" class="br-mono">— 暂无任务书流水线 —</p>
-              </div>
-              <div class="br-card-tight min-h-48">
-                <template x-if="selectedRun">
-                  <div class="space-y-4">
-                    <div>
-                      <div class="br-label">SELECTED RUN</div>
-                      <h4 class="br-h3 mt-1" x-text="selectedRun.title"></h4>
-                      <p class="br-mono mt-1" x-text="selectedRun.run_id"></p>
-                    </div>
-                    <div class="space-y-2">
-                      <template x-for="step in selectedRun.steps || []" :key="step.step_id">
-                        <div class="border-t-[1.5px] border-[var(--ink)] pt-2">
-                          <div class="flex items-center justify-between gap-3">
-                            <span class="br-mono" x-text="`${step.step_id} · ${step.agent_id}`"></span>
-                            <span :class="brStatusClass(step.status)" x-text="step.status"></span>
+                    <div class="mt-3 grid gap-2" :style="`grid-template-columns: repeat(${Math.min((run.steps || []).length, 4) || 1}, minmax(0, 1fr))`">
+                      <template x-for="step in (run.steps || [])" :key="step.step_id">
+                        <div class="border-[1px] border-[var(--ink)] bg-[var(--panel)] p-2">
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="mono truncate" x-text="step.step_id"></span>
+                            <span class="chip" :class="brStatusClass(step.status)" x-text="step.status"></span>
                           </div>
-                          <p class="text-sm text-[var(--ink-soft)] mt-1" x-text="step.objective"></p>
+                          <div class="mt-2 text-[11px] text-[var(--ink-soft)] line-clamp-2" x-text="step.objective"></div>
+                          <div class="mt-2 flex flex-wrap gap-1">
+                            <template x-for="output in step.outputs || []" :key="output">
+                              <span class="chip" x-text="output.split('/').slice(-1)[0]"></span>
+                            </template>
+                          </div>
                         </div>
                       </template>
                     </div>
-                    <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
-                      <div class="flex items-center justify-between gap-3">
-                        <div class="br-label">QUALITY CHECKS</div>
-                        <span class="br-mono" x-text="selectedRunQuality ? `PASS ${selectedRunQuality.summary.passed} · FAIL ${selectedRunQuality.summary.failed}` : '—'"></span>
-                      </div>
-                      <template x-if="selectedRunQuality">
-                        <div class="mt-2 space-y-2">
-                          <template x-for="step in selectedRunQuality.steps" :key="step.step_id">
-                            <div class="border-t-[1px] border-[var(--ink)] pt-2">
-                              <p class="br-mono" x-text="step.step_id"></p>
-                              <template x-for="check in step.checks" :key="`${step.step_id}-${check.type}-${check.path || check.term || check.text}`">
-                                <p class="br-mono mt-1" :class="check.status === 'passed' ? 'text-[var(--success)]' : 'text-[var(--accent)]'" x-text="`${check.status.toUpperCase()} · ${check.type} · ${check.term || check.path || check.text || ''}`"></p>
-                              </template>
+                  </article>
+                </template>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="room-frame min-h-0 overflow-hidden">
+          <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
+            <div class="room-title text-[13px]">控制中心 / 主 Agent 办公室</div>
+            <div class="room-sub">dispatch, taskbooks and compliance</div>
+          </div>
+          <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none space-y-3">
+            <div class="room-frame p-3">
+              <div class="room-title text-[12px]">Dispatch Rack</div>
+              <div class="mt-3 space-y-2">
+                <input x-model="taskbookPath" class="field" placeholder="taskbook path">
+                <input x-model="sourcePath" class="field" placeholder="source path or directory">
+                <div class="grid grid-cols-2 gap-2">
+                  <button @click="lintTaskbook" :disabled="isLintingTaskbook || !taskbookPath.trim()" class="btn" x-text="isLintingTaskbook ? 'LINTING' : 'LINT'"></button>
+                  <button @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" class="btn-primary" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button>
+                </div>
+                <button @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" class="btn w-full" x-text="isRunningCompliance ? 'RUNNING' : 'RUN COMPLIANCE'"></button>
+              </div>
+            </div>
+
+            <div class="room-frame p-3">
+              <div class="room-title text-[12px]">TaskBook Dispatch Rack</div>
+              <div class="mt-3 space-y-2">
+                <template x-for="item in taskbooks" :key="item.filename">
+                  <button @click="loadTaskbook(item.filename)" class="w-full border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-3 py-2 text-left" :class="selectedTaskbookFilename === item.filename ? 'border-[3px]' : ''">
+                    <div class="room-title text-[11px] truncate" x-text="item.filename"></div>
+                    <div class="mono truncate" x-text="item.path"></div>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <div class="room-frame p-3">
+              <div class="room-title text-[12px]">主 Agent 办公室</div>
+              <div class="mt-3 grid gap-2">
+                <div class="mini-metric"><span>Selected Worker</span><strong class="!text-base" x-text="selectedWorker"></strong><em x-text="selectedWorkerPrompt() || '—'"></em></div>
+                <div class="mini-metric"><span>Selected TaskBook</span><strong class="!text-base" x-text="selectedTaskbookFilename || 'NONE'"></strong><em x-text="selectedTaskbookPath || '—'"></em></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="grid min-h-0 grid-cols-[340px_minmax(0,1fr)_420px] gap-3 px-3 pb-3">
+        <aside class="room-frame min-h-0 overflow-hidden">
+          <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
+            <div class="room-title text-[13px]">产物仓库</div>
+            <div class="room-sub">artifact shelves and markdown preview</div>
+          </div>
+          <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none space-y-2">
+            <template x-for="artifact in runArtifacts" :key="artifact.path">
+              <button @click="loadRunArtifact(artifact)" class="w-full border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3 text-left" :class="selectedRunArtifactPath === artifact.path ? 'border-[3px]' : ''">
+                <div class="room-title text-[11px] truncate" x-text="artifact.path"></div>
+                <div class="mono" x-text="formatBytes(artifact.size)"></div>
+              </button>
+            </template>
+            <div x-show="!runArtifacts.length" class="mono">— 暂无产物 —</div>
+          </div>
+        </aside>
+
+        <section class="room-frame min-h-0 overflow-hidden">
+          <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="room-title text-[13px]">流水线详情 / 日志 / 产物预览</div>
+                <div class="room-sub">selected run and step detail</div>
+              </div>
+              <span class="badge" x-text="selectedRun ? selectedRun.status : 'NO RUN SELECTED'"></span>
+            </div>
+          </div>
+          <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none">
+            <template x-if="selectedRun">
+              <div class="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
+                <div class="space-y-3">
+                  <div class="room-frame p-3">
+                    <div class="room-title text-[12px]">Step Timeline</div>
+                    <div class="mt-3 space-y-3">
+                      <template x-for="step in selectedRun.steps || []" :key="step.step_id">
+                        <div class="timeline-step">
+                          <div class="flex items-center justify-between gap-2">
+                            <button @click="selectStep(step)" class="room-title text-[11px] text-left" x-text="step.step_id"></button>
+                            <span class="chip" :class="brStatusClass(step.status)" x-text="step.status"></span>
+                          </div>
+                          <div class="mono mt-1" x-text="step.objective"></div>
+                          <div class="mt-1 flex flex-wrap gap-1">
+                            <template x-for="dep in (step.depends_on || [])" :key="dep">
+                              <span class="chip">DEP: <span x-text="dep"></span></span>
+                            </template>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+
+                  <div class="room-frame p-3">
+                    <div class="room-title text-[12px]">Run Log</div>
+                    <div class="mt-3 max-h-56 overflow-auto space-y-1 font-mono text-[11px] leading-5">
+                      <template x-for="event in selectedRunEvents" :key="event.event_id">
+                        <div class="border-t-[1px] border-[var(--ink)] pt-1" x-text="`${event.time || ''} · ${event.type}`"></div>
+                      </template>
+                      <div x-show="selectedRunEvents.length === 0" class="mono">— 暂无事件 —</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-3">
+                  <div class="room-frame p-3">
+                    <div class="room-title text-[12px]">Artifact Preview</div>
+                    <div class="mono mt-1" x-text="selectedRunArtifactPath || '—'"></div>
+                    <pre class="mt-3 max-h-64 overflow-auto whitespace-pre-wrap border-t-[1.5px] border-[var(--ink)] pt-3 text-sm leading-6 text-[var(--ink-soft)]" x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre>
+                  </div>
+
+                  <div class="room-frame p-3">
+                    <div class="room-title text-[12px]">Compliance</div>
+                    <div class="mt-3 space-y-2">
+                      <div class="mini-metric"><span>Status</span><strong class="!text-base" x-text="complianceResult ? (complianceResult.success ? 'PASSED' : 'FAILED') : 'IDLE'"></strong><em x-text="complianceSummary()"></em></div>
+                      <template x-if="complianceResult">
+                        <div class="space-y-2">
+                          <template x-for="caseItem in complianceResult.cases" :key="caseItem.name">
+                            <div class="border-[1.5px] border-[var(--ink)] bg-[var(--panel)] p-2">
+                              <div class="flex items-center justify-between gap-2">
+                                <span class="room-title text-[11px]" x-text="caseItem.name"></span>
+                                <span class="chip" :class="caseItem.status === 'passed' ? 'success' : 'failed'" x-text="caseItem.status"></span>
+                              </div>
+                              <div class="mono mt-1" x-text="(caseItem.errors || []).join(' · ') || 'all assertions passed'"></div>
                             </div>
                           </template>
                         </div>
                       </template>
                     </div>
-                    <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
-                      <div class="br-label">RUN EVENTS</div>
-                      <template x-for="event in selectedRunEvents" :key="event.event_id">
-                        <p class="br-mono mt-2" x-text="`${event.type} · ${event.agent_id || '-'} · ${event.step_id || '-'}`"></p>
-                      </template>
-                      <p x-show="selectedRunEvents.length === 0" class="br-mono mt-2">— 暂无事件 —</p>
-                    </div>
-                    <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
-                      <div class="br-label">RUN ARTIFACTS</div>
-                      <div class="mt-2 space-y-2">
-                        <template x-for="artifact in runArtifacts" :key="artifact.path">
-                          <button @click="loadRunArtifact(artifact)" class="block w-full text-left br-mono hover:text-[var(--accent)]" x-text="`${artifact.path} · ${formatBytes(artifact.size)}`"></button>
-                        </template>
-                        <p x-show="runArtifacts.length === 0" class="br-mono">— 暂无产物 —</p>
-                      </div>
-                      <pre x-show="selectedRunArtifactContent" class="mt-3 max-h-64 overflow-auto whitespace-pre-wrap border-t-[1.5px] border-[var(--ink)] pt-3 text-sm leading-6 text-[var(--ink-soft)]" x-text="selectedRunArtifactContent"></pre>
-                    </div>
                   </div>
-                </template>
-                <p x-show="!selectedRun" class="br-mono">— 选择一个 run 查看 step 和事件 —</p>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="br-label">PIPELINE</div>
-                <h3 class="br-h3 mt-1">牛马流水线</h3>
-              </div>
-              <span class="br-tag">niuma-1 → niuma-2</span>
-            </div>
-            <div class="mt-4 space-y-4">
-              <template x-for="(worker, index) in workers" :key="worker.worker_id">
-                <article @click="selectedWorker = worker.worker_id" class="br-card cursor-pointer" :class="selectedWorker === worker.worker_id ? 'bg-[var(--paper)] border-[3px]' : ''">
-                  <div class="flex items-start justify-between gap-4">
-                    <div class="flex items-start gap-3 min-w-0">
-                      <span class="br-tag-on shrink-0" x-text="`N°0${index + 1}`"></span>
-                      <div class="min-w-0">
-                        <div class="br-label" x-text="worker.worker_id === 'niuma-1' ? 'UNIT 01 · REVERSE' : 'UNIT 02 · WRITER'"></div>
-                        <h3 class="br-h3 mt-1" x-text="worker.display_name"></h3>
-                        <p class="text-sm text-[var(--ink-soft)] mt-2" x-text="worker.role"></p>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                      <span :class="brStatusClass(worker.status)" x-text="`[ ${worker.status.toUpperCase()} ]`"></span>
-                      <button @click.stop="openWorkerConfig(worker)" class="br-btn !py-1">[ 配置 ]</button>
-                      <button x-show="worker.worker_id === 'niuma-1'" @click.stop="openDocumentInstall(worker)" class="br-btn !py-1">[ 规则 ]</button>
-                    </div>
-                  </div>
-
-                  <div class="br-rule"></div>
-
-                  <div class="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <div class="br-label">PROVIDER / MODEL</div>
-                      <p class="mt-1 truncate"><span x-text="worker.provider"></span> · <span x-text="worker.model"></span></p>
-                    </div>
-                    <div>
-                      <div class="br-label">BACKEND</div>
-                      <p class="mt-1 br-mono" x-text="worker.backend_type || 'unknown'"></p>
-                    </div>
-                    <div>
-                      <div class="br-label">API KEY</div>
-                      <p class="mt-1"><span class="br-mono" x-text="worker.api_key_env"></span> · <span :class="worker.api_key_configured ? 'text-[var(--success)]' : 'text-[var(--accent)]'" x-text="worker.api_key_configured ? '已配置' : '未配置'"></span></p>
-                    </div>
-                    <div class="col-span-2">
-                      <div class="br-label">BASE URL</div>
-                      <p class="mt-1 br-mono break-all" x-text="worker.base_url || '未配置'"></p>
-                    </div>
-                    <div class="col-span-2">
-                      <div class="br-label">任务材料</div>
-                      <div class="mt-2 flex flex-wrap gap-2">
-                        <span :class="documentInstalled(worker, 'task_manual') ? 'br-tag-success' : 'br-tag-failed'" x-text="documentInstalled(worker, 'task_manual') ? '任务手册 ✓' : '缺任务手册'"></span>
-                        <span :class="documentInstalled(worker, 'conversion_rules') ? 'br-tag-success' : 'br-tag-failed'" x-text="documentInstalled(worker, 'conversion_rules') ? '转换规则 ✓' : '缺转换规则'"></span>
-                      </div>
-                    </div>
-                    <div class="col-span-2">
-                      <div class="br-label">当前任务</div>
-                      <p class="mt-1 text-[var(--ink-soft)] line-clamp-2" x-text="currentTaskPrompt(worker) || '— 空闲 —'"></p>
-                    </div>
-                  </div>
-                </article>
-              </template>
-            </div>
-          </section>
-
-          <section>
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="br-label">TIMELINE</div>
-                <h3 class="br-h3 mt-1">操作回执</h3>
-              </div>
-              <button @click="events = []" class="br-btn !py-1">[ 清空 ]</button>
-            </div>
-            <div class="mt-4 space-y-3">
-              <template x-for="event in events" :key="event.id">
-                <article class="br-card-tight">
-                  <div class="flex items-center justify-between">
-                    <span class="br-tag" x-text="event.type.toUpperCase()"></span>
-                    <span class="br-mono" x-text="event.time"></span>
-                  </div>
-                  <pre class="mt-3 overflow-auto whitespace-pre-wrap text-sm leading-6 text-[var(--ink-soft)]" x-text="event.body"></pre>
-                </article>
-              </template>
-              <p x-show="events.length === 0" class="br-mono">— 暂无操作回执 —</p>
-            </div>
-          </section>
-          <!-- ↑↑↑ 旧的 section 全部包在 PIPELINE 标签下 ↑↑↑ -->
-        </section>
-
-        <!-- COMPLIANCE -->
-        <section x-show="activeTab === 'compliance'" class="space-y-6 max-w-4xl">
-          <div>
-            <h2 class="br-h2">验厂 · COMPLIANCE</h2>
-            <div class="br-divider"></div>
-          </div>
-          <div class="br-card space-y-4">
-            <div>
-              <div class="br-label">QUICK SUITE</div>
-              <p class="br-mono mt-1">不调用真实模型，验证任务书、调度、依赖、产物和断言契约。</p>
-            </div>
-            <div class="grid gap-2 lg:grid-cols-[1fr_auto_auto]">
-              <input x-model="complianceSuitePath" class="br-input-mono" placeholder="D:\\codex\\cclaude\\tests\\compliance">
-              <select x-model="complianceMode" class="br-input-mono !w-40">
-                <option value="quick">quick</option>
-                <option value="model">model</option>
-              </select>
-              <button @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" class="br-btn-primary" x-text="isRunningCompliance ? '验厂中...' : `[ RUN ${complianceMode.toUpperCase()} ]`"></button>
-            </div>
-          </div>
-          <div x-show="complianceResult" class="br-card space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="br-label">RESULT</div>
-                <h3 class="br-h3 mt-1" x-text="complianceResult && complianceResult.success ? '通过' : '失败'"></h3>
-              </div>
-              <span :class="complianceResult && complianceResult.success ? 'br-tag-success' : 'br-tag-failed'" x-text="complianceResult && complianceResult.success ? '[ PASSED ]' : '[ FAILED ]'"></span>
-            </div>
-            <template x-for="caseItem in (complianceResult ? complianceResult.cases : [])" :key="caseItem.name">
-              <div class="border-t-[1.5px] border-[var(--ink)] pt-3">
-                <div class="flex items-center justify-between">
-                  <span class="br-mono" x-text="caseItem.name"></span>
-                  <span :class="caseItem.status === 'passed' ? 'br-tag-success' : 'br-tag-failed'" x-text="caseItem.status"></span>
                 </div>
-                <template x-for="error in caseItem.errors" :key="error">
-                  <p class="br-mono mt-2 text-[var(--accent)]" x-text="error"></p>
-                </template>
               </div>
             </template>
           </div>
         </section>
 
-        <!-- WORKERS -->
-        <section x-show="activeTab === 'workers'" class="space-y-6">
-          <div>
-            <h2 class="br-h2">工位 · WORKERS</h2>
-            <div class="br-divider"></div>
+        <aside class="room-frame min-h-0 overflow-hidden">
+          <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
+            <div class="room-title text-[13px]">断言 / 任务书 / 主体信息</div>
+            <div class="room-sub">control room notes</div>
           </div>
-          <div class="grid gap-4 lg:grid-cols-2">
-            <template x-for="worker in workers" :key="worker.worker_id">
-              <article class="br-card space-y-3">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <div class="br-label" x-text="worker.worker_id"></div>
-                    <h3 class="br-h3 mt-1" x-text="worker.display_name"></h3>
-                    <p class="br-mono mt-1" x-text="`${worker.backend_type} · ${worker.model}`"></p>
-                  </div>
-                  <button @click="refreshWorkerHealth(worker.worker_id)" class="br-btn !py-1">[ HEALTH ]</button>
+          <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none space-y-3">
+            <div class="room-frame p-3">
+              <div class="room-title text-[12px]">TaskBook Studio</div>
+              <div class="mt-3 space-y-2">
+                <textarea x-model="taskbookEditorContent" rows="8" class="field-area" placeholder="title: ..."></textarea>
+                <div class="grid grid-cols-2 gap-2">
+                  <button @click="saveTaskbook" :disabled="isSavingTaskbook || !selectedTaskbookFilename.trim() || !taskbookEditorContent.trim()" class="btn-primary" x-text="isSavingTaskbook ? 'SAVING' : 'SAVE'"></button>
+                  <button @click="newTaskbookDraft" class="btn">NEW DRAFT</button>
                 </div>
-                <div class="br-rule"></div>
-                <template x-if="workerHealth[worker.worker_id]">
-                  <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="br-label">STATUS</span>
-                      <span :class="workerHealth[worker.worker_id].status === 'ok' ? 'br-tag-success' : 'br-tag-failed'" x-text="workerHealth[worker.worker_id].status"></span>
-                    </div>
-                    <template x-for="check in workerHealth[worker.worker_id].checks" :key="check.name">
-                      <div class="flex items-start justify-between gap-3 border-t-[1px] border-[var(--ink)] pt-2">
-                        <div>
-                          <p class="br-mono" x-text="check.name"></p>
-                          <p class="br-mono mt-1 break-all" x-text="check.message"></p>
-                        </div>
-                        <span :class="check.status === 'passed' ? 'br-tag-success' : check.status === 'failed' ? 'br-tag-failed' : 'br-tag'" x-text="check.status"></span>
-                      </div>
-                    </template>
-                  </div>
-                </template>
-                <p x-show="!workerHealth[worker.worker_id]" class="br-mono">— 点击 HEALTH 检查工位 —</p>
-              </article>
-            </template>
-          </div>
-        </section>
-
-        <!-- ARCHIVE -->
-        <section x-show="activeTab === 'archive'" class="space-y-4">
-          <div>
-            <h2 class="br-h2">档案 · ARCHIVE</h2>
-            <div class="br-divider"></div>
-          </div>
-          <div class="grid gap-5 grid-cols-[1fr_1.4fr]">
-            <!-- 左：任务历史 -->
-            <div>
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="br-label">HISTORY</div>
-                  <h3 class="br-h3 mt-1">任务历史</h3>
-                </div>
-                <div class="flex gap-2">
-                  <select x-model="taskFilter.worker" class="br-input-mono !py-1 !w-36">
-                    <option value="all">全部工位</option>
-                    <template x-for="worker in workers" :key="worker.worker_id">
-                      <option :value="worker.worker_id" x-text="worker.worker_id"></option>
-                    </template>
-                  </select>
-                  <select x-model="taskFilter.status" class="br-input-mono !py-1 !w-36">
-                    <option value="all">全部状态</option>
-                    <option value="succeeded">succeeded</option>
-                    <option value="failed">failed</option>
-                    <option value="running">running</option>
-                    <option value="pending">pending</option>
-                  </select>
-                </div>
-              </div>
-              <div class="mt-4 max-h-[640px] overflow-auto space-y-2 pr-1">
-                <template x-for="task in filteredTasks()" :key="task.task_id">
-                  <button @click="selectTask(task)" class="w-full text-left br-card-tight" :class="selectedTask && selectedTask.task_id === task.task_id ? 'border-[3px]' : ''">
-                    <div class="flex items-center justify-between">
-                      <span class="br-h3" x-text="task.worker_id"></span>
-                      <span :class="brStatusClass(task.status)" x-text="`[ ${task.status.toUpperCase()} ]`"></span>
-                    </div>
-                    <p class="mt-2 text-sm line-clamp-2 text-[var(--ink-soft)]" x-text="task.prompt"></p>
-                    <p class="mt-2 br-mono" x-text="task.task_id"></p>
-                  </button>
-                </template>
-                <p x-show="filteredTasks().length === 0" class="br-card-tight text-center text-[var(--muted)]">— 暂无匹配任务 —</p>
+                <pre class="mt-2 max-h-44 overflow-auto whitespace-pre-wrap border-t-[1.5px] border-[var(--ink)] pt-2 text-[11px] text-[var(--ink-soft)]" x-text="taskbookLint || 'lint result will appear here'"></pre>
               </div>
             </div>
 
-            <!-- 右：产物阅读器 -->
-            <div>
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="br-label">ARTIFACT</div>
-                  <h3 class="br-h3 mt-1">产物阅读器</h3>
-                </div>
-                <button @click="copyArtifact" :disabled="!artifactText()" class="br-btn !py-1">[ 复制产物 ]</button>
+            <div class="room-frame p-3">
+              <div class="room-title text-[12px]">Selected Step</div>
+              <div class="mt-3 mini-metric">
+                <span>Step</span>
+                <strong class="!text-base" x-text="selectedStep ? selectedStep.step_id : 'NONE'"></strong>
+                <em x-text="selectedStep ? selectedStep.objective : 'select a step'"></em>
               </div>
-              <template x-if="selectedTask">
-                <div class="mt-4 space-y-3">
-                  <div class="br-card-tight space-y-2">
-                    <div class="flex flex-wrap gap-2">
-                      <span class="br-tag" x-text="selectedTask.worker_id"></span>
-                      <span :class="brStatusClass(selectedTask.status)" x-text="`[ ${selectedTask.status.toUpperCase()} ]`"></span>
-                      <span class="br-tag" x-show="selectedTask.parent_task_id">[ HAS UPSTREAM ]</span>
-                    </div>
-                    <p class="br-mono" x-text="selectedTask.task_id"></p>
-                    <p class="text-sm text-[var(--ink-soft)]" x-text="selectedTask.prompt"></p>
-                    <p class="text-sm text-[var(--accent)]" x-show="selectedTask.error" x-text="selectedTask.error"></p>
-                  </div>
-                  <div class="flex flex-wrap gap-2">
-                    <template x-for="artifactId in selectedTask.artifact_ids" :key="artifactId">
-                      <button @click="loadArtifact(artifactId)" class="br-btn !py-1" x-text="artifactId"></button>
-                    </template>
-                  </div>
-                  <pre class="max-h-[640px] overflow-auto whitespace-pre-wrap br-card-tight font-mono text-sm leading-7" x-text="artifactText() || '— 这个任务还没有产物 —'"></pre>
-                </div>
-              </template>
-              <p x-show="!selectedTask" class="mt-4 br-card-tight text-center text-[var(--muted)]">— 选择左侧任务查看结果 —</p>
+            </div>
+
+            <div class="room-frame p-3">
+              <div class="room-title text-[12px]">Current Worker Office</div>
+              <div class="mt-3 mini-metric">
+                <span>Worker</span>
+                <strong class="!text-base" x-text="selectedWorker"></strong>
+                <em x-text="selectedWorkerPrompt() || 'empty desk'"></em>
+              </div>
             </div>
           </div>
-        </section>
-      </div>
+        </aside>
+      </section>
     </div>
 
-      <!-- 配置模态 -->
-      <div x-show="configModalOpen" x-transition.opacity class="br-modal-mask" @click.self="configModalOpen = false">
-        <div class="br-modal">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="br-label">CONFIG</div>
-              <h3 class="br-h3 mt-1">工位配置</h3>
-            </div>
-            <button @click="configModalOpen = false" class="br-mono hover:text-[var(--accent)]">[ × ]</button>
-          </div>
-          <div class="br-rule"></div>
-          <div class="space-y-3">
-            <div>
-              <div class="br-label">BACKEND TYPE</div>
-              <input x-model="configForm.backend_type" readonly class="br-input-mono text-[var(--muted)]">
-            </div>
-            <div>
-              <div class="br-label">PROVIDER</div>
-              <input x-model="configForm.provider" class="br-input">
-            </div>
-            <div>
-              <div class="br-label">BASE URL</div>
-              <input x-model="configForm.base_url" placeholder="http://host:port/v1" class="br-input-mono">
-            </div>
-            <div>
-              <div class="br-label">MODEL</div>
-              <input x-model="configForm.model" class="br-input">
-            </div>
-            <div>
-              <div class="br-label">ROLE</div>
-              <input x-model="configForm.role" class="br-input">
-            </div>
-            <div>
-              <div class="br-label">API KEY</div>
-              <input x-model="configForm.api_key" type="password" placeholder="留空则保留原 key" class="br-input-mono">
-            </div>
-            <p class="text-xs text-[var(--accent)]">本地试运行会把 key 保存到 runtime_config.json；不要分享这个文件。</p>
-            <div class="flex justify-end pt-2">
-              <button @click="saveWorkerConfig" :disabled="isSavingConfig" class="br-btn-primary" x-text="isSavingConfig ? '保存中...' : '[ 保存配置 ]'"></button>
-            </div>
-          </div>
+    <div class="drawer" :class="drawerOpen ? 'open' : ''">
+      <div class="drawer-head">
+        <div>
+          <div class="room-title text-[12px]" x-text="drawerTitle"></div>
+          <div class="room-sub" x-text="drawerSubtitle"></div>
         </div>
+        <button class="btn tiny" @click="drawerOpen = false">CLOSE</button>
       </div>
-
-      <!-- 规则模态 -->
-      <div x-show="documentModalOpen" x-transition.opacity class="br-modal-mask" @click.self="documentModalOpen = false">
-        <div class="br-modal">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="br-label">DOCUMENTS</div>
-              <h3 class="br-h3 mt-1">牛马1 任务材料</h3>
-            </div>
-            <button @click="documentModalOpen = false" class="br-mono hover:text-[var(--accent)]">[ × ]</button>
-          </div>
-          <div class="br-rule"></div>
-          <p class="text-sm text-[var(--ink-soft)]">上传后会保存为牛马1 固定任务材料；执行前先读任务手册，再读转换规则。</p>
-
-          <div class="mt-4 space-y-4">
-            <div class="br-card-tight space-y-2">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="br-label">任务手册</div>
-                  <p class="br-mono mt-1" x-text="installedDocumentText(documentInstallWorker, 'task_manual')"></p>
-                </div>
-                <span :class="documentInstalled(documentInstallWorker, 'task_manual') ? 'br-tag-success' : 'br-tag-failed'" x-text="documentInstalled(documentInstallWorker, 'task_manual') ? '[ 已安装 ]' : '[ 未安装 ]'"></span>
-              </div>
-              <input @change="installDocument($event, 'task_manual')" type="file" class="br-input-mono file:mr-3 file:border-0 file:bg-[var(--ink)] file:px-3 file:py-1 file:text-[var(--paper)] file:font-mono file:text-xs file:uppercase">
-            </div>
-
-            <div class="br-card-tight space-y-2">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="br-label">转换规则</div>
-                  <p class="br-mono mt-1" x-text="installedDocumentText(documentInstallWorker, 'conversion_rules')"></p>
-                </div>
-                <span :class="documentInstalled(documentInstallWorker, 'conversion_rules') ? 'br-tag-success' : 'br-tag-failed'" x-text="documentInstalled(documentInstallWorker, 'conversion_rules') ? '[ 已安装 ]' : '[ 未安装 ]'"></span>
-              </div>
-              <input @change="installDocument($event, 'conversion_rules')" type="file" class="br-input-mono file:mr-3 file:border-0 file:bg-[var(--ink)] file:px-3 file:py-1 file:text-[var(--paper)] file:font-mono file:text-xs file:uppercase">
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="drawer-body" x-html="drawerHtml"></div>
+    </div>
   </main>
 
   <script>
-    function factoryConsole() {
+    function factoryRoom() {
       return {
         baseUrl: 'http://127.0.0.1:8846',
         token: 'local-token',
@@ -668,70 +363,67 @@
         workers: [],
         tasks: [],
         runs: [],
+        taskbooks: [],
         selectedRun: null,
         selectedRunEvents: [],
         selectedRunQuality: null,
-        runArtifacts: [],
         selectedRunArtifactContent: '',
-        taskbooks: [],
+        selectedRunArtifactPath: '',
         selectedTaskbookFilename: '',
         selectedTaskbookPath: '',
         taskbookEditorContent: '',
-        selectedTask: null,
-        artifactContent: '',
+        taskbookLint: '',
+        selectedStep: null,
         selectedWorker: 'niuma-1',
         prompt: '',
         chainPrompt: '',
-        taskbookPath: '',
+        filePath: '',
         sourcePath: '',
-        taskbookLint: '',
+        taskbookPath: '',
         complianceSuitePath: 'D:\\codex\\cclaude\\tests\\compliance',
         complianceMode: 'quick',
         complianceResult: null,
         workerHealth: {},
-        filePath: '',
         fileContext: {files: [], prompt: ''},
-        nextInstruction: '根据上游逆向分析清单，编写可交付的需求文档。',
-        taskFilter: {worker: 'all', status: 'all'},
-        configWorker: null,
+        selectedTask: null,
+        artifactContent: '',
+        selectedTaskResultText: '',
         configForm: {backend_type: '', provider: '', base_url: '', model: '', role: '', api_key: ''},
-        documentLabels: {task_manual: '任务手册', conversion_rules: '规则安装'},
         documentInstallWorker: null,
-        events: [],
+        documentLabels: {task_manual: '任务手册', conversion_rules: '转换规则'},
         alert: null,
-        activeTab: 'pipeline',
-        configModalOpen: false,
-        documentModalOpen: false,
-        autoRefresh: false,
-        autoRefreshTimer: null,
         isRefreshing: false,
         isDelegating: false,
         isChaining: false,
         isStartingRun: false,
         isLintingTaskbook: false,
-        isLoadingTaskbooks: false,
-        isSavingTaskbook: false,
         isRunningCompliance: false,
+        isSavingTaskbook: false,
         isSavingConfig: false,
         isInstallingDocument: false,
         isLoadingFileContext: false,
+        isLoadingTaskbooks: false,
+        drawerOpen: false,
+        drawerTitle: 'DETAIL',
+        drawerSubtitle: '',
+        drawerHtml: '<div class="mono">select a node to inspect</div>',
+        init() {
+          window.__marvisRoom = this;
+          window.__marvisOpenWorkerConfig = (workerId) => {
+            const worker = this.workers.find((item) => item.worker_id === workerId);
+            if (worker) this.openWorkerConfig(worker);
+          };
+          window.__marvisOpenDocumentInstall = (workerId) => {
+            const worker = this.workers.find((item) => item.worker_id === workerId);
+            if (worker) this.openDocumentInstall(worker);
+          };
+          window.__marvisInstallDocument = (event, kind) => this.installDocument(event, kind);
+          this.refreshAll();
+        },
         headers(contentType = 'application/json') {
           const headers = {'x-hermes-token': this.token};
           if (contentType) headers['content-type'] = contentType;
           return headers;
-        },
-        async init() {
-          const saved = localStorage.getItem('niuma.activeTab');
-          if (saved === 'dispatch' || saved === 'pipeline' || saved === 'archive' || saved === 'compliance' || saved === 'workers') {
-            this.activeTab = saved;
-          }
-          document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-              this.configModalOpen = false;
-              this.documentModalOpen = false;
-            }
-          });
-          await this.refreshAll();
         },
         async requestJson(path, options = {}) {
           const contentType = options.body instanceof FormData ? null : 'application/json';
@@ -740,9 +432,7 @@
             headers: {...this.headers(contentType), ...(options.headers || {})}
           });
           const body = await response.json().catch(() => ({}));
-          if (!response.ok) {
-            throw new Error(body.detail || body.error || `HTTP ${response.status}`);
-          }
+          if (!response.ok) throw new Error(body.detail || body.error || `HTTP ${response.status}`);
           return body;
         },
         async refreshAll() {
@@ -750,10 +440,6 @@
           this.isRefreshing = true;
           try {
             await Promise.all([this.refreshHealth(), this.refreshWorkers(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks()]);
-          } catch (error) {
-            this.health = {};
-            this.showAlert('error', `刷新失败：${error.message}`);
-            this.record('error', error.message);
           } finally {
             this.isRefreshing = false;
           }
@@ -768,16 +454,9 @@
             this.selectedWorker = this.workers[0].worker_id;
           }
         },
-        async refreshWorkerHealth(workerId) {
-          const body = await this.requestJson(`/api/workers/${workerId}/health`);
-          this.workerHealth = {...this.workerHealth, [workerId]: body};
-        },
         async refreshTasks() {
           const body = await this.requestJson('/api/tasks');
           this.tasks = body.tasks || [];
-          if (!this.selectedTask && this.tasks.length) {
-            this.selectTask(this.tasks[0]);
-          }
         },
         async refreshRuns() {
           const body = await this.requestJson('/api/runs');
@@ -791,11 +470,17 @@
             await this.selectRun(this.runs[0]);
           }
         },
-        async selectRun(run) {
-          const body = await this.requestJson(`/api/runs/${run.run_id}`);
-          this.selectedRun = {...(body.run || run), steps: body.steps || []};
-          this.selectedRunArtifactContent = '';
-          await Promise.all([this.refreshRunEvents(run.run_id), this.refreshRunArtifacts(run.run_id), this.refreshRunQuality(run.run_id)]);
+        async refreshTaskbooks() {
+          this.isLoadingTaskbooks = true;
+          try {
+            const body = await this.requestJson('/api/taskbooks');
+            this.taskbooks = body.taskbooks || [];
+            if (!this.selectedTaskbookFilename && this.taskbooks.length) {
+              await this.loadTaskbook(this.taskbooks[0].filename);
+            }
+          } finally {
+            this.isLoadingTaskbooks = false;
+          }
         },
         async refreshRunEvents(runId) {
           const body = await this.requestJson(`/api/runs/${runId}/events`);
@@ -808,33 +493,53 @@
           const body = await this.requestJson(`/api/runs/${runId}/artifacts`);
           this.runArtifacts = body.artifacts || [];
         },
-        async refreshTaskbooks() {
-          this.isLoadingTaskbooks = true;
-          try {
-            const body = await this.requestJson('/api/taskbooks');
-            this.taskbooks = body.taskbooks || [];
-            if (!this.selectedTaskbookFilename && this.taskbooks.length) {
-              await this.loadTaskbook(this.taskbooks[0].filename);
-            }
-          } catch (error) {
-            this.record('error', error.message);
-          } finally {
-            this.isLoadingTaskbooks = false;
+        async selectRun(run) {
+          const body = await this.requestJson(`/api/runs/${run.run_id}`);
+          this.selectedRun = {...(body.run || run), steps: body.steps || []};
+          this.selectedStep = this.selectedRun.steps && this.selectedRun.steps[0] ? this.selectedRun.steps[0] : null;
+          this.selectedRunArtifactContent = '';
+          this.selectedRunArtifactPath = '';
+          await Promise.all([this.refreshRunEvents(run.run_id), this.refreshRunArtifacts(run.run_id), this.refreshRunQuality(run.run_id)]);
+        },
+        async selectStep(step) {
+          this.selectedStep = step;
+          this.drawerTitle = `STEP · ${step.step_id}`;
+          this.drawerSubtitle = step.status;
+          this.drawerHtml = `
+            <div class="space-y-3">
+              <div class="mini-metric"><span>Step ID</span><strong class="!text-base">${step.step_id}</strong><em>${step.objective || ''}</em></div>
+              <div class="mini-metric"><span>Agent</span><strong class="!text-base">${step.agent_id || step.agent || ''}</strong><em>${(step.depends_on || []).join(' · ') || 'no dependencies'}</em></div>
+            </div>
+          `;
+          if (step.outputs && step.outputs.length) {
+            await this.loadArtifactByPath(step.outputs[0]);
           }
         },
+        async loadArtifactByPath(path) {
+          if (!this.selectedRun || !path) return;
+          const body = await this.requestJson(`/api/runs/${this.selectedRun.run_id}/artifacts/${path}`);
+          this.selectedRunArtifactPath = body.path;
+          this.selectedRunArtifactContent = body.content || '';
+        },
+        async loadRunArtifact(artifact) {
+          if (!this.selectedRun || !artifact) return;
+          this.selectedRunArtifactPath = artifact.path;
+          const body = await this.requestJson(`/api/runs/${this.selectedRun.run_id}/artifacts/${artifact.path}`);
+          this.selectedRunArtifactContent = body.content || '';
+        },
         async loadTaskbook(filename) {
-          if (!filename) return;
           const body = await this.requestJson(`/api/taskbooks/${filename}`);
           this.selectedTaskbookFilename = body.filename;
           this.selectedTaskbookPath = body.path;
           this.taskbookEditorContent = body.content || '';
           this.taskbookPath = body.path;
           this.taskbookLint = '';
+          this.drawerTitle = `TASKBOOK · ${filename}`;
+          this.drawerSubtitle = 'contract preview';
+          this.drawerHtml = `<pre class="whitespace-pre-wrap text-[11px] leading-5">${this.escapeHtml(body.content || '')}</pre>`;
         },
         newTaskbookDraft() {
-          if (!this.selectedTaskbookFilename.trim()) {
-            this.selectedTaskbookFilename = 'new-taskbook.yml';
-          }
+          this.selectedTaskbookFilename = this.selectedTaskbookFilename || 'new-taskbook.yml';
           this.selectedTaskbookPath = '';
           this.taskbookEditorContent = [
             'title: 新任务书',
@@ -850,7 +555,6 @@
         async saveTaskbook() {
           if (this.isSavingTaskbook || !this.selectedTaskbookFilename.trim() || !this.taskbookEditorContent.trim()) return;
           this.isSavingTaskbook = true;
-          this.alert = null;
           try {
             const filename = this.selectedTaskbookFilename.trim();
             const body = await this.requestJson(`/api/taskbooks/${filename}`, {
@@ -862,11 +566,6 @@
             this.taskbookPath = body.path;
             this.taskbookLint = JSON.stringify({title: body.title, execution_order: body.execution_order}, null, 2);
             await this.refreshTaskbooks();
-            this.record('taskbook', `${body.filename} 路 saved`);
-            this.showAlert('success', `任务书已保存：${body.filename}`);
-          } catch (error) {
-            this.showAlert('error', `保存任务书失败：${error.message}`);
-            this.record('error', error.message);
           } finally {
             this.isSavingTaskbook = false;
           }
@@ -874,29 +573,18 @@
         useEditedTaskbook() {
           if (!this.selectedTaskbookPath) return;
           this.taskbookPath = this.selectedTaskbookPath;
-          this.record('taskbook', `使用任务书：${this.selectedTaskbookFilename}`);
-        },
-        async loadRunArtifact(artifact) {
-          if (!this.selectedRun || !artifact) return;
-          const runId = this.selectedRun.run_id;
-          const body = await this.requestJson(`/api/runs/${runId}/artifacts/${artifact.path}`);
-          this.selectedRunArtifactContent = body.content || '';
         },
         async lintTaskbook() {
           if (this.isLintingTaskbook || !this.taskbookPath.trim()) return;
           this.isLintingTaskbook = true;
-          this.alert = null;
           try {
             const body = await this.requestJson('/api/taskbooks/lint', {
               method: 'POST',
               body: JSON.stringify({taskbook_path: this.taskbookPath})
             });
             this.taskbookLint = JSON.stringify(body, null, 2);
-            this.showAlert('success', '任务书检查通过。');
           } catch (error) {
-            this.taskbookLint = '';
-            this.showAlert('error', `任务书检查失败：${error.message}`);
-            this.record('error', error.message);
+            this.taskbookLint = error.message;
           } finally {
             this.isLintingTaskbook = false;
           }
@@ -904,7 +592,6 @@
         async startTaskbookRun() {
           if (this.isStartingRun || !this.taskbookPath.trim()) return;
           this.isStartingRun = true;
-          this.alert = null;
           try {
             const payload = {taskbook_path: this.taskbookPath};
             if (this.sourcePath.trim()) payload.source_path = this.sourcePath;
@@ -913,13 +600,9 @@
               body: JSON.stringify(payload)
             });
             this.selectedRun = {...body.run, steps: body.steps || []};
+            this.selectedStep = this.selectedRun.steps && this.selectedRun.steps[0] ? this.selectedRun.steps[0] : null;
             await this.refreshRunEvents(body.run.run_id);
             await this.refreshRuns();
-            this.record('pipeline', `${body.run.run_id} · ${body.run.status}`);
-            this.showAlert('success', `任务书流水线已完成：${body.run.status}`);
-          } catch (error) {
-            this.showAlert('error', `启动任务书失败：${error.message}`);
-            this.record('error', error.message);
           } finally {
             this.isStartingRun = false;
           }
@@ -927,104 +610,24 @@
         async runCompliance() {
           if (this.isRunningCompliance || !this.complianceSuitePath.trim()) return;
           this.isRunningCompliance = true;
-          this.alert = null;
           try {
             const body = await this.requestJson('/api/compliance/run', {
               method: 'POST',
               body: JSON.stringify({suite_path: this.complianceSuitePath, mode: this.complianceMode})
             });
             this.complianceResult = body;
-            this.record('compliance', `${body.success ? 'PASSED' : 'FAILED'} · ${body.cases.length} cases`);
-            this.showAlert(body.success ? 'success' : 'error', body.success ? '验厂通过。' : '验厂失败，请查看 case 明细。');
-          } catch (error) {
-            this.showAlert('error', `验厂请求失败：${error.message}`);
-            this.record('error', error.message);
           } finally {
             this.isRunningCompliance = false;
-          }
-        },
-        toggleAutoRefresh() {
-          this.autoRefresh = !this.autoRefresh;
-          if (this.autoRefresh) {
-            this.autoRefreshTimer = setInterval(() => this.refreshAll(), 5000);
-            this.record('system', '自动刷新已开启，每 5 秒刷新一次。');
-          } else {
-            clearInterval(this.autoRefreshTimer);
-            this.autoRefreshTimer = null;
-            this.record('system', '自动刷新已关闭。');
-          }
-        },
-        async delegateTask() {
-          if (this.isDelegating || !this.prompt.trim()) return;
-          this.isDelegating = true;
-          this.alert = null;
-          try {
-            const body = await this.requestJson('/api/delegate', {
-              method: 'POST',
-              body: JSON.stringify({worker_id: this.selectedWorker, prompt: this.prompt})
-            });
-            this.record('delegate', this.taskSummary(body));
-            this.selectedTask = body;
-            this.artifactContent = '';
-            if (body.status === 'failed') {
-              this.showAlert('error', body.error || '任务执行失败，请查看任务历史。');
-            } else {
-              this.showAlert('success', `${body.worker_id} 已完成任务。`);
-            }
-            await this.refreshAll();
-          } catch (error) {
-            this.showAlert('error', `派工请求失败：${error.message}`);
-            this.record('error', error.message);
-          } finally {
-            this.isDelegating = false;
-          }
-        },
-        async chainTask() {
-          const finalPrompt = this.chainPromptWithFiles();
-          if (this.isChaining || !finalPrompt.trim()) return;
-          this.isChaining = true;
-          this.alert = null;
-          try {
-            const body = await this.requestJson('/api/chain', {
-              method: 'POST',
-              body: JSON.stringify({
-                source_worker: 'niuma-1',
-                target_worker: 'niuma-2',
-                prompt: finalPrompt,
-                next_instruction: this.nextInstruction
-              })
-            });
-            this.record('chain', `上游：${this.taskSummary(body.source)}\n\n下游：${this.taskSummary(body.target)}`);
-            this.selectedTask = body.target;
-            this.artifactContent = '';
-            if (body.source.status === 'failed' || body.target.status === 'failed') {
-              this.showAlert('error', body.target.error || body.source.error || '链式任务执行失败。');
-            } else {
-              this.showAlert('success', '牛马1 → 牛马2 链式派工已完成。');
-            }
-            await this.refreshAll();
-          } catch (error) {
-            this.showAlert('error', `链式派工失败：${error.message}`);
-            this.record('error', error.message);
-          } finally {
-            this.isChaining = false;
           }
         },
         async loadLocalPath() {
           if (this.isLoadingFileContext || !this.filePath.trim()) return;
           this.isLoadingFileContext = true;
-          this.alert = null;
           try {
-            const body = await this.requestJson('/api/file-context/path', {
+            this.fileContext = await this.requestJson('/api/file-context/path', {
               method: 'POST',
               body: JSON.stringify({path: this.filePath})
             });
-            this.fileContext = body;
-            this.record('file', `读取本机路径：${this.filePath}\n${this.fileListText()}`);
-            this.showAlert('success', `已读取 ${body.files.length} 个文件。`);
-          } catch (error) {
-            this.showAlert('error', `读取路径失败：${error.message}`);
-            this.record('error', error.message);
           } finally {
             this.isLoadingFileContext = false;
           }
@@ -1033,84 +636,57 @@
           const files = Array.from(event.target.files || []);
           if (!files.length || this.isLoadingFileContext) return;
           this.isLoadingFileContext = true;
-          this.alert = null;
           const formData = new FormData();
           files.forEach((file) => formData.append('files', file));
           try {
-            const body = await this.requestJson('/api/file-context/upload', {
+            this.fileContext = await this.requestJson('/api/file-context/upload', {
               method: 'POST',
-              headers: {'x-hermes-token': this.token},
               body: formData
             });
-            this.fileContext = body;
-            this.record('file', `上传文件：\n${this.fileListText()}`);
-            this.showAlert('success', `已上传 ${body.files.length} 个文件。`);
-          } catch (error) {
-            this.showAlert('error', `上传文件失败：${error.message}`);
-            this.record('error', error.message);
           } finally {
             this.isLoadingFileContext = false;
           }
         },
         clearFileContext() {
           this.fileContext = {files: [], prompt: ''};
-          this.record('file', '已清空文件输入内容。');
-        },
-        chainPromptWithFiles() {
-          return [this.chainPrompt, this.fileContext.prompt].filter((part) => part && part.trim()).join('\n\n');
-        },
-        fileListText() {
-          return this.fileContext.files.map((file) => `${file.path} · ${this.formatBytes(file.size)}`).join('\n');
-        },
-        formatBytes(size) {
-          if (size < 1024) return `${size} B`;
-          if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-          return `${(size / 1024 / 1024).toFixed(1)} MB`;
-        },
-        documentInstalled(worker, kind) {
-          return Boolean(worker && worker.installed_documents && worker.installed_documents[kind] && worker.installed_documents[kind].installed);
-        },
-        installedDocumentText(worker, kind) {
-          if (!worker || !kind) return '';
-          const document = worker.installed_documents && worker.installed_documents[kind];
-          if (!document || !document.installed) return `${this.documentLabels[kind]} 未安装`;
-          return `${document.filename} · ${this.formatBytes(document.size)}`;
         },
         openDocumentInstall(worker) {
-          this.selectedWorker = worker.worker_id;
-          this.configWorker = null;
           this.documentInstallWorker = worker;
-          this.documentModalOpen = true;
+          this.drawerTitle = `DOCUMENTS · ${worker.worker_id}`;
+          this.drawerSubtitle = 'task manual and conversion rules';
+          this.drawerHtml = `
+            <div class="space-y-3">
+              <div class="mini-metric"><span>Worker</span><strong class="!text-base">${worker.worker_id}</strong><em>${worker.role || ''}</em></div>
+              <label class="block">
+                <span class="room-sub">task_manual</span>
+                <input onchange="window.__marvisInstallDocument && window.__marvisInstallDocument(event, 'task_manual')" type="file" class="field">
+              </label>
+              <label class="block">
+                <span class="room-sub">conversion_rules</span>
+                <input onchange="window.__marvisInstallDocument && window.__marvisInstallDocument(event, 'conversion_rules')" type="file" class="field">
+              </label>
+            </div>
+          `;
+          this.drawerOpen = true;
         },
         async installDocument(event, kind) {
           const file = event.target.files && event.target.files[0];
           if (!file || !this.documentInstallWorker || !kind || this.isInstallingDocument) return;
           this.isInstallingDocument = true;
-          this.alert = null;
           const formData = new FormData();
           formData.append('file', file);
           try {
-            const body = await this.requestJson(`/api/workers/${this.documentInstallWorker.worker_id}/installed-documents/${kind}`, {
+            await this.requestJson(`/api/workers/${this.documentInstallWorker.worker_id}/installed-documents/${kind}`, {
               method: 'POST',
               body: formData
             });
-            this.documentInstallWorker.installed_documents = body.installed_documents;
-            const worker = this.workers.find((candidate) => candidate.worker_id === this.documentInstallWorker.worker_id);
-            if (worker) worker.installed_documents = body.installed_documents;
-            this.record('document', `${this.documentInstallWorker.worker_id} · ${this.documentLabels[kind]} · ${file.name}`);
-            this.showAlert('success', `${this.documentLabels[kind]} 已安装。`);
             await this.refreshWorkers();
-          } catch (error) {
-            this.showAlert('error', `安装失败：${error.message}`);
-            this.record('error', error.message);
           } finally {
             this.isInstallingDocument = false;
           }
         },
         openWorkerConfig(worker) {
           this.selectedWorker = worker.worker_id;
-          this.configWorker = worker;
-          this.documentInstallWorker = null;
           this.configForm = {
             backend_type: worker.backend_type || '',
             provider: worker.provider || '',
@@ -1119,106 +695,105 @@
             role: worker.role || '',
             api_key: ''
           };
-          this.configModalOpen = true;
+          this.drawerTitle = `WORKER CONFIG · ${worker.worker_id}`;
+          this.drawerSubtitle = 'backend type read-only';
+          this.drawerHtml = `
+            <div class="space-y-3">
+              <div class="mini-metric"><span>BACKEND TYPE</span><strong class="!text-base">${this.escapeHtml(this.configForm.backend_type)}</strong><em>read only</em></div>
+              <div class="mini-metric"><span>Provider</span><strong class="!text-base">${this.escapeHtml(this.configForm.provider)}</strong><em>${this.escapeHtml(this.configForm.model)}</em></div>
+              <div class="mini-metric"><span>Base URL</span><strong class="!text-base">${this.escapeHtml(this.configForm.base_url || 'default')}</strong><em>${this.escapeHtml(this.configForm.role)}</em></div>
+            </div>
+          `;
+          this.drawerOpen = true;
         },
         async saveWorkerConfig() {
-          if (!this.configWorker || this.isSavingConfig) return;
+          if (this.isSavingConfig) return;
           this.isSavingConfig = true;
-          this.alert = null;
-          const payload = {
-            provider: this.configForm.provider,
-            base_url: this.configForm.base_url,
-            model: this.configForm.model,
-            role: this.configForm.role
-          };
-          if (this.configForm.api_key) {
-            payload.api_key = this.configForm.api_key;
-          }
           try {
-            const body = await this.requestJson(`/api/workers/${this.configWorker.worker_id}/config`, {
+            await this.requestJson(`/api/workers/${this.selectedWorker}/config`, {
               method: 'PATCH',
-              body: JSON.stringify(payload)
+              body: JSON.stringify({
+                provider: this.configForm.provider,
+                base_url: this.configForm.base_url,
+                model: this.configForm.model,
+                role: this.configForm.role,
+                api_key: this.configForm.api_key
+              })
             });
             this.configForm.api_key = '';
-            this.record('config', `${body.worker.worker_id} · ${body.worker.provider} · ${body.worker.model}\n${body.notice}`);
-            this.showAlert('success', body.notice || '配置已保存。');
-            await this.refreshAll();
-          } catch (error) {
-            this.showAlert('error', `配置请求失败：${error.message}`);
-            this.record('error', error.message);
+            await this.refreshWorkers();
           } finally {
             this.isSavingConfig = false;
           }
+        },
+        chainPromptWithFiles() {
+          return [this.chainPrompt, this.fileContext.prompt].filter((part) => part && part.trim()).join('\n\n');
+        },
+        formatBytes(size) {
+          if (size < 1024) return `${size} B`;
+          if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+          return `${(size / 1024 / 1024).toFixed(1)} MB`;
+        },
+        brStatusClass(status) {
+          if (status === 'succeeded' || status === 'passed' || status === 'ok') return 'success';
+          if (status === 'failed') return 'failed';
+          if (status === 'blocked') return 'blocked';
+          if (status === 'running') return 'running';
+          if (status === 'queued' || status === 'idle') return '';
+          return '';
+        },
+        workersWithKeys() {
+          return this.workers.filter((worker) => worker.api_key_configured).length;
+        },
+        runningRuns() {
+          return this.runs.filter((run) => run.status === 'running').length;
+        },
+        queuedTasks() {
+          return this.tasks.filter((task) => task.status === 'queued').length;
+        },
+        complianceSummary() {
+          if (!this.complianceResult) return 'suite idle';
+          return `${this.complianceResult.cases.length} cases`;
         },
         currentTaskPrompt(worker) {
           const task = this.tasks.find((candidate) => candidate.task_id === worker.current_task_id);
           return task ? task.prompt : '';
         },
-        workersWithKeys() {
-          return this.workers.filter((worker) => worker.api_key_configured).length;
+        selectedWorkerPrompt() {
+          const worker = this.workers.find((item) => item.worker_id === this.selectedWorker);
+          return worker ? this.currentTaskPrompt(worker) : '';
         },
-        filteredTasks() {
-          return this.tasks.filter((task) => {
-            const workerMatch = this.taskFilter.worker === 'all' || task.worker_id === this.taskFilter.worker;
-            const statusMatch = this.taskFilter.status === 'all' || task.status === this.taskFilter.status;
-            return workerMatch && statusMatch;
-          });
+        selectedTaskResult() {
+          return this.selectedTask ? this.selectedTask.result_text : '';
         },
-        selectTask(task) {
-          this.selectedTask = task;
-          this.artifactContent = '';
-        },
-        async loadArtifact(artifactId) {
-          try {
-            const body = await this.requestJson(`/api/artifacts/${artifactId}`);
-            this.artifactContent = body.content || '';
-          } catch (error) {
-            this.showAlert('error', `读取产物失败：${error.message}`);
-            this.record('error', error.message);
+        selectWorker(workerId) {
+          this.selectedWorker = workerId;
+          const worker = this.workers.find((item) => item.worker_id === workerId);
+          if (worker) {
+            this.drawerTitle = `WORKER · ${worker.worker_id}`;
+            this.drawerSubtitle = worker.backend_type || '';
+            this.drawerHtml = `
+              <div class="space-y-3">
+                <div class="mini-metric"><span>Role</span><strong class="!text-base">${this.escapeHtml(worker.role || '')}</strong><em>${this.escapeHtml(worker.model || '')}</em></div>
+                <div class="mini-metric"><span>BACKEND</span><strong class="!text-base">${this.escapeHtml(worker.backend_type || '')}</strong><em>${this.escapeHtml(worker.base_url || '')}</em></div>
+                <div class="grid grid-cols-2 gap-2">
+                  <button class="btn" onclick="window.__marvisOpenWorkerConfig && window.__marvisOpenWorkerConfig('${worker.worker_id}')">CONFIG</button>
+                  <button class="btn" onclick="window.__marvisOpenDocumentInstall && window.__marvisOpenDocumentInstall('${worker.worker_id}')">DOCS</button>
+                </div>
+              </div>
+            `;
+            this.drawerOpen = true;
           }
         },
-        artifactText() {
-          return this.artifactContent || (this.selectedTask && this.selectedTask.result_text) || '';
-        },
-        async copyArtifact() {
-          const text = this.artifactText();
-          if (!text) return;
-          await navigator.clipboard.writeText(text);
-          this.showAlert('success', '产物已复制到剪贴板。');
-        },
-        brStatusClass(status) {
-          if (status === 'succeeded') return 'br-tag-success';
-          if (status === 'failed') return 'br-tag-failed';
-          if (status === 'blocked') return 'br-tag-failed';
-          if (status === 'running') return 'br-tag-on';
-          if (status === 'idle') return 'br-tag-muted';
-          if (status === 'queued') return 'br-tag-muted';
-          return 'br-tag';
-        },
-        showAlert(type, message) {
-          this.alert = {type, message};
-        },
-        taskSummary(task) {
-          const lines = [
-            `${task.worker_id} · ${task.status}`,
-            task.prompt || '',
-          ];
-          if (task.error) {
-            lines.push(`错误：${task.error}`);
-          }
-          if (task.artifact_ids && task.artifact_ids.length) {
-            lines.push(`产物：${task.artifact_ids.join(', ')}`);
-          }
-          return lines.filter(Boolean).join('\n');
-        },
-        setActiveTab(tab) {
-          this.activeTab = tab;
-          localStorage.setItem('niuma.activeTab', tab);
-        },
-        record(type, body) {
-          this.events.unshift({id: crypto.randomUUID(), type, body, time: new Date().toLocaleTimeString()});
+        escapeHtml(text) {
+          return String(text)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
         }
-      }
+      };
     }
   </script>
 </body>

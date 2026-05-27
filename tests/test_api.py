@@ -308,8 +308,8 @@ def test_console_uses_kind_specific_file_inputs_for_document_install():
     console = Path(__file__).parents[1] / "web" / "console.html"
     html = console.read_text(encoding="utf-8")
 
-    assert "installDocument($event, 'conversion_rules')" in html
-    assert "installDocument($event, 'task_manual')" in html
+    assert "__marvisInstallDocument && window.__marvisInstallDocument(event, 'conversion_rules')" in html
+    assert "__marvisInstallDocument && window.__marvisInstallDocument(event, 'task_manual')" in html
     assert "@change=\"installDocument\"" not in html
 
 
@@ -333,28 +333,29 @@ def test_console_fetches_pipeline_runs_and_events():
     console = Path(__file__).parents[1] / "web" / "console.html"
     html = console.read_text(encoding="utf-8")
 
-    assert "Marvis AI Factory" in html
-    assert "token: 'local-token'" in html
-    assert "refreshRuns" in html
-    assert "selectRun" in html
-    assert "startTaskbookRun" in html
+    assert "Marvis AI Factory Console" in html
+    assert "工厂屋顶掀开后的上帝视角总控图" in html
+    assert "工位 / 车间区" in html
+    assert "多流水线总览" in html
+    assert "控制中心 / 主 Agent 办公室" in html
+    assert "产物仓库" in html
+    assert "流水线详情 / 日志 / 产物预览" in html
+    assert "断言 / 任务书 / 主体信息" in html
     assert "taskbookPath" in html
     assert "sourcePath" in html
     assert "lintTaskbook" in html
-    assert "taskbookLint" in html
+    assert "startTaskbookRun" in html
+    assert "runCompliance" in html
     assert "selectedRunEvents" in html
-    assert "runArtifacts" in html
-    assert "loadRunArtifact" in html
     assert "selectedRunArtifactContent" in html
     assert "selectedRunQuality" in html
-    assert "refreshRunQuality" in html
-    assert "complianceSuitePath" in html
-    assert "complianceMode" in html
-    assert "runCompliance" in html
-    assert "complianceResult" in html
-    assert "workerHealth" in html
-    assert "refreshWorkerHealth" in html
-    assert "/api/workers/${workerId}/health" in html
+    assert "refreshTaskbooks" in html
+    assert "selectedTaskbookFilename" in html
+    assert "selectedTaskbookPath" in html
+    assert "selectedStep" in html
+    assert "drawerHtml" in html
+    assert "/api/taskbooks/${filename}" in html
+    assert "/api/compliance/run" in html
     assert "/api/compliance/run" in html
     assert "/api/runs" in html
     assert "/api/runs/${runId}/events" in html
@@ -366,8 +367,8 @@ def test_console_has_taskbook_studio_editor():
     console = Path(__file__).parents[1] / "web" / "console.html"
     html = console.read_text(encoding="utf-8")
 
-    assert "TASKBOOK STUDIO" in html
-    assert "taskbooks: []" in html
+    assert "TaskBook Dispatch Rack" in html
+    assert "new-taskbook.yml" in html
     assert "selectedTaskbookFilename" in html
     assert "taskbookEditorContent" in html
     assert "refreshTaskbooks" in html
