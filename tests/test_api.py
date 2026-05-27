@@ -335,12 +335,16 @@ def test_console_fetches_pipeline_runs_and_events():
 
     assert "Marvis AI Factory Console" in html
     assert "工厂屋顶掀开后的上帝视角总控图" in html
+    assert "2.5D 工厂沙盘" in html
+    assert 'class="viewport"' in html
+    assert 'class="room core"' in html
+    assert 'class="pipe"' in html
     assert "工位 / 车间区" in html
     assert "多流水线总览" in html
     assert "控制中心 / 主 Agent 办公室" in html
     assert "产物仓库" in html
-    assert "流水线详情 / 日志 / 产物预览" in html
-    assert "断言 / 任务书 / 主体信息" in html
+    assert "Step Timeline / Run Log" in html
+    assert "任务书工作间" in html
     assert "taskbookPath" in html
     assert "sourcePath" in html
     assert "lintTaskbook" in html

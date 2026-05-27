@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
@@ -26,7 +26,7 @@
     }
     @layer components {
       .room-frame { @apply border-[1.5px] border-[var(--ink)] bg-[var(--panel)] shadow-[0_2px_0_#00000008]; }
-      .room-title { @apply font-black text-[var(--ink)] uppercase tracking-[1px]; font-family: Georgia, 'Songti SC', '宋体', serif; }
+      .room-title { @apply font-black text-[var(--ink)] uppercase tracking-[1px]; font-family: Georgia, 'Songti SC', '瀹嬩綋', serif; }
       .room-sub { @apply font-mono text-[10px] uppercase tracking-[2px] text-[var(--muted)]; }
       .mono { @apply font-mono text-xs text-[var(--ink-soft)]; }
       .badge { @apply inline-flex items-center gap-1 border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-2 py-[2px] font-mono text-[10px] uppercase tracking-[1px] text-[var(--ink)]; }
@@ -39,7 +39,7 @@
       .field-area { @apply w-full border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3 font-mono text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] resize-none; }
       .mini-metric { @apply border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-3 py-2; }
       .mini-metric span { @apply block font-mono text-[10px] uppercase tracking-[1.5px] text-[var(--muted)]; }
-      .mini-metric strong { @apply block mt-1 text-xl font-black text-[var(--ink)]; font-family: Georgia, 'Songti SC', '宋体', serif; }
+      .mini-metric strong { @apply block mt-1 text-xl font-black text-[var(--ink)]; font-family: Georgia, 'Songti SC', '瀹嬩綋', serif; }
       .mini-metric em { @apply block mt-1 font-mono text-[10px] uppercase tracking-[1px] not-italic text-[var(--ink-soft)]; }
       .lane { @apply border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3; }
       .lane.selected { @apply border-[3px]; }
@@ -58,290 +58,98 @@
       .timeline-step:first-child { @apply border-t-0 pt-0; }
     }
   </style>
+  <style>
+    :root{
+      --iso-bg:#dfe5dc;--iso-floor:#d8dfd5;--iso-ink:#243136;--iso-muted:#667376;--iso-line:#2b383d;
+      --iso-paper:#f4f1e4;--iso-dark:#172124;--iso-blue:#4d85a8;--iso-blue-soft:#d7e7ee;
+      --iso-green:#5e9b70;--iso-green-soft:#dcebdd;--iso-yellow:#c7a84e;--iso-yellow-soft:#f2e8bd;
+      --iso-red:#b8655b;--iso-red-soft:#ead0ca;--iso-glass:#b9d6d7;--iso-steel:#8d9a9d;
+      --iso-font:"Courier New","Microsoft YaHei",ui-monospace,monospace;
+    }
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101719;color:var(--iso-ink);font-family:var(--iso-font);-webkit-font-smoothing:none;text-rendering:geometricPrecision}
+    body{display:grid;place-items:center}
+    [x-cloak]{display:none!important}
+    .viewport{width:1920px;height:1080px;position:relative;overflow:hidden;background:
+      linear-gradient(rgba(36,49,54,.06) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(36,49,54,.06) 1px,transparent 1px),var(--iso-bg);
+      background-size:16px 16px;border:8px solid #0a1012;image-rendering:pixelated;transform-origin:center center}
+    @media (max-width:1919px),(max-height:1079px){.viewport{transform:scale(min(calc(100vw / 1920),calc(100vh / 1080)))}}
+    .pixel{clip-path:polygon(0 8px,8px 8px,8px 0,calc(100% - 8px) 0,calc(100% - 8px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 8px),0 calc(100% - 8px))}
+    .topbar{position:absolute;left:24px;right:24px;top:20px;height:82px;background:var(--iso-dark);color:#eef3ed;border:3px solid #0b1113;display:grid;grid-template-columns:430px 1fr 420px;box-shadow:7px 7px 0 rgba(0,0,0,.28);z-index:20}
+    .brand{display:flex;align-items:center;gap:16px;padding:14px 20px;border-right:3px solid #0b1113}
+    .mark{width:52px;height:52px;position:relative;background:#d9dfd7;border:3px solid #0b1113;box-shadow:inset -6px -6px 0 rgba(0,0,0,.12)}
+    .mark:before{content:"";position:absolute;left:7px;bottom:8px;width:36px;height:18px;background:#29363a;box-shadow:0 -10px 0 -3px var(--iso-blue),14px -16px 0 -5px var(--iso-yellow),28px -8px 0 -5px var(--iso-green)}
+    .mark:after{content:"";position:absolute;left:8px;top:8px;width:8px;height:8px;background:var(--iso-green);box-shadow:14px 0 0 var(--iso-yellow),28px 0 0 var(--iso-red);border:2px solid #0b1113}
+    h1{margin:0;font-size:25px;line-height:1;letter-spacing:-.04em}.subtitle{margin-top:6px;color:#a9b8bb;font-size:12px;letter-spacing:.08em}
+    .stats{display:grid;grid-template-columns:repeat(6,1fr);height:100%}.stat{display:flex;flex-direction:column;justify-content:center;gap:7px;padding:12px 14px;border-right:2px solid rgba(255,255,255,.12);min-width:0}.stat label{color:#9fb0b3;font-size:11px;letter-spacing:.08em;white-space:nowrap}.stat strong{color:#f5f7f1;font-size:20px;white-space:nowrap}.stat small{color:#9fb0b3;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .top-actions{display:grid;grid-template-columns:1fr 120px;gap:10px;align-content:center;padding:12px 14px}.top-actions input{height:28px;border:0;border-bottom:2px solid #eef3ed;background:transparent;color:#eef3ed;font:14px var(--iso-font);outline:0}.top-actions button,.industrial{border:3px solid var(--iso-line);background:#e8ede5;color:#172124;font:900 11px var(--iso-font);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:3px 3px 0 rgba(0,0,0,.18)}.top-actions button{height:48px;background:#eef3ed}.industrial.dark{background:#172124;color:#eef3ed}.industrial:disabled{opacity:.45;cursor:not-allowed}
+    .lamp{width:13px;height:13px;display:inline-block;border:2px solid #0d1416;background:var(--iso-steel);box-shadow:inset -2px -2px 0 rgba(0,0,0,.25)}.running,.ok,.succeeded,.success{background:var(--iso-green)}.queued,.blocked,.warning,.idle{background:var(--iso-yellow)}.failed,.danger{background:var(--iso-red)}.status-row{display:inline-flex;align-items:center;gap:7px;font-size:17px;font-weight:900}
+    .legend{position:absolute;top:106px;right:32px;display:flex;gap:8px;z-index:18}.tag{display:inline-flex;align-items:center;gap:5px;border:2px solid var(--iso-line);background:#fff;padding:3px 6px;font-size:10px;font-weight:900;box-shadow:3px 3px 0 rgba(0,0,0,.12);white-space:nowrap}.tag.green{background:var(--iso-green-soft)}.tag.yellow{background:var(--iso-yellow-soft)}.tag.red{background:var(--iso-red-soft)}.tag.blue{background:var(--iso-blue-soft)}
+    .floor{position:absolute;left:24px;right:24px;top:120px;bottom:24px}.map{position:absolute;inset:0;overflow:hidden;background:
+      linear-gradient(30deg,rgba(43,56,61,.09) 1px,transparent 1px),
+      linear-gradient(150deg,rgba(43,56,61,.09) 1px,transparent 1px),
+      radial-gradient(circle at 50% 42%,rgba(255,255,255,.34),transparent 62%),var(--iso-floor);
+      background-size:32px 18px,32px 18px,auto,auto;border:3px solid var(--iso-line);box-shadow:inset 0 0 0 6px rgba(255,255,255,.22),8px 8px 0 rgba(0,0,0,.18)}
+    .map:before{content:"";position:absolute;left:440px;top:120px;width:1000px;height:550px;transform:skewY(-11deg);background:repeating-linear-gradient(90deg,rgba(36,49,54,.08) 0 2px,transparent 2px 96px),repeating-linear-gradient(0deg,rgba(36,49,54,.08) 0 2px,transparent 2px 64px);opacity:.75;pointer-events:none}
+    .zone-label{position:absolute;z-index:8;display:flex;justify-content:space-between;align-items:center;height:34px;padding:0 12px;color:#edf3ec;background:#243136;border:3px solid #0d1416;font-size:12px;font-weight:900;letter-spacing:.06em;box-shadow:5px 5px 0 rgba(0,0,0,.18)}.zone-label small{color:#aeb9bb;font-size:10px}.left-title{left:40px;top:14px;width:400px}.core-title{left:468px;top:14px;width:940px}.right-title{right:36px;top:14px;width:404px}.warehouse-title{left:40px;bottom:238px;width:960px}.task-title{right:36px;bottom:238px;width:404px}
+    .corridor{position:absolute;z-index:2;background:rgba(255,255,255,.22);border:2px dashed rgba(43,56,61,.35);transform:skewY(-8deg)}.c1{left:444px;top:172px;width:18px;height:410px}.c2{left:1418px;top:172px;width:28px;height:410px}.c3{left:230px;top:630px;width:1320px;height:26px;transform:skewX(-25deg)}
+    .room{position:absolute;z-index:4;transition:transform .16s,filter .16s;filter:drop-shadow(10px 14px 0 rgba(0,0,0,.16))}.room:hover{filter:drop-shadow(10px 14px 0 rgba(0,0,0,.21)) saturate(1.03)}.room.selected{transform:translate(-8px,-14px);filter:drop-shadow(15px 24px 0 rgba(0,0,0,.22)) saturate(1.05);z-index:10}
+    .top{position:absolute;inset:0;background:linear-gradient(135deg,var(--room-top,#eef0ea),var(--room-top-2,#d8e0d9));border:3px solid var(--iso-line);clip-path:polygon(10% 0,100% 18%,90% 100%,0 82%);overflow:hidden}.top:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(43,56,61,.10) 0 2px,transparent 2px 32px),repeating-linear-gradient(0deg,rgba(43,56,61,.07) 0 2px,transparent 2px 32px);opacity:.55}.side-r{position:absolute;right:-24px;top:18%;width:26px;height:82%;background:var(--room-side,#aeb9b4);border-right:3px solid var(--iso-line);border-bottom:3px solid var(--iso-line);clip-path:polygon(0 0,100% 18px,100% 100%,0 82%)}.side-b{position:absolute;left:0;bottom:-24px;width:90%;height:26px;background:var(--room-front,#9ea9a5);border-left:3px solid var(--iso-line);border-bottom:3px solid var(--iso-line);clip-path:polygon(0 0,100% 20%,calc(100% - 28px) 100%,10% 82%)}.content{position:absolute;inset:18px 24px 26px 20px;z-index:3;display:grid;gap:9px}
+    .workshop{left:32px;top:58px;width:408px;height:562px;--room-top:#e9eee8;--room-top-2:#d2dbd3;--room-side:#b4beb8;--room-front:#a3ada8}.core{left:462px;top:58px;width:954px;height:562px;--room-top:#e7ece5;--room-top-2:#ced9d0;--room-side:#aebbb1;--room-front:#9ba8a0}.control{left:1454px;top:58px;width:396px;height:562px;--room-top:#dce7e7;--room-top-2:#c4d7d8;--room-side:#93aeb0;--room-front:#7f9699}.warehouse{left:32px;top:668px;width:974px;height:234px;--room-top:#e8e6d8;--room-top-2:#d4d1bd;--room-side:#b7b29a;--room-front:#a39e88}.taskbook{left:1454px;top:668px;width:396px;height:234px;--room-top:#ece7d5;--room-top-2:#d8d0af;--room-side:#b6aa82;--room-front:#a29670}.log-strip{position:absolute;left:1034px;top:668px;width:384px;height:234px;z-index:5}
+    .workshop-list{display:grid;grid-template-rows:repeat(4,1fr);gap:12px;overflow:hidden}.bay{position:relative;min-height:112px;padding:8px 8px 8px 112px;border:2px dashed rgba(43,56,61,.35);background:rgba(255,255,255,.22);cursor:pointer}.bay-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11px;font-weight:900}.bay-copy{font-size:10px;line-height:1.35;color:#465357;font-weight:700}.bench{position:absolute;left:10px;top:16px;width:86px;height:58px;filter:drop-shadow(8px 10px 0 rgba(0,0,0,.16))}.bench-top{position:absolute;inset:0;background:#cbd7d7;border:3px solid #253237;clip-path:polygon(15% 0,100% 22%,82% 100%,0 78%)}.bench-side{position:absolute;right:-12px;top:22%;width:14px;height:78%;background:#8e9c9c;border-right:3px solid #253237;border-bottom:3px solid #253237;clip-path:polygon(0 0,100% 10px,100% 100%,0 78%)}.bench-front{position:absolute;left:0;bottom:-12px;width:82%;height:14px;background:#79888a;border-left:3px solid #253237;border-bottom:3px solid #253237;clip-path:polygon(0 0,100% 20%,calc(100% - 12px) 100%,12% 82%)}.meters{margin-top:7px;display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.meter{border:2px solid var(--iso-line);background:rgba(255,255,255,.52);font-size:9px;font-weight:900;text-align:center;padding:3px 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .core-content{display:grid;grid-template-columns:104px 1fr 104px;gap:14px;height:100%}.yard,.dock{display:grid;grid-template-rows:32px repeat(3,1fr);gap:9px;padding:8px;border:3px solid var(--iso-line);background:rgba(255,255,255,.28)}.yard-title{display:grid;place-items:center;border-bottom:2px solid var(--iso-line);font-size:10px;font-weight:900;text-align:center}.cube{position:relative;height:72px;filter:drop-shadow(5px 7px 0 rgba(0,0,0,.14));cursor:pointer}.cube-top{position:absolute;left:8px;top:0;width:70px;height:40px;background:var(--crate,#cdd6d1);border:2px solid var(--iso-line);clip-path:polygon(14% 0,100% 18%,84% 100%,0 82%)}.cube-front{position:absolute;left:8px;top:34px;width:58px;height:28px;background:#a8b3ad;border-left:2px solid var(--iso-line);border-bottom:2px solid var(--iso-line);clip-path:polygon(0 0,100% 20%,84% 100%,0 82%)}.cube-side{position:absolute;left:66px;top:8px;width:14px;height:52px;background:#909b96;border-right:2px solid var(--iso-line);border-bottom:2px solid var(--iso-line);clip-path:polygon(0 0,100% 10px,100% 100%,0 78%)}.cube b{position:absolute;left:13px;top:24px;width:58px;z-index:2;font-size:9px;line-height:1.1;text-align:center}.cube.queued{--crate:var(--iso-yellow-soft)}.cube.ok{--crate:var(--iso-green-soft)}.cube.fail{--crate:var(--iso-red-soft)}.cube.blue{--crate:var(--iso-blue-soft)}
+    .pipes{position:relative;display:grid;grid-template-rows:repeat(3,1fr);gap:18px;padding:4px 0}.pipe{position:relative;min-height:160px;cursor:pointer;transition:transform .16s,filter .16s;filter:drop-shadow(10px 12px 0 rgba(0,0,0,.16))}.pipe.selected{transform:translate(-8px,-12px);filter:drop-shadow(15px 21px 0 rgba(0,0,0,.22));z-index:6}.pipe-top{position:absolute;inset:0;background:linear-gradient(135deg,var(--lane),var(--lane2));border:4px solid var(--edge);clip-path:polygon(5% 0,100% 16%,95% 100%,0 84%);overflow:hidden}.pipe-top:before{content:"";position:absolute;left:160px;right:72px;top:54px;height:42px;border:3px solid var(--iso-line);background:repeating-linear-gradient(90deg,rgba(36,49,54,.25) 0 16px,transparent 16px 28px),linear-gradient(90deg,rgba(255,255,255,.35),rgba(255,255,255,.1));transform:skewY(8deg);animation:belt 1.2s linear infinite}.pipe-top:after{content:"";position:absolute;left:200px;right:112px;top:66px;height:8px;background:repeating-linear-gradient(90deg,rgba(36,49,54,.45) 0 22px,transparent 22px 44px);transform:skewY(8deg);animation:arrows 1.1s linear infinite}@keyframes belt{to{background-position:28px 0,0 0}}@keyframes arrows{to{transform:translateX(28px) skewY(8deg)}}.pipe-side{position:absolute;right:-18px;top:16%;width:20px;height:84%;background:#61757a;border-right:4px solid var(--iso-line);border-bottom:4px solid var(--iso-line);clip-path:polygon(0 0,100% 14px,100% 100%,0 84%)}.pipe-front{position:absolute;left:0;bottom:-18px;width:95%;height:20px;background:#53666b;border-left:4px solid var(--iso-line);border-bottom:4px solid var(--iso-line);clip-path:polygon(0 0,100% 17%,calc(100% - 20px) 100%,5% 84%)}.pipe-content{position:absolute;inset:14px 22px 22px 22px;z-index:3;display:grid;grid-template-columns:150px 1fr 88px;gap:12px;align-items:center}.pipe-label{align-self:stretch;padding:8px;background:rgba(255,255,255,.44);border:2px solid var(--iso-line);display:flex;flex-direction:column;justify-content:space-between}.pipe-label small{font-size:9px;color:#48575b;font-weight:900;letter-spacing:.08em}.pipe-label strong{display:block;margin-top:5px;font-size:13px;line-height:1.18;letter-spacing:-.04em}.task-chip{margin-top:7px;border:2px solid var(--iso-line);background:rgba(255,255,255,.55);padding:4px;font-size:9px;font-weight:900;line-height:1.15}.machines{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:center}
+    .machine{position:relative;height:108px;filter:drop-shadow(5px 7px 0 rgba(0,0,0,.14));cursor:pointer}.m-top{position:absolute;inset:0;background:#eef4ef;border:3px solid #253237;clip-path:polygon(13% 0,100% 20%,85% 100%,0 80%);overflow:hidden}.m-top:before{content:"";position:absolute;left:18px;top:16px;width:34px;height:10px;background:#5d696c;border:2px solid #253237;box-shadow:38px 18px 0 #5d696c}.m-top:after{content:attr(data-name);position:absolute;left:10px;right:15px;bottom:12px;border-top:2px solid rgba(43,56,61,.55);padding-top:5px;font-size:9px;font-weight:900;text-align:center;letter-spacing:-.04em}.m-side{position:absolute;right:-12px;top:20%;width:14px;height:80%;background:#909c98;border-right:3px solid #253237;border-bottom:3px solid #253237;clip-path:polygon(0 0,100% 11px,100% 100%,0 80%)}.m-front{position:absolute;left:0;bottom:-12px;width:86%;height:14px;background:#7c8a86;border-left:3px solid #253237;border-bottom:3px solid #253237;clip-path:polygon(0 0,100% 20%,calc(100% - 14px) 100%,13% 80%)}.machine.failed .m-top{outline:4px solid rgba(184,101,91,.78);outline-offset:-8px}.machine.blocked .m-top{outline:4px dashed rgba(176,139,42,.9);outline-offset:-8px}.machine.running .lamp{animation:pulse 1s steps(2,end) infinite}@keyframes pulse{50%{filter:brightness(1.5)}}.machine .lamp{position:absolute;z-index:5;left:18px;top:12px}.gate{position:absolute;z-index:4;left:calc(50% - 12px);top:18px;width:24px;height:74px;background:repeating-linear-gradient(45deg,var(--iso-yellow) 0 9px,#263238 9px 18px);border:3px solid #263238;transform:skewY(7deg);display:none}.pipe.blocked .gate{display:block}.pipe.failed .pipe-top:before{background:repeating-linear-gradient(90deg,rgba(184,101,91,.55) 0 18px,transparent 18px 30px),linear-gradient(90deg,rgba(255,255,255,.35),rgba(255,255,255,.1));animation:none}
+    .line-blue{--lane:#d7e7ee;--lane2:#c7dce7;--edge:#4d85a8}.line-green{--lane:#dcebdd;--lane2:#cde0cf;--edge:#5e9b70}.line-yellow{--lane:#f2e8bd;--lane2:#e6d9a4;--edge:#b99a3c}.belt-crate{position:absolute;z-index:5;top:58px;left:48%;width:48px;height:38px;transform:skewY(8deg);background:var(--iso-paper);border:2px solid var(--iso-line);box-shadow:7px 7px 0 rgba(0,0,0,.16);font-size:9px;font-weight:900;display:grid;place-items:center}.pipe.running .belt-crate{animation:moveCrate 3.2s linear infinite}.pipe.queued .belt-crate{left:20%;background:var(--iso-yellow-soft)}.pipe.succeeded .belt-crate{left:76%;background:var(--iso-green-soft)}.pipe.failed .belt-crate{left:50%;background:var(--iso-red-soft)}@keyframes moveCrate{0%{left:18%}100%{left:78%}}.qa-stamp{position:absolute;right:108px;top:30px;z-index:6;transform:rotate(-12deg);border:3px solid var(--iso-green);color:var(--iso-green);background:rgba(255,255,255,.72);padding:4px 8px;font-size:11px;font-weight:900;display:none}.pipe.succeeded .qa-stamp{display:block}
+    .filebox{height:30px;border:2px solid var(--iso-line);background:#fffdf4;box-shadow:3px 3px 0 rgba(0,0,0,.13);font-size:9px;font-weight:900;display:flex;align-items:center;padding-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.filebox.ok{border-left:8px solid var(--iso-green)}.filebox.warn{border-left:8px solid var(--iso-yellow)}.filebox.fail{border-left:8px solid var(--iso-red)}
+    .glass{position:relative;border:3px solid var(--iso-line);background:linear-gradient(135deg,rgba(185,214,215,.75),rgba(255,255,255,.25));height:150px;clip-path:polygon(9% 0,100% 18%,91% 100%,0 82%);box-shadow:inset 0 0 0 6px rgba(255,255,255,.25)}.desk{position:absolute;left:42px;top:38px;width:96px;height:62px;background:#233137;color:#eef3ed;border:3px solid #0d1416;transform:skewY(8deg);display:grid;place-items:center;text-align:center;font-weight:900;font-size:12px}.control-note{position:absolute;right:18px;top:24px;width:170px;z-index:2;font-size:11px;line-height:1.45;font-weight:700}.control-note b{font-size:13px}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.buttons .industrial{height:44px}.board,.shelf,.preview,.quality,.log-panel,.contract,.editor-panel{border:3px solid var(--iso-line);background:rgba(255,255,255,.38);padding:10px;overflow:hidden}.board{display:grid;gap:7px;font-size:11px;font-weight:900}.board-row{display:flex;justify-content:space-between;gap:10px;border-bottom:2px dotted rgba(43,56,61,.3);padding-bottom:5px}.warehouse-content{grid-template-columns:320px 1fr 300px;align-items:stretch}.shelf,.preview,.quality{min-height:100%;overflow:auto}.shelf{display:grid;align-content:start;gap:8px}.preview pre,.editor-panel textarea,.editor-panel pre{font:11px/1.45 var(--iso-font);white-space:pre-wrap}.preview pre{max-height:150px;overflow:auto;margin:8px 0 0;border-top:2px solid var(--iso-line);padding-top:8px}.quality{display:grid;align-content:start;gap:7px}.assertion{border:2px solid var(--iso-line);background:#fffdf4;padding:6px;font-size:10px;font-weight:900}.log-panel{height:100%;display:grid;grid-template-rows:28px 1fr;box-shadow:8px 8px 0 rgba(0,0,0,.16);background:#eef0e5}.log-list{overflow:auto;font-size:10px;line-height:1.45}.log-line{border-top:1px dotted rgba(43,56,61,.45);padding:4px 0}.contracts{display:grid;gap:8px}.contract{display:grid;grid-template-columns:36px 1fr 48px;gap:8px;align-items:center;cursor:pointer}.contract-icon{width:34px;height:34px;border:2px solid var(--iso-line);background:var(--iso-paper);display:grid;place-items:center;font-weight:900}.contract strong{display:block;font-size:11px}.contract small{display:block;font-size:9px;color:#526064;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.state{border:2px solid var(--iso-line);font-size:9px;font-weight:900;text-align:center;padding:3px}.state.run{background:var(--iso-green-soft)}.state.fail{background:var(--iso-red-soft)}.state.queue{background:var(--iso-yellow-soft)}
+    .editor-panel{position:absolute;left:1034px;top:668px;width:384px;height:234px;z-index:5;display:grid;grid-template-rows:26px 1fr 34px 58px;gap:6px}.editor-panel textarea{width:100%;height:100%;resize:none;border:2px solid var(--iso-line);background:#fffdf4;padding:7px;color:var(--iso-ink);outline:0}.editor-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.field-iso{width:100%;height:30px;border:0;border-bottom:2px solid var(--iso-line);background:rgba(255,255,255,.45);padding:0 6px;font:12px var(--iso-font);outline:0}.drawer{position:absolute;right:0;top:0;z-index:50;width:430px;height:100%;transform:translateX(100%);transition:transform .2s;background:#f4f1e4;border-left:4px solid #10191c;box-shadow:-10px 0 0 rgba(0,0,0,.16)}.drawer.open{transform:translateX(0)}.drawer-head{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--iso-line);padding:14px}.drawer-body{height:calc(100% - 64px);overflow:auto;padding:14px}.room-title{font-weight:900;letter-spacing:.04em}.room-sub{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--iso-muted)}.mono{font:11px/1.45 var(--iso-font);color:#465357}.mini-metric{border:2px solid var(--iso-line);background:rgba(255,255,255,.48);padding:8px}.mini-metric span{display:block;font-size:9px;color:var(--iso-muted);letter-spacing:.1em;text-transform:uppercase}.mini-metric strong{display:block;margin-top:4px;font-weight:900}.mini-metric em{display:block;margin-top:4px;font-style:normal;font-size:10px;color:#526064}.chip{display:inline-flex;align-items:center;gap:4px;border:2px solid var(--iso-line);background:#fffdf4;padding:2px 5px;font-size:9px;font-weight:900;text-transform:uppercase}.chip.success{background:var(--iso-green-soft)}.chip.failed{background:var(--iso-red-soft)}.chip.blocked,.chip.running{background:var(--iso-yellow-soft)}
+  </style>
 </head>
-<body class="min-h-screen bg-[var(--paper)] text-[var(--ink)] antialiased">
-  <main x-data="factoryRoom()" x-init="init()" class="h-screen overflow-hidden">
-    <div class="grid h-full grid-rows-[58px_1fr_250px]">
-      <header class="room-frame border-x-0 border-t-0 flex items-center gap-3 px-4">
-        <div class="flex min-w-0 items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center border-[1.5px] border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)] font-black">M</div>
-          <div class="min-w-0">
-            <div class="room-title text-[15px]">Marvis AI Factory Console</div>
-            <div class="room-sub truncate">工厂屋顶掀开后的上帝视角总控图</div>
-          </div>
+<body>
+  <main x-data="factoryRoom()" x-init="init()" class="viewport" aria-label="Marvis AI 工厂控制台 2.5D 沙盘">
+    <header class="topbar pixel">
+      <div class="brand"><div class="mark" aria-hidden="true"></div><div><h1>Marvis AI Factory Console</h1><div class="subtitle">工厂屋顶掀开后的上帝视角总控图 · 2.5D 工厂沙盘</div></div></div>
+      <div class="stats">
+        <div class="stat"><label>Server</label><strong x-text="health.status === 'ok' ? 'ONLINE' : 'OFFLINE'"></strong><small x-text="baseUrl"></small></div>
+        <div class="stat"><label>Workers</label><strong x-text="workers.length"></strong><small x-text="`${workersWithKeys()} keys ready`"></small></div>
+        <div class="stat"><label>Runs</label><strong x-text="runs.length"></strong><small x-text="`${runningRuns()} running`"></small></div>
+        <div class="stat"><label>Queue</label><strong x-text="tasks.length"></strong><small x-text="`${queuedTasks()} queued`"></small></div>
+        <div class="stat"><label>Compliance</label><strong x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></strong><small x-text="complianceSummary()"></small></div>
+        <div class="stat"><label>Active</label><strong x-text="selectedRun ? selectedRun.run_id.slice(0, 8) : 'NONE'"></strong><small x-text="selectedWorker"></small></div>
+      </div>
+      <div class="top-actions"><div><input x-model="baseUrl" aria-label="Server URL"><input x-model="token" type="password" aria-label="Hermes Token"></div><button @click="refreshAll" :disabled="isRefreshing" x-text="isRefreshing ? 'SYNC' : 'REFRESH'"></button></div>
+    </header>
+
+    <div class="legend"><span class="tag green"><span class="lamp ok"></span>running / ok</span><span class="tag yellow"><span class="lamp queued"></span>queued / blocked</span><span class="tag red"><span class="lamp failed"></span>failed</span><span class="tag blue"><span class="lamp idle"></span>idle</span></div>
+
+    <section class="floor"><div class="map">
+      <div class="zone-label left-title"><span>工位 / 车间区</span><small>AGENT BAYS</small></div><div class="zone-label core-title"><span>多流水线总览</span><small>ONE ROOF OPENED</small></div><div class="zone-label right-title"><span>控制中心 / 主 Agent 办公室</span><small>DISPATCH</small></div><div class="zone-label warehouse-title"><span>产物仓库 / 日志 / 断言</span><small>ARTIFACT HANDOFF</small></div><div class="zone-label task-title"><span>任务书工作间</span><small>TASKBOOK STUDIO</small></div>
+      <div class="corridor c1"></div><div class="corridor c2"></div><div class="corridor c3"></div>
+
+      <article class="room workshop" :class="selectedWorker ? 'selected' : ''"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content workshop-list">
+        <template x-for="worker in workers.slice(0, 4)" :key="worker.worker_id"><section class="bay" @click="selectWorker(worker.worker_id)"><div class="bench"><div class="bench-top"></div><div class="bench-side"></div><div class="bench-front"></div></div><div class="bay-head"><span><i class="lamp" :class="lampClass(worker.status)"></i> <span x-text="worker.display_name"></span></span><span x-text="worker.status"></span></div><div class="bay-copy" x-text="worker.worker_id + ' · ' + (worker.role || 'agent bay')"></div><div class="meters"><span class="meter" x-text="worker.backend_type || 'backend'"></span><span class="meter" x-text="worker.model || 'model'"></span><span class="meter" x-text="worker.api_key_configured ? 'KEY OK' : 'NO KEY'"></span></div></section></template>
+      </div></article>
+
+      <article class="room core"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content core-content">
+        <aside class="yard"><div class="yard-title">Input Source</div><div class="cube blue"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>legacy module</b></div><div class="cube queued"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>taskbook</b></div><div class="cube ok"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>context</b></div></aside>
+        <div class="pipes">
+          <template x-for="(run, index) in runs.slice(0, 3)" :key="run.run_id"><section class="pipe" :class="[lineClass(index), pipeStatusClass(run.status), selectedRun && selectedRun.run_id === run.run_id ? 'selected' : '']" @click="selectRun(run)"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="qa-stamp">质检通过</div><div class="belt-crate">产物</div><div class="pipe-content"><div class="pipe-label"><div><small x-text="`LINE ${index + 1} · ${run.status}`"></small><strong x-text="run.title || run.run_id"></strong></div><div class="task-chip" x-text="run.run_id"></div></div><div class="machines"><template x-for="step in paddedSteps(run)" :key="step.step_id"><div class="machine" :class="machineStatusClass(step.status)" @click.stop="step.real && selectStep(step)"><span class="lamp" :class="lampClass(step.status)"></span><div class="m-top" :data-name="step.step_id"></div><div class="m-side"></div><div class="m-front"></div></div></template></div><div class="exports"><template x-for="artifact in outputFilesForRun(run).slice(0, 3)" :key="artifact"><div class="filebox ok" x-text="artifact.split('/').slice(-1)[0]"></div></template></div></div></section></template>
+          <template x-if="runs.length === 0"><section class="pipe line-blue queued selected"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="belt-crate">待命</div><div class="pipe-content"><div class="pipe-label"><div><small>LINE 1 · idle</small><strong>等待任务书入闸</strong></div><div class="task-chip">TaskBook Dispatch Rack</div></div></div></section></template>
         </div>
+        <aside class="dock"><div class="yard-title">Output Dock</div><template x-for="artifact in runArtifacts.slice(0, 3)" :key="artifact.path"><div class="cube ok" @click="loadRunArtifact(artifact)"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b x-text="artifact.path.split('/').slice(-1)[0]"></b></div></template></aside>
+      </div></article>
 
-        <div class="grid flex-1 grid-cols-6 gap-2">
-          <div class="mini-metric"><span>Server</span><strong x-text="health.status === 'ok' ? 'ONLINE' : 'OFFLINE'"></strong><em x-text="baseUrl"></em></div>
-          <div class="mini-metric"><span>Workers</span><strong x-text="`${workers.length}`"></strong><em x-text="`${workersWithKeys()} keys`"></em></div>
-          <div class="mini-metric"><span>Runs</span><strong x-text="runs.length"></strong><em x-text="`${runningRuns()} running`"></em></div>
-          <div class="mini-metric"><span>Queue</span><strong x-text="tasks.length"></strong><em x-text="`${queuedTasks()} queued`"></em></div>
-          <div class="mini-metric"><span>Compliance</span><strong x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></strong><em x-text="complianceSummary()"></em></div>
-          <div class="mini-metric"><span>Active</span><strong x-text="selectedRun ? selectedRun.run_id.slice(0, 8) : 'NONE'"></strong><em x-text="selectedWorker"></em></div>
-        </div>
+      <article class="room control"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content control-content"><section class="glass"><div class="desk">主 Agent<br>独立<br>办公室</div><div class="control-note"><b>调度室</b><br><span x-text="`正在调度 ${runs.length} 条流水线、${workers.length} 个工位与 ${tasks.length} 个任务。`"></span></div></section><section class="buttons"><button class="industrial" @click="lintTaskbook" :disabled="isLintingTaskbook || !taskbookPath.trim()" x-text="isLintingTaskbook ? 'LINTING' : 'LINT'"></button><button class="industrial dark" @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button><button class="industrial" @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" x-text="isRunningCompliance ? 'RUNNING' : 'COMPLIANCE'"></button><button class="industrial" @click="refreshRuns">RUNS</button></section><section class="board"><input class="field-iso" x-model="taskbookPath" placeholder="taskbook path"><input class="field-iso" x-model="sourcePath" placeholder="source path or directory"><div class="board-row"><span>Selected Worker</span><b x-text="selectedWorker"></b></div><div class="board-row"><span>Selected TaskBook</span><b x-text="selectedTaskbookFilename || 'NONE'"></b></div><div class="board-row"><span>Compliance</span><b x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></b></div></section></div></article>
 
-        <div class="flex items-center gap-2">
-          <input x-model="baseUrl" class="field w-56 py-1" aria-label="Server URL">
-          <input x-model="token" type="password" class="field w-40 py-1" aria-label="Hermes Token">
-          <button @click="refreshAll" :disabled="isRefreshing" class="btn-primary" x-text="isRefreshing ? '...' : 'REFRESH'"></button>
-        </div>
-      </header>
+      <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><template x-for="artifact in runArtifacts" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifact.path"></button></template><div x-show="runArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">Artifact Preview</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">Compliance</div><div x-show="complianceResult"><template x-for="caseItem in (complianceResult ? complianceResult.cases : [])" :key="caseItem.name"><div class="assertion" :class="caseItem.status === 'passed' ? 'ok' : 'fail'" x-text="caseItem.name + ' · ' + caseItem.status"></div></template></div><div x-show="!complianceResult" class="assertion">断言测试集待运行</div></section></div></article>
 
-      <section class="grid min-h-0 grid-cols-[310px_minmax(0,1fr)_360px] gap-3 p-3">
-        <aside class="room-frame min-h-0 overflow-hidden">
-          <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
-            <div class="room-title text-[13px]">工位 / 车间区</div>
-            <div class="room-sub">workshops and agent bays</div>
-          </div>
-          <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none">
-            <div class="space-y-3">
-              <template x-for="worker in workers" :key="worker.worker_id">
-                <article @click="selectWorker(worker.worker_id)" class="border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3 cursor-pointer" :class="selectedWorker === worker.worker_id ? 'border-[3px]' : ''">
-                  <div class="flex items-start justify-between gap-2">
-                    <div class="min-w-0">
-                      <div class="room-title text-[12px] truncate" x-text="worker.display_name"></div>
-                      <div class="mono truncate" x-text="worker.worker_id + ' · ' + worker.role"></div>
-                    </div>
-                    <span class="chip" :class="brStatusClass(worker.status)" x-text="worker.status"></span>
-                  </div>
-                  <div class="mt-3 grid grid-cols-2 gap-2">
-                    <div class="mini-metric"><span>Backend</span><strong class="!text-sm" x-text="worker.backend_type"></strong><em x-text="worker.model"></em></div>
-                    <div class="mini-metric"><span>Queue</span><strong class="!text-sm" x-text="worker.queue_depth"></strong><em x-text="worker.api_key_configured ? 'KEY OK' : 'NO KEY'"></em></div>
-                  </div>
-                  <div class="mt-2 text-[11px] text-[var(--ink-soft)] line-clamp-2" x-text="currentTaskPrompt(worker) || '空闲'"></div>
-                </article>
-              </template>
-            </div>
-          </div>
-        </aside>
+      <aside class="log-strip"><section class="log-panel"><div class="room-title">Step Timeline / Run Log</div><div class="log-list"><template x-for="step in selectedRunSteps()" :key="step.step_id"><div class="log-line"><b x-text="step.step_id"></b> · <span x-text="step.status"></span> · <span x-text="step.objective"></span></div></template><template x-for="event in selectedRunEvents.slice(0, 8)" :key="event.event_id"><div class="log-line" x-text="`${event.time || ''} · ${event.type}`"></div></template></div></section></aside>
 
-        <section class="min-h-0 overflow-hidden">
-          <div class="room-frame h-full overflow-hidden">
-            <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <div class="room-title text-[13px]">多流水线总览</div>
-                  <div class="room-sub">one roof opened, multiple lines visible</div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button class="btn tiny" @click="refreshRuns">RUNS</button>
-                  <button class="btn tiny" @click="runCompliance">COMPLIANCE</button>
-                </div>
-              </div>
-            </div>
-            <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none">
-              <div class="grid gap-3">
-                <template x-for="run in runs" :key="run.run_id">
-                  <article class="lane" :class="selectedRun && selectedRun.run_id === run.run_id ? 'selected' : ''" @click="selectRun(run)">
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                      <div class="min-w-0">
-                        <div class="room-title text-[12px] truncate" x-text="run.title"></div>
-                        <div class="mono truncate" x-text="run.run_id"></div>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <span class="chip" :class="brStatusClass(run.status)" x-text="run.status"></span>
-                        <span class="chip" x-text="run.steps ? run.steps.length + ' STEPS' : '0 STEPS'"></span>
-                      </div>
-                    </div>
-                    <div class="mt-3 grid gap-2" :style="`grid-template-columns: repeat(${Math.min((run.steps || []).length, 4) || 1}, minmax(0, 1fr))`">
-                      <template x-for="step in (run.steps || [])" :key="step.step_id">
-                        <div class="border-[1px] border-[var(--ink)] bg-[var(--panel)] p-2">
-                          <div class="flex items-center justify-between gap-2">
-                            <span class="mono truncate" x-text="step.step_id"></span>
-                            <span class="chip" :class="brStatusClass(step.status)" x-text="step.status"></span>
-                          </div>
-                          <div class="mt-2 text-[11px] text-[var(--ink-soft)] line-clamp-2" x-text="step.objective"></div>
-                          <div class="mt-2 flex flex-wrap gap-1">
-                            <template x-for="output in step.outputs || []" :key="output">
-                              <span class="chip" x-text="output.split('/').slice(-1)[0]"></span>
-                            </template>
-                          </div>
-                        </div>
-                      </template>
-                    </div>
-                  </article>
-                </template>
-              </div>
-            </div>
-          </div>
-        </section>
+      <article class="room taskbook"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content contracts"><div class="room-title">TaskBook Dispatch Rack</div><template x-for="item in taskbooks.slice(0, 3)" :key="item.filename"><section class="contract" @click="loadTaskbook(item.filename)"><div class="contract-icon">书</div><div><strong x-text="item.filename"></strong><small x-text="item.path"></small></div><div class="state" :class="selectedTaskbookFilename === item.filename ? 'run' : 'queue'" x-text="selectedTaskbookFilename === item.filename ? '选中' : '待命'"></div></section></template></div></article>
 
-        <aside class="room-frame min-h-0 overflow-hidden">
-          <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
-            <div class="room-title text-[13px]">控制中心 / 主 Agent 办公室</div>
-            <div class="room-sub">dispatch, taskbooks and compliance</div>
-          </div>
-          <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none space-y-3">
-            <div class="room-frame p-3">
-              <div class="room-title text-[12px]">Dispatch Rack</div>
-              <div class="mt-3 space-y-2">
-                <input x-model="taskbookPath" class="field" placeholder="taskbook path">
-                <input x-model="sourcePath" class="field" placeholder="source path or directory">
-                <div class="grid grid-cols-2 gap-2">
-                  <button @click="lintTaskbook" :disabled="isLintingTaskbook || !taskbookPath.trim()" class="btn" x-text="isLintingTaskbook ? 'LINTING' : 'LINT'"></button>
-                  <button @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" class="btn-primary" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button>
-                </div>
-                <button @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" class="btn w-full" x-text="isRunningCompliance ? 'RUNNING' : 'RUN COMPLIANCE'"></button>
-              </div>
-            </div>
-
-            <div class="room-frame p-3">
-              <div class="room-title text-[12px]">TaskBook Dispatch Rack</div>
-              <div class="mt-3 space-y-2">
-                <template x-for="item in taskbooks" :key="item.filename">
-                  <button @click="loadTaskbook(item.filename)" class="w-full border-[1.5px] border-[var(--ink)] bg-[var(--paper)] px-3 py-2 text-left" :class="selectedTaskbookFilename === item.filename ? 'border-[3px]' : ''">
-                    <div class="room-title text-[11px] truncate" x-text="item.filename"></div>
-                    <div class="mono truncate" x-text="item.path"></div>
-                  </button>
-                </template>
-              </div>
-            </div>
-
-            <div class="room-frame p-3">
-              <div class="room-title text-[12px]">主 Agent 办公室</div>
-              <div class="mt-3 grid gap-2">
-                <div class="mini-metric"><span>Selected Worker</span><strong class="!text-base" x-text="selectedWorker"></strong><em x-text="selectedWorkerPrompt() || '—'"></em></div>
-                <div class="mini-metric"><span>Selected TaskBook</span><strong class="!text-base" x-text="selectedTaskbookFilename || 'NONE'"></strong><em x-text="selectedTaskbookPath || '—'"></em></div>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </section>
-
-      <section class="grid min-h-0 grid-cols-[340px_minmax(0,1fr)_420px] gap-3 px-3 pb-3">
-        <aside class="room-frame min-h-0 overflow-hidden">
-          <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
-            <div class="room-title text-[13px]">产物仓库</div>
-            <div class="room-sub">artifact shelves and markdown preview</div>
-          </div>
-          <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none space-y-2">
-            <template x-for="artifact in runArtifacts" :key="artifact.path">
-              <button @click="loadRunArtifact(artifact)" class="w-full border-[1.5px] border-[var(--ink)] bg-[var(--paper)] p-3 text-left" :class="selectedRunArtifactPath === artifact.path ? 'border-[3px]' : ''">
-                <div class="room-title text-[11px] truncate" x-text="artifact.path"></div>
-                <div class="mono" x-text="formatBytes(artifact.size)"></div>
-              </button>
-            </template>
-            <div x-show="!runArtifacts.length" class="mono">— 暂无产物 —</div>
-          </div>
-        </aside>
-
-        <section class="room-frame min-h-0 overflow-hidden">
-          <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="room-title text-[13px]">流水线详情 / 日志 / 产物预览</div>
-                <div class="room-sub">selected run and step detail</div>
-              </div>
-              <span class="badge" x-text="selectedRun ? selectedRun.status : 'NO RUN SELECTED'"></span>
-            </div>
-          </div>
-          <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none">
-            <template x-if="selectedRun">
-              <div class="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
-                <div class="space-y-3">
-                  <div class="room-frame p-3">
-                    <div class="room-title text-[12px]">Step Timeline</div>
-                    <div class="mt-3 space-y-3">
-                      <template x-for="step in selectedRun.steps || []" :key="step.step_id">
-                        <div class="timeline-step">
-                          <div class="flex items-center justify-between gap-2">
-                            <button @click="selectStep(step)" class="room-title text-[11px] text-left" x-text="step.step_id"></button>
-                            <span class="chip" :class="brStatusClass(step.status)" x-text="step.status"></span>
-                          </div>
-                          <div class="mono mt-1" x-text="step.objective"></div>
-                          <div class="mt-1 flex flex-wrap gap-1">
-                            <template x-for="dep in (step.depends_on || [])" :key="dep">
-                              <span class="chip">DEP: <span x-text="dep"></span></span>
-                            </template>
-                          </div>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-
-                  <div class="room-frame p-3">
-                    <div class="room-title text-[12px]">Run Log</div>
-                    <div class="mt-3 max-h-56 overflow-auto space-y-1 font-mono text-[11px] leading-5">
-                      <template x-for="event in selectedRunEvents" :key="event.event_id">
-                        <div class="border-t-[1px] border-[var(--ink)] pt-1" x-text="`${event.time || ''} · ${event.type}`"></div>
-                      </template>
-                      <div x-show="selectedRunEvents.length === 0" class="mono">— 暂无事件 —</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="space-y-3">
-                  <div class="room-frame p-3">
-                    <div class="room-title text-[12px]">Artifact Preview</div>
-                    <div class="mono mt-1" x-text="selectedRunArtifactPath || '—'"></div>
-                    <pre class="mt-3 max-h-64 overflow-auto whitespace-pre-wrap border-t-[1.5px] border-[var(--ink)] pt-3 text-sm leading-6 text-[var(--ink-soft)]" x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre>
-                  </div>
-
-                  <div class="room-frame p-3">
-                    <div class="room-title text-[12px]">Compliance</div>
-                    <div class="mt-3 space-y-2">
-                      <div class="mini-metric"><span>Status</span><strong class="!text-base" x-text="complianceResult ? (complianceResult.success ? 'PASSED' : 'FAILED') : 'IDLE'"></strong><em x-text="complianceSummary()"></em></div>
-                      <template x-if="complianceResult">
-                        <div class="space-y-2">
-                          <template x-for="caseItem in complianceResult.cases" :key="caseItem.name">
-                            <div class="border-[1.5px] border-[var(--ink)] bg-[var(--panel)] p-2">
-                              <div class="flex items-center justify-between gap-2">
-                                <span class="room-title text-[11px]" x-text="caseItem.name"></span>
-                                <span class="chip" :class="caseItem.status === 'passed' ? 'success' : 'failed'" x-text="caseItem.status"></span>
-                              </div>
-                              <div class="mono mt-1" x-text="(caseItem.errors || []).join(' · ') || 'all assertions passed'"></div>
-                            </div>
-                          </template>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </div>
-        </section>
-
-        <aside class="room-frame min-h-0 overflow-hidden">
-          <div class="border-b-[1.5px] border-[var(--ink)] px-4 py-3">
-            <div class="room-title text-[13px]">断言 / 任务书 / 主体信息</div>
-            <div class="room-sub">control room notes</div>
-          </div>
-          <div class="h-[calc(100%-54px)] overflow-auto p-3 scrollbar-none space-y-3">
-            <div class="room-frame p-3">
-              <div class="room-title text-[12px]">TaskBook Studio</div>
-              <div class="mt-3 space-y-2">
-                <textarea x-model="taskbookEditorContent" rows="8" class="field-area" placeholder="title: ..."></textarea>
-                <div class="grid grid-cols-2 gap-2">
-                  <button @click="saveTaskbook" :disabled="isSavingTaskbook || !selectedTaskbookFilename.trim() || !taskbookEditorContent.trim()" class="btn-primary" x-text="isSavingTaskbook ? 'SAVING' : 'SAVE'"></button>
-                  <button @click="newTaskbookDraft" class="btn">NEW DRAFT</button>
-                </div>
-                <pre class="mt-2 max-h-44 overflow-auto whitespace-pre-wrap border-t-[1.5px] border-[var(--ink)] pt-2 text-[11px] text-[var(--ink-soft)]" x-text="taskbookLint || 'lint result will appear here'"></pre>
-              </div>
-            </div>
-
-            <div class="room-frame p-3">
-              <div class="room-title text-[12px]">Selected Step</div>
-              <div class="mt-3 mini-metric">
-                <span>Step</span>
-                <strong class="!text-base" x-text="selectedStep ? selectedStep.step_id : 'NONE'"></strong>
-                <em x-text="selectedStep ? selectedStep.objective : 'select a step'"></em>
-              </div>
-            </div>
-
-            <div class="room-frame p-3">
-              <div class="room-title text-[12px]">Current Worker Office</div>
-              <div class="mt-3 mini-metric">
-                <span>Worker</span>
-                <strong class="!text-base" x-text="selectedWorker"></strong>
-                <em x-text="selectedWorkerPrompt() || 'empty desk'"></em>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </section>
-    </div>
-
+      <section class="editor-panel"><div class="room-title">TaskBook Studio · new-taskbook.yml</div><textarea x-model="taskbookEditorContent" placeholder="title: ..."></textarea><div class="editor-actions"><button class="industrial dark" @click="saveTaskbook" :disabled="isSavingTaskbook || !selectedTaskbookFilename.trim() || !taskbookEditorContent.trim()" x-text="isSavingTaskbook ? 'SAVING' : 'SAVE'"></button><button class="industrial" @click="newTaskbookDraft">NEW DRAFT</button></div><pre x-text="taskbookLint || 'lint result will appear here'"></pre></section>
+    </div></section>
     <div class="drawer" :class="drawerOpen ? 'open' : ''">
       <div class="drawer-head">
         <div>
@@ -367,6 +175,7 @@
         selectedRun: null,
         selectedRunEvents: [],
         selectedRunQuality: null,
+        runArtifacts: [],
         selectedRunArtifactContent: '',
         selectedRunArtifactPath: '',
         selectedTaskbookFilename: '',
@@ -742,6 +551,43 @@
           if (status === 'queued' || status === 'idle') return '';
           return '';
         },
+        lampClass(status) {
+          if (status === 'succeeded' || status === 'passed' || status === 'ok') return 'ok';
+          if (status === 'failed') return 'failed';
+          if (status === 'running') return 'running';
+          if (status === 'blocked') return 'blocked';
+          if (status === 'queued') return 'queued';
+          return 'idle';
+        },
+        pipeStatusClass(status) {
+          if (status === 'succeeded' || status === 'passed' || status === 'ok') return 'succeeded';
+          if (status === 'failed') return 'failed';
+          if (status === 'blocked') return 'blocked';
+          if (status === 'running') return 'running';
+          return 'queued';
+        },
+        machineStatusClass(status) {
+          if (status === 'failed') return 'failed';
+          if (status === 'blocked') return 'blocked';
+          if (status === 'running') return 'running';
+          return '';
+        },
+        lineClass(index) {
+          return ['line-blue', 'line-green', 'line-yellow'][index % 3];
+        },
+        selectedRunSteps() {
+          return this.selectedRun && this.selectedRun.steps ? this.selectedRun.steps : [];
+        },
+        paddedSteps(run) {
+          const steps = (run.steps || []).slice(0, 4).map((step) => ({...step, real: true}));
+          while (steps.length < 4) {
+            steps.push({step_id: `empty-${steps.length + 1}`, status: 'queued', objective: 'waiting for step', outputs: [], real: false});
+          }
+          return steps;
+        },
+        outputFilesForRun(run) {
+          return (run.steps || []).flatMap((step) => step.outputs || []);
+        },
         workersWithKeys() {
           return this.workers.filter((worker) => worker.api_key_configured).length;
         },
@@ -798,3 +644,4 @@
   </script>
 </body>
 </html>
+
