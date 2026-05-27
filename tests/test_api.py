@@ -95,6 +95,34 @@ def test_api_reports_marvis_factory_status(tmp_path):
     assert {capability["key"] for capability in body["capabilities"]} >= {"taskbook-pipeline", "factory-console-ui"}
 
 
+def test_api_runs_preflight(tmp_path):
+    client = build_client(tmp_path)
+    taskbook_path = tmp_path / "login.yml"
+    taskbook_path.write_text(
+        """
+title: login
+objective: reverse login
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: reverse login
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+""",
+        encoding="utf-8",
+    )
+
+    response = client.post(
+        "/api/preflight",
+        headers={"x-hermes-token": "local-token"},
+        json={"taskbook_path": str(taskbook_path), "source_path": str(tmp_path / "missing.jsp")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "failed"
+    assert {check["name"] for check in response.json()["checks"]} >= {"taskbook", "taskbook_agents", "source", "worker_health"}
+
+
 def test_api_builds_file_context_from_local_path(tmp_path):
     source = tmp_path / "user-list.jsp"
     source.write_text("<table>用户名称</table>", encoding="utf-8")
@@ -364,6 +392,9 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "sourcePath" in html
     assert "lintTaskbook" in html
     assert "startTaskbookRun" in html
+    assert "runPreflight" in html
+    assert "openPreflightResult" in html
+    assert "/api/preflight" in html
     assert "runCompliance" in html
     assert "selectedRunEvents" in html
     assert "selectedRunArtifactContent" in html

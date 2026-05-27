@@ -14,6 +14,7 @@ from agent_factory.core.event_log import EventLog
 from agent_factory.core.marvis_status import build_marvis_status
 from agent_factory.core.models import TaskRecord, WorkerConfig
 from agent_factory.core.pipeline_executor import PipelineExecutor
+from agent_factory.core.preflight import run_preflight
 from agent_factory.core.quality import evaluate_run_quality
 from agent_factory.core.resource_manager import ResourceManager, ResourceManagerError
 from agent_factory.core.run_manifest import build_run_manifest
@@ -64,6 +65,12 @@ class TaskBookSaveRequest(BaseModel):
 class ComplianceRunRequest(BaseModel):
     suite_path: str
     mode: str = "quick"
+
+
+class PreflightRequest(BaseModel):
+    taskbook_path: str = ""
+    source_path: str = ""
+    compliance_suite_path: str = ""
 
 
 REQUIRED_DOCUMENT_WORKER_ID = "niuma-1"
@@ -257,6 +264,16 @@ def create_app(
     async def marvis_status(x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
         return build_marvis_status(workers, bus, resource_manager, runtime_config_path)
+
+    @app.post("/api/preflight")
+    async def preflight(request: PreflightRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        return run_preflight(
+            workers,
+            normalize_user_path(request.taskbook_path) if request.taskbook_path else "",
+            normalize_user_path(request.source_path) if request.source_path else "",
+            normalize_user_path(request.compliance_suite_path) if request.compliance_suite_path else "",
+        )
 
     @app.get("/api/workers")
     async def list_workers(x_hermes_token: str | None = Header(default=None)):

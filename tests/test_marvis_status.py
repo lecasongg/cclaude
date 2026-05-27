@@ -37,6 +37,7 @@ def test_marvis_status_reports_blueprint_progress_and_capabilities(tmp_path):
         "quality-gate",
         "compliance-suite",
         "factory-console-ui",
+        "run-preflight",
     }
     assert all("weight" in capability and "earned" in capability for capability in status["capabilities"])
 
