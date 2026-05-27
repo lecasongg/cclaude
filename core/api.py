@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from agent_factory.core.config import save_runtime_config
 from agent_factory.core.compliance import ComplianceSuite
 from agent_factory.core.event_log import EventLog
+from agent_factory.core.marvis_status import build_marvis_status
 from agent_factory.core.models import TaskRecord, WorkerConfig
 from agent_factory.core.pipeline_executor import PipelineExecutor
 from agent_factory.core.quality import evaluate_run_quality
@@ -247,6 +248,11 @@ def create_app(
             "tasks_total": len(bus.list_tasks()),
             "runtime_config_persistence": runtime_config_path is not None,
         }
+
+    @app.get("/api/marvis/status")
+    async def marvis_status(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        return build_marvis_status(workers, bus, resource_manager, runtime_config_path)
 
     @app.get("/api/workers")
     async def list_workers(x_hermes_token: str | None = Header(default=None)):

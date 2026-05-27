@@ -143,7 +143,7 @@
         <aside class="dock"><div class="yard-title">Output Dock</div><template x-for="artifact in runArtifacts.slice(0, 3)" :key="artifact.path"><div class="cube ok" @click="loadRunArtifact(artifact)"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b x-text="artifact.path.split('/').slice(-1)[0]"></b></div></template></aside>
       </div></article>
 
-      <article class="room control"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content control-content"><section class="glass"><div class="desk">主 Agent<br>独立<br>办公室</div><div class="control-note"><b>调度室</b><br><span x-text="`正在调度 ${runs.length} 条流水线、${workers.length} 个工位与 ${tasks.length} 个任务。`"></span></div></section><section class="buttons"><button class="industrial" @click="lintTaskbook" :disabled="isLintingTaskbook || !taskbookPath.trim()" x-text="isLintingTaskbook ? 'LINTING' : 'LINT'"></button><button class="industrial dark" @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button><button class="industrial" @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" x-text="isRunningCompliance ? 'RUNNING' : 'COMPLIANCE'"></button><button class="industrial" @click="openRunManifest" :disabled="!selectedRun">MANIFEST</button></section><section class="board"><input class="field-iso" x-model="taskbookPath" placeholder="taskbook path"><input class="field-iso" x-model="sourcePath" placeholder="source path or directory"><div class="board-row"><span>Selected Worker</span><b x-text="selectedWorker"></b></div><div class="board-row"><span>Selected TaskBook</span><b x-text="selectedTaskbookFilename || 'NONE'"></b></div><div class="board-row"><span>Compliance</span><b x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></b></div></section></div></article>
+      <article class="room control"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content control-content"><section class="glass"><div class="desk">主 Agent<br>独立<br>办公室</div><div class="control-note"><b>调度室</b><br><span x-text="`正在调度 ${runs.length} 条流水线、${workers.length} 个工位与 ${tasks.length} 个任务。`"></span></div></section><section class="buttons"><button class="industrial" @click="lintTaskbook" :disabled="isLintingTaskbook || !taskbookPath.trim()" x-text="isLintingTaskbook ? 'LINTING' : 'LINT'"></button><button class="industrial dark" @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button><button class="industrial" @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" x-text="isRunningCompliance ? 'RUNNING' : 'COMPLIANCE'"></button><button class="industrial" @click="openRunManifest" :disabled="!selectedRun">MANIFEST</button></section><section class="board"><input class="field-iso" x-model="taskbookPath" placeholder="taskbook path"><input class="field-iso" x-model="sourcePath" placeholder="source path or directory"><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>Blueprint</span><b x-text="marvisProgressLabel()"></b></div><div class="board-row"><span>Scenario</span><b x-text="marvisStatus.product ? marvisStatus.product.primary_scenario : 'legacy-system modernization'"></b></div><div class="board-row"><span>Selected Worker</span><b x-text="selectedWorker"></b></div><div class="board-row"><span>Selected TaskBook</span><b x-text="selectedTaskbookFilename || 'NONE'"></b></div><div class="board-row"><span>Compliance</span><b x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></b></div></section></div></article>
 
       <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><template x-for="artifact in runArtifacts" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifactLabel(artifact)"></button></template><div x-show="runArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">Artifact Preview</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">Quality Gate</div><div class="assertion" :class="qualityPassed() ? 'ok' : 'fail'"><b x-text="qualityScoreLabel()"></b><br><span x-text="qualitySummaryLabel()"></span></div><template x-for="step in qualitySteps()" :key="step.step_id"><div class="assertion" :class="step.summary && step.summary.failed ? 'fail' : 'ok'" @click="openQualityStep(step)"><b x-text="step.step_id"></b><br><span x-text="`${step.summary.passed}/${step.summary.total} checks passed`"></span></div></template><div x-show="complianceResult" class="assertion" :class="complianceResult && complianceResult.success ? 'ok' : 'fail'" x-text="complianceSummary()"></div><div x-show="!selectedRunQuality && !complianceResult" class="assertion">断言测试集待运行</div></section></div></article>
 
@@ -171,6 +171,7 @@
         baseUrl: 'http://127.0.0.1:8846',
         token: 'local-token',
         health: {},
+        marvisStatus: {product: null, metrics: {}, capabilities: [], risks: []},
         workers: [],
         workerHealthSummary: {summary: null, workers: []},
         tasks: [],
@@ -255,7 +256,7 @@
           if (this.isRefreshing) return;
           this.isRefreshing = true;
           try {
-            await Promise.all([this.refreshHealth(), this.refreshWorkers(), this.refreshWorkerHealthSummary(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks()]);
+            await Promise.all([this.refreshHealth(), this.refreshMarvisStatus(), this.refreshWorkers(), this.refreshWorkerHealthSummary(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks()]);
             this.notify('Factory sync complete');
           } catch (error) {
             this.notifyError(error);
@@ -265,6 +266,9 @@
         },
         async refreshHealth() {
           this.health = await this.requestJson('/api/health');
+        },
+        async refreshMarvisStatus() {
+          this.marvisStatus = await this.requestJson('/api/marvis/status');
         },
         async refreshWorkers() {
           const body = await this.requestJson('/api/workers');
@@ -766,6 +770,34 @@
           const summary = this.workerHealthSummary.summary;
           if (!summary) return 'idle';
           return summary.warning ? 'failed' : 'ok';
+        },
+        marvisProgressLabel() {
+          const product = this.marvisStatus.product || {};
+          if (!product.progress_percent) return 'SYNC';
+          return `${product.progress_percent}% / ${product.target_percent}%`;
+        },
+        openMarvisStatus() {
+          const product = this.marvisStatus.product || {};
+          const metrics = this.marvisStatus.metrics || {};
+          const capabilities = this.marvisStatus.capabilities || [];
+          const risks = this.marvisStatus.risks || [];
+          this.drawerTitle = 'MARVIS · FACTORY STATUS';
+          this.drawerSubtitle = `${product.progress_percent || 0}% blueprint progress`;
+          this.drawerHtml = `
+            <div class="space-y-3">
+              <div class="mini-metric"><span>Scenario</span><strong class="!text-base">${this.escapeHtml(product.primary_scenario || '')}</strong><em>${this.escapeHtml(product.stage || '')}</em></div>
+              <div class="mini-metric"><span>Factory Metrics</span><strong class="!text-base">${metrics.runs_total || 0} runs · ${metrics.workers_ready || 0}/${metrics.workers_total || 0} workers</strong><em>${metrics.runs_succeeded || 0} succeeded · ${metrics.runs_failed || 0} failed · ${metrics.runs_blocked || 0} blocked</em></div>
+              ${capabilities.map((item) => `
+                <div class="mini-metric">
+                  <span>${this.escapeHtml(item.key)}</span>
+                  <strong class="!text-base">${this.escapeHtml(item.status)}</strong>
+                  <em>${this.escapeHtml(item.evidence)}</em>
+                </div>
+              `).join('')}
+              ${risks.map((item) => `<div class="assertion ${item.level === 'ok' ? 'ok' : 'fail'}">${this.escapeHtml(item.message)}</div>`).join('')}
+            </div>
+          `;
+          this.drawerOpen = true;
         },
         openWorkerHealthCenter() {
           const summary = this.workerHealthSummary.summary || {};

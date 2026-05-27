@@ -80,6 +80,20 @@ def test_api_reports_health_with_token(tmp_path, monkeypatch):
     }
 
 
+def test_api_reports_marvis_factory_status(tmp_path):
+    client = build_client(tmp_path)
+
+    response = client.get("/api/marvis/status", headers={"x-hermes-token": "local-token"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["product"]["name"] == "Marvis AI Factory Console"
+    assert body["product"]["primary_scenario"] == "legacy-system modernization"
+    assert body["product"]["progress_percent"] == 68
+    assert body["metrics"]["workers_total"] == 2
+    assert {capability["key"] for capability in body["capabilities"]} >= {"taskbook-pipeline", "factory-console-ui"}
+
+
 def test_api_builds_file_context_from_local_path(tmp_path):
     source = tmp_path / "user-list.jsp"
     source.write_text("<table>用户名称</table>", encoding="utf-8")
@@ -361,6 +375,10 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "CONFIG CENTER" in html
     assert "refreshWorkerHealthSummary" in html
     assert "/api/workers/health-summary" in html
+    assert "marvisStatus" in html
+    assert "marvisProgressLabel" in html
+    assert "openMarvisStatus" in html
+    assert "/api/marvis/status" in html
     assert "Factory sync complete" in html
     assert "Compliance passed" in html
     assert "refreshTaskbooks" in html
