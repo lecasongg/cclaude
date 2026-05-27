@@ -357,6 +357,9 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "qualityScoreLabel" in html
     assert "openQualityStep" in html
     assert "artifactLabel" in html
+    assert "notifyError" in html
+    assert "Factory sync complete" in html
+    assert "Compliance passed" in html
     assert "refreshTaskbooks" in html
     assert "selectedTaskbookFilename" in html
     assert "selectedTaskbookPath" in html
