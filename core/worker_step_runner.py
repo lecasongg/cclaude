@@ -50,6 +50,10 @@ class WorkerRuntimeStepRunner:
             parts.append("")
             parts.append("## Source Context")
             parts.append(_truncate_text(self.global_context, MAX_CONTEXT_CHARS))
+        if context.correction:
+            parts.append("")
+            parts.append("## Correction For This Rerun")
+            parts.append(_truncate_text(context.correction, MAX_INPUT_FILE_CHARS))
         if context.step.self_check:
             parts.extend(["", "## Self Check", *[f"- {item}" for item in context.step.self_check]])
         parts.extend(

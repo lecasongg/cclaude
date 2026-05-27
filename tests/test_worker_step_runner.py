@@ -127,3 +127,31 @@ def test_worker_step_runner_includes_global_source_context(tmp_path):
     assert "login.jsp" in prompt
     assert len(prompt) < 50000
     assert "<form>登录</form>" in prompt
+
+
+def test_worker_step_runner_includes_rerun_correction_in_prompt(tmp_path):
+    bus = TaskBus(["niuma-1"])
+    artifacts = ArtifactStore(tmp_path / "artifacts")
+    backend = FakeWorkerBackend("output")
+    runtime = WorkerRuntime(worker_config("niuma-1"), bus, artifacts, backend)
+    output_path = str(tmp_path / "artifacts" / "runs" / "run-1" / "reverse-login" / "function-list.md")
+
+    WorkerRuntimeStepRunner({"niuma-1": runtime})(
+        StepExecutionContext(
+            run_id="run-1",
+            step=TaskBookStep(
+                step_id="reverse-login",
+                agent="niuma-1",
+                objective="reverse login",
+                outputs=[TaskBookPath("artifacts/runs/{run_id}/reverse-login/function-list.md")],
+            ),
+            input_paths=[],
+            output_paths=[output_path],
+            input_files={},
+            correction="parse JSP login guards",
+        )
+    )
+
+    prompt = backend.calls[0][0]
+    assert "## Correction For This Rerun" in prompt
+    assert "parse JSP login guards" in prompt

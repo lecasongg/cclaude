@@ -103,7 +103,7 @@
     .line-blue{--lane:#d7e7ee;--lane2:#c7dce7;--edge:#4d85a8}.line-green{--lane:#dcebdd;--lane2:#cde0cf;--edge:#5e9b70}.line-yellow{--lane:#f2e8bd;--lane2:#e6d9a4;--edge:#b99a3c}.belt-crate{position:absolute;z-index:5;top:58px;left:48%;width:48px;height:38px;transform:skewY(8deg);background:var(--iso-paper);border:2px solid var(--iso-line);box-shadow:7px 7px 0 rgba(0,0,0,.16);font-size:9px;font-weight:900;display:grid;place-items:center}.pipe.running .belt-crate{animation:moveCrate 3.2s linear infinite}.pipe.queued .belt-crate{left:20%;background:var(--iso-yellow-soft)}.pipe.succeeded .belt-crate{left:76%;background:var(--iso-green-soft)}.pipe.failed .belt-crate{left:50%;background:var(--iso-red-soft)}@keyframes moveCrate{0%{left:18%}100%{left:78%}}.qa-stamp{position:absolute;right:108px;top:30px;z-index:6;transform:rotate(-12deg);border:3px solid var(--iso-green);color:var(--iso-green);background:rgba(255,255,255,.72);padding:4px 8px;font-size:11px;font-weight:900;display:none}.pipe.succeeded .qa-stamp{display:block}
     .filebox{height:30px;border:2px solid var(--iso-line);background:#fffdf4;box-shadow:3px 3px 0 rgba(0,0,0,.13);font-size:9px;font-weight:900;display:flex;align-items:center;padding-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.filebox.ok{border-left:8px solid var(--iso-green)}.filebox.warn{border-left:8px solid var(--iso-yellow)}.filebox.fail{border-left:8px solid var(--iso-red)}
     .glass{position:relative;border:3px solid var(--iso-line);background:linear-gradient(135deg,rgba(185,214,215,.75),rgba(255,255,255,.25));height:150px;clip-path:polygon(9% 0,100% 18%,91% 100%,0 82%);box-shadow:inset 0 0 0 6px rgba(255,255,255,.25)}.desk{position:absolute;left:42px;top:38px;width:96px;height:62px;background:#233137;color:#eef3ed;border:3px solid #0d1416;transform:skewY(8deg);display:grid;place-items:center;text-align:center;font-weight:900;font-size:12px}.control-note{position:absolute;right:18px;top:24px;width:170px;z-index:2;font-size:11px;line-height:1.45;font-weight:700}.control-note b{font-size:13px}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.buttons .industrial{height:44px}.board,.shelf,.preview,.quality,.log-panel,.contract,.editor-panel{border:3px solid var(--iso-line);background:rgba(255,255,255,.38);padding:10px;overflow:hidden}.board{display:grid;gap:7px;font-size:11px;font-weight:900}.board-row{display:flex;justify-content:space-between;gap:10px;border-bottom:2px dotted rgba(43,56,61,.3);padding-bottom:5px}.warehouse-content{grid-template-columns:320px 1fr 300px;align-items:stretch}.shelf,.preview,.quality{min-height:100%;overflow:auto}.shelf{display:grid;align-content:start;gap:8px}.preview pre,.editor-panel textarea,.editor-panel pre{font:11px/1.45 var(--iso-font);white-space:pre-wrap}.preview pre{max-height:150px;overflow:auto;margin:8px 0 0;border-top:2px solid var(--iso-line);padding-top:8px}.quality{display:grid;align-content:start;gap:7px}.assertion{border:2px solid var(--iso-line);background:#fffdf4;padding:6px;font-size:10px;font-weight:900}.log-panel{height:100%;display:grid;grid-template-rows:28px 1fr;box-shadow:8px 8px 0 rgba(0,0,0,.16);background:#eef0e5}.log-list{overflow:auto;font-size:10px;line-height:1.45}.log-line{border-top:1px dotted rgba(43,56,61,.45);padding:4px 0}.contracts{display:grid;gap:8px}.contract{display:grid;grid-template-columns:36px 1fr 48px;gap:8px;align-items:center;cursor:pointer}.contract-icon{width:34px;height:34px;border:2px solid var(--iso-line);background:var(--iso-paper);display:grid;place-items:center;font-weight:900}.contract strong{display:block;font-size:11px}.contract small{display:block;font-size:9px;color:#526064;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.state{border:2px solid var(--iso-line);font-size:9px;font-weight:900;text-align:center;padding:3px}.state.run{background:var(--iso-green-soft)}.state.fail{background:var(--iso-red-soft)}.state.queue{background:var(--iso-yellow-soft)}
-    .editor-panel{position:absolute;left:1034px;top:668px;width:384px;height:234px;z-index:5;display:grid;grid-template-rows:26px 1fr 34px 58px;gap:6px}.editor-panel textarea{width:100%;height:100%;resize:none;border:2px solid var(--iso-line);background:#fffdf4;padding:7px;color:var(--iso-ink);outline:0}.editor-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.field-iso{width:100%;height:30px;border:0;border-bottom:2px solid var(--iso-line);background:rgba(255,255,255,.45);padding:0 6px;font:12px var(--iso-font);outline:0}.drawer{position:absolute;right:0;top:0;z-index:50;width:430px;height:100%;transform:translateX(100%);transition:transform .2s;background:#f4f1e4;border-left:4px solid #10191c;box-shadow:-10px 0 0 rgba(0,0,0,.16)}.drawer.open{transform:translateX(0)}.drawer-head{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--iso-line);padding:14px}.drawer-body{height:calc(100% - 64px);overflow:auto;padding:14px}.room-title{font-weight:900;letter-spacing:.04em}.room-sub{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--iso-muted)}.mono{font:11px/1.45 var(--iso-font);color:#465357}.mini-metric{border:2px solid var(--iso-line);background:rgba(255,255,255,.48);padding:8px}.mini-metric span{display:block;font-size:9px;color:var(--iso-muted);letter-spacing:.1em;text-transform:uppercase}.mini-metric strong{display:block;margin-top:4px;font-weight:900}.mini-metric em{display:block;margin-top:4px;font-style:normal;font-size:10px;color:#526064}.chip{display:inline-flex;align-items:center;gap:4px;border:2px solid var(--iso-line);background:#fffdf4;padding:2px 5px;font-size:9px;font-weight:900;text-transform:uppercase}.chip.success{background:var(--iso-green-soft)}.chip.failed{background:var(--iso-red-soft)}.chip.blocked,.chip.running{background:var(--iso-yellow-soft)}
+    .editor-panel{position:absolute;left:1034px;top:668px;width:384px;height:234px;z-index:5;display:grid;grid-template-rows:26px 1fr 34px 58px;gap:6px}.editor-panel textarea{width:100%;height:100%;resize:none;border:2px solid var(--iso-line);background:#fffdf4;padding:7px;color:var(--iso-ink);outline:0}.editor-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.field-iso{width:100%;height:30px;border:0;border-bottom:2px solid var(--iso-line);background:rgba(255,255,255,.45);padding:0 6px;font:12px var(--iso-font);outline:0}.drawer{position:absolute;right:0;top:0;z-index:50;width:430px;height:100%;transform:translateX(100%);transition:transform .2s;background:#f4f1e4;border-left:4px solid #10191c;box-shadow:-10px 0 0 rgba(0,0,0,.16)}.drawer.open{transform:translateX(0)}.drawer-head{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--iso-line);padding:14px}.drawer-body{height:calc(100% - 64px);overflow:auto;padding:14px}.rerun-box{display:grid;gap:8px;margin-top:10px;border:2px solid var(--iso-line);background:#fffdf4;padding:8px}.rerun-box textarea{height:90px;resize:none;border:2px solid var(--iso-line);background:#f8f3df;padding:7px;font:11px/1.45 var(--iso-font);outline:0}.rerun-box button{height:36px}.room-title{font-weight:900;letter-spacing:.04em}.room-sub{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--iso-muted)}.mono{font:11px/1.45 var(--iso-font);color:#465357}.mini-metric{border:2px solid var(--iso-line);background:rgba(255,255,255,.48);padding:8px}.mini-metric span{display:block;font-size:9px;color:var(--iso-muted);letter-spacing:.1em;text-transform:uppercase}.mini-metric strong{display:block;margin-top:4px;font-weight:900}.mini-metric em{display:block;margin-top:4px;font-style:normal;font-size:10px;color:#526064}.chip{display:inline-flex;align-items:center;gap:4px;border:2px solid var(--iso-line);background:#fffdf4;padding:2px 5px;font-size:9px;font-weight:900;text-transform:uppercase}.chip.success{background:var(--iso-green-soft)}.chip.failed{background:var(--iso-red-soft)}.chip.blocked,.chip.running{background:var(--iso-yellow-soft)}
   </style>
 </head>
 <body>
@@ -192,6 +192,7 @@
         complianceSuitePath: 'D:\\codex\\cclaude\\tests\\compliance',
         complianceMode: 'quick',
         complianceResult: null,
+        correctionText: '',
         workerHealth: {},
         fileContext: {files: [], prompt: ''},
         selectedTask: null,
@@ -207,6 +208,7 @@
         isStartingRun: false,
         isLintingTaskbook: false,
         isRunningCompliance: false,
+        isRerunningStep: false,
         isSavingTaskbook: false,
         isSavingConfig: false,
         isInstallingDocument: false,
@@ -227,6 +229,7 @@
             if (worker) this.openDocumentInstall(worker);
           };
           window.__marvisInstallDocument = (event, kind) => this.installDocument(event, kind);
+          window.__marvisRerunSelectedStep = () => this.rerunSelectedStep();
           this.refreshAll();
         },
         headers(contentType = 'application/json') {
@@ -318,10 +321,44 @@
             <div class="space-y-3">
               <div class="mini-metric"><span>Step ID</span><strong class="!text-base">${step.step_id}</strong><em>${step.objective || ''}</em></div>
               <div class="mini-metric"><span>Agent</span><strong class="!text-base">${step.agent_id || step.agent || ''}</strong><em>${(step.depends_on || []).join(' · ') || 'no dependencies'}</em></div>
+              <div class="rerun-box">
+                <div class="room-title">Correction Booth</div>
+                <textarea id="marvis-correction-input" placeholder="写下这次重跑要修正的方向"></textarea>
+                <button class="industrial dark" onclick="window.__marvisRerunSelectedStep && window.__marvisRerunSelectedStep()">RERUN FROM STEP</button>
+              </div>
             </div>
           `;
+          setTimeout(() => {
+            const input = document.getElementById('marvis-correction-input');
+            if (input) input.value = this.correctionText;
+          }, 0);
           if (step.outputs && step.outputs.length) {
             await this.loadArtifactByPath(step.outputs[0]);
+          }
+        },
+        async rerunSelectedStep() {
+          if (this.isRerunningStep || !this.selectedRun || !this.selectedStep || !this.taskbookPath.trim()) return;
+          const correctionInput = document.getElementById('marvis-correction-input');
+          this.correctionText = correctionInput ? correctionInput.value : this.correctionText;
+          this.isRerunningStep = true;
+          try {
+            const payload = {taskbook_path: this.taskbookPath, correction: this.correctionText};
+            if (this.sourcePath.trim()) payload.source_path = this.sourcePath;
+            const body = await this.requestJson(`/api/runs/${this.selectedRun.run_id}/steps/${this.selectedStep.step_id}/rerun`, {
+              method: 'POST',
+              body: JSON.stringify(payload)
+            });
+            this.selectedRun = {...body.run, steps: body.steps || []};
+            this.selectedRunEvents = body.events || [];
+            const updated = this.selectedRun.steps.find((step) => step.step_id === this.selectedStep.step_id);
+            if (updated) this.selectedStep = updated;
+            await Promise.all([
+              this.refreshRuns(),
+              this.refreshRunArtifacts(this.selectedRun.run_id),
+              this.refreshRunQuality(this.selectedRun.run_id)
+            ]);
+          } finally {
+            this.isRerunningStep = false;
           }
         },
         async loadArtifactByPath(path) {

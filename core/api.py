@@ -44,6 +44,12 @@ class TaskBookRunRequest(BaseModel):
     source_path: str | None = None
 
 
+class StepRerunRequest(BaseModel):
+    taskbook_path: str
+    source_path: str | None = None
+    correction: str = ""
+
+
 class TaskBookPathRequest(BaseModel):
     taskbook_path: str
 
@@ -425,6 +431,44 @@ def create_app(
         return {
             "run": resource_manager.get_pipeline_run(run_id),
             "steps": resource_manager.list_step_runs(run_id),
+        }
+
+    @app.post("/api/runs/{run_id}/steps/{step_id}/rerun")
+    async def rerun_step(
+        run_id: str,
+        step_id: str,
+        request: StepRerunRequest,
+        x_hermes_token: str | None = Header(default=None),
+    ):
+        authorize(x_hermes_token)
+        if resource_manager is None or event_log is None:
+            raise HTTPException(status_code=400, detail="pipeline runtime not configured")
+        try:
+            resource_manager.get_pipeline_run(run_id)
+            taskbook = load_taskbook(request.taskbook_path)
+            taskbook.step(step_id)
+        except ResourceManagerError as exc:
+            raise HTTPException(status_code=404, detail="run not found") from exc
+        except (TaskBookError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        source_context = ""
+        if request.source_path:
+            source_context = read_local_files(request.source_path)["prompt"]
+        ensure_workers_registered_for_pipeline()
+        executor = PipelineExecutor(
+            resource_manager=resource_manager,
+            event_log=event_log,
+            workspace_root=pipeline_workspace_root or Path.cwd(),
+            step_runner=WorkerRuntimeStepRunner(supervisor.runtimes, global_context=source_context),
+        )
+        try:
+            await asyncio.to_thread(executor.rerun_from_step, run_id, taskbook, step_id, request.correction)
+        except ResourceManagerError as exc:
+            raise HTTPException(status_code=404, detail="step not found") from exc
+        return {
+            "run": resource_manager.get_pipeline_run(run_id),
+            "steps": resource_manager.list_step_runs(run_id),
+            "events": event_log.read_events(run_id),
         }
 
     @app.get("/api/runs/{run_id}/artifacts")
