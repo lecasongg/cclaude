@@ -324,6 +324,9 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "selectRun" in html
     assert "startTaskbookRun" in html
     assert "taskbookPath" in html
+    assert "sourcePath" in html
+    assert "lintTaskbook" in html
+    assert "taskbookLint" in html
     assert "selectedRunEvents" in html
     assert "runArtifacts" in html
     assert "loadRunArtifact" in html
