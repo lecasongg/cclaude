@@ -379,6 +379,10 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "marvisProgressLabel" in html
     assert "openMarvisStatus" in html
     assert "/api/marvis/status" in html
+    assert "complianceReports" in html
+    assert "refreshComplianceReports" in html
+    assert "openComplianceReport" in html
+    assert "/api/compliance/reports" in html
     assert "Factory sync complete" in html
     assert "Compliance passed" in html
     assert "refreshTaskbooks" in html
@@ -1026,6 +1030,18 @@ assert:
     report_path = Path(response.json()["report_path"])
     assert report_path.exists()
     assert report_path.parent == tmp_path / "artifacts" / "compliance"
+
+    reports = client.get("/api/compliance/reports", headers={"x-hermes-token": "local-token"})
+    assert reports.status_code == 200
+    assert reports.json()["reports"][0]["filename"] == report_path.name
+
+    report = client.get(
+        f"/api/compliance/reports/{report_path.name}",
+        headers={"x-hermes-token": "local-token"},
+    )
+    assert report.status_code == 200
+    assert report.json()["report"]["success"] is True
+    assert report.json()["report"]["cases"][0]["name"] == "legacy-login"
 
 
 def test_api_runs_model_compliance_suite_through_workers(tmp_path):

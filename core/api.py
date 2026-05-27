@@ -1,6 +1,7 @@
 import asyncio
 import os
 from dataclasses import asdict
+import json
 
 from pathlib import Path
 
@@ -233,6 +234,9 @@ def create_app(
     def taskbooks_root() -> Path:
         return (pipeline_workspace_root or Path.cwd()) / "taskbooks"
 
+    def compliance_reports_root() -> Path:
+        return (pipeline_workspace_root or Path.cwd()) / "artifacts" / "compliance"
+
     def resolve_taskbook_filename(filename: str) -> Path:
         if "/" in filename or "\\" in filename or not filename.endswith((".yml", ".yaml")):
             raise HTTPException(status_code=404, detail="taskbook not found")
@@ -341,7 +345,7 @@ def create_app(
         if not suite_path.exists():
             raise HTTPException(status_code=404, detail="suite not found")
         workspace_root = (pipeline_workspace_root or Path.cwd()) / ".tmp" / "compliance-runs"
-        report_dir = (pipeline_workspace_root or Path.cwd()) / "artifacts" / "compliance"
+        report_dir = compliance_reports_root()
         if request.mode == "quick":
             result = ComplianceSuite(suite_path).run_quick(workspace_root, report_dir=report_dir)
         else:
@@ -353,6 +357,33 @@ def create_app(
                 report_dir,
             )
         return result.to_dict()
+
+    @app.get("/api/compliance/reports")
+    async def list_compliance_reports(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        root = compliance_reports_root()
+        reports = []
+        if root.exists():
+            for path in sorted(root.glob("compliance-*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+                reports.append(
+                    {
+                        "filename": path.name,
+                        "path": str(path),
+                        "size": path.stat().st_size,
+                        "updated_at": path.stat().st_mtime,
+                    }
+                )
+        return {"reports": reports}
+
+    @app.get("/api/compliance/reports/{filename}")
+    async def read_compliance_report(filename: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if "/" in filename or "\\" in filename or not filename.endswith(".json"):
+            raise HTTPException(status_code=404, detail="compliance report not found")
+        path = compliance_reports_root() / filename
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="compliance report not found")
+        return {"filename": filename, "path": str(path), "report": json.loads(path.read_text(encoding="utf-8"))}
 
     @app.get("/api/workers/{worker_id}/installed-documents")
     async def get_installed_documents(worker_id: str, x_hermes_token: str | None = Header(default=None)):
