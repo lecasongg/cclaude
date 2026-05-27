@@ -97,7 +97,7 @@ def build_file_prompt(files: list[tuple[str, str, int]]) -> dict:
 
 
 def read_local_files(path_text: str) -> dict:
-    path = Path(path_text).expanduser()
+    path = Path(normalize_user_path(path_text)).expanduser()
     if not path.exists():
         raise HTTPException(status_code=404, detail="path not found")
     paths = [path]
@@ -105,6 +105,10 @@ def read_local_files(path_text: str) -> dict:
         paths = [candidate for candidate in sorted(path.rglob("*")) if candidate.is_file()]
     files = [(str(candidate), candidate.read_text(encoding="utf-8", errors="replace"), candidate.stat().st_size) for candidate in paths]
     return build_file_prompt(files)
+
+
+def normalize_user_path(path_text: str) -> str:
+    return path_text.strip().strip('"').strip("'").strip()
 
 
 def document_status(documents: dict) -> dict:

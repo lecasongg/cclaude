@@ -98,6 +98,21 @@ def test_api_builds_file_context_from_local_path(tmp_path):
     assert "用户名称" in response.json()["prompt"]
 
 
+def test_api_normalizes_quoted_file_context_path(tmp_path):
+    source = tmp_path / "user-list.jsp"
+    source.write_text("<table>用户名称</table>", encoding="utf-8")
+    client = build_client(tmp_path)
+
+    response = client.post(
+        "/api/file-context/path",
+        headers={"x-hermes-token": "local-token"},
+        json={"path": f'  "{source}"  '},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["files"][0]["path"] == str(source)
+
+
 def test_api_builds_file_context_from_upload(tmp_path):
     client = build_client(tmp_path)
 
