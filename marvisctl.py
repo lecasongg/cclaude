@@ -16,6 +16,9 @@ if "agent_factory" not in sys.modules:
 
 from agent_factory.core.compliance import ComplianceSuite
 from agent_factory.core.config_registry import ConfigRegistryError, load_config_registry
+from agent_factory.core.event_log import EventLog
+from agent_factory.core.resource_manager import ResourceManager
+from agent_factory.core.run_manifest import build_run_manifest
 from agent_factory.core.taskbook import TaskBookError, load_taskbook
 
 
@@ -72,6 +75,13 @@ def _build_parser() -> argparse.ArgumentParser:
     compliance_run.add_argument("--mode", choices=["quick"], default="quick")
     compliance_run.add_argument("--workspace")
     compliance_run.set_defaults(handler=_compliance_run)
+
+    artifact = subparsers.add_parser("artifact")
+    artifact_subparsers = artifact.add_subparsers(dest="artifact_command", required=True)
+    artifact_manifest = artifact_subparsers.add_parser("manifest")
+    artifact_manifest.add_argument("run_id")
+    artifact_manifest.add_argument("--workspace", default=".")
+    artifact_manifest.set_defaults(handler=_artifact_manifest)
 
     return parser
 
@@ -138,6 +148,15 @@ def _compliance_run(args: argparse.Namespace) -> int:
     for error in result.errors:
         print(error, file=sys.stderr)
     return 1
+
+
+def _artifact_manifest(args: argparse.Namespace) -> int:
+    workspace = Path(args.workspace)
+    manager = ResourceManager(workspace / "marvis.db")
+    event_log_path = workspace / "events"
+    event_log = EventLog(event_log_path) if event_log_path.exists() else None
+    print(json.dumps(build_run_manifest(manager, workspace, args.run_id, event_log), ensure_ascii=False, indent=2))
+    return 0
 
 
 def _resolve_config_path(config: str) -> str:

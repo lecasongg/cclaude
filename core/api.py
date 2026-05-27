@@ -14,6 +14,7 @@ from agent_factory.core.models import TaskRecord, WorkerConfig
 from agent_factory.core.pipeline_executor import PipelineExecutor
 from agent_factory.core.quality import evaluate_run_quality
 from agent_factory.core.resource_manager import ResourceManager, ResourceManagerError
+from agent_factory.core.run_manifest import build_run_manifest
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
@@ -483,16 +484,22 @@ def create_app(
     @app.get("/api/runs/{run_id}/artifacts")
     async def list_run_artifacts(run_id: str, x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
+        if resource_manager is not None:
+            try:
+                return {"artifacts": build_run_manifest(resource_manager, pipeline_workspace_root or Path.cwd(), run_id)["artifacts"]}
+            except ResourceManagerError:
+                return {"artifacts": []}
         workspace_root = pipeline_workspace_root or Path.cwd()
         run_root = workspace_root / "artifacts" / "runs" / run_id
         if not run_root.exists():
             return {"artifacts": []}
-        artifacts = []
-        for path in sorted(run_root.rglob("*")):
-            if path.is_file():
-                relative_path = path.relative_to(workspace_root).as_posix()
-                artifacts.append({"path": relative_path, "size": path.stat().st_size})
-        return {"artifacts": artifacts}
+        return {
+            "artifacts": [
+                {"path": path.relative_to(workspace_root).as_posix(), "size": path.stat().st_size}
+                for path in sorted(run_root.rglob("*"))
+                if path.is_file()
+            ]
+        }
 
     @app.get("/api/runs/{run_id}/artifacts/{artifact_path:path}")
     async def read_run_artifact(run_id: str, artifact_path: str, x_hermes_token: str | None = Header(default=None)):
@@ -541,25 +548,10 @@ def create_app(
         if resource_manager is None:
             raise HTTPException(status_code=404, detail="run not found")
         try:
-            run = resource_manager.get_pipeline_run(run_id)
-            steps = resource_manager.list_step_runs(run_id)
+            resource_manager.get_pipeline_run(run_id)
         except ResourceManagerError as exc:
             raise HTTPException(status_code=404, detail="run not found") from exc
-        workspace_root = pipeline_workspace_root or Path.cwd()
-        run_root = workspace_root / "artifacts" / "runs" / run_id
-        artifacts = []
-        if run_root.exists():
-            for path in sorted(run_root.rglob("*")):
-                if path.is_file():
-                    artifacts.append({"path": path.relative_to(workspace_root).as_posix(), "size": path.stat().st_size})
-        return {
-            "manifest_version": 1,
-            "run": run,
-            "steps": steps,
-            "artifacts": artifacts,
-            "quality": evaluate_run_quality(resource_manager, workspace_root, run_id),
-            "events": event_log.read_events(run_id) if event_log is not None else [],
-        }
+        return build_run_manifest(resource_manager, pipeline_workspace_root or Path.cwd(), run_id, event_log)
 
     @app.get("/api/artifacts/{worker_id}/{task_id}/{filename}")
     async def read_artifact(worker_id: str, task_id: str, filename: str, x_hermes_token: str | None = Header(default=None)):

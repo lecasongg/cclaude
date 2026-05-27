@@ -356,6 +356,7 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "Quality Gate" in html
     assert "qualityScoreLabel" in html
     assert "openQualityStep" in html
+    assert "artifactLabel" in html
     assert "refreshTaskbooks" in html
     assert "selectedTaskbookFilename" in html
     assert "selectedTaskbookPath" in html
@@ -667,6 +668,8 @@ steps:
     artifact_id = f"artifacts/runs/{body['run']['run_id']}/reverse-login/function-list.md"
     assert artifacts_response.status_code == 200
     assert artifacts_response.json()["artifacts"][0]["path"] == artifact_id
+    assert artifacts_response.json()["artifacts"][0]["step_id"] == "reverse-login"
+    assert artifacts_response.json()["artifacts"][0]["exists"] is True
 
     artifact_response = client.get(
         f"/api/runs/{body['run']['run_id']}/artifacts/{artifact_id}",
@@ -693,6 +696,7 @@ steps:
     assert manifest["run"]["run_id"] == body["run"]["run_id"]
     assert manifest["steps"][0]["step_id"] == "reverse-login"
     assert manifest["artifacts"][0]["path"] == artifact_id
+    assert manifest["artifacts"][0]["step_id"] == "reverse-login"
     assert manifest["quality"]["summary"]["failed"] == 0
     assert [event["type"] for event in manifest["events"]] == [
         "run_created",
