@@ -17,6 +17,9 @@ from agent_factory.core.task_bus import TaskBus
 from agent_factory.core.worker_runtime import WorkerRuntime, default_mock_command
 
 
+ROOT = Path(__file__).resolve().parent
+
+
 def resolve_config_path(root: str | Path, override: str | None = None) -> Path:
     if override:
         return Path(override)
@@ -84,9 +87,17 @@ def build_app(config_path: str | Path):
     @app.get("/")
     @app.get("/console")
     async def console():
-        return FileResponse(config_path.parent / "web" / "console.html")
+        return FileResponse(resolve_console_path(config_path.parent))
 
     return app
+
+
+def resolve_console_path(config_root: str | Path) -> Path:
+    config_root = Path(config_root)
+    for candidate in (config_root / "web" / "console.html", ROOT / "web" / "console.html"):
+        if candidate.exists():
+            return candidate
+    return config_root / "web" / "console.html"
 
 
 if __name__ == "__main__":

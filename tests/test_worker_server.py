@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from agent_factory.worker_server import build_app, resolve_config_path
+from agent_factory.worker_server import build_app, resolve_config_path, resolve_console_path
 
 
 def test_resolve_config_path_prefers_factory_config(tmp_path):
@@ -31,6 +31,48 @@ def test_resolve_config_path_honors_override(tmp_path):
     override = tmp_path / "custom.json"
 
     assert resolve_config_path(tmp_path, str(override)) == override
+
+
+def test_resolve_console_path_falls_back_to_repo_console(tmp_path):
+    repo_root = Path(__file__).parents[1]
+
+    assert resolve_console_path(tmp_path) == repo_root / "web" / "console.html"
+
+
+def test_worker_server_serves_console_from_external_config_dir(tmp_path):
+    config_path = tmp_path / "factory.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "runtime_mode": "mock-inline",
+                "workers": [
+                    {
+                        "worker_id": "legacy",
+                        "display_name": "legacy",
+                        "provider": "test",
+                        "model": "test-model",
+                        "api_key_env": "LEGACY_API_KEY",
+                        "profile_dir": "p",
+                        "workspace_dir": "w",
+                        "skills_dir": "s",
+                        "backend_type": "fake",
+                        "backend_options": {"response_text": "factory backend"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    client = TestClient(build_app(config_path))
+
+    root_response = client.get("/")
+    console_response = client.get("/console")
+
+    assert root_response.status_code == 200
+    assert console_response.status_code == 200
+    assert "Marvis AI Factory Console" in root_response.text
+    assert "class=\"viewport\"" in console_response.text
 
 
 def test_worker_server_build_app_uses_worker_backend_type(tmp_path):
