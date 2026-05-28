@@ -1,0 +1,8 @@
+title: restart recovery contract
+objective: verify in-flight runs become blocked and leases are released on startup reconciliation
+steps:
+  - id: reverse-before-restart
+    agent: niuma-1
+    objective: simulate a reverse-analysis step that was running during restart
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-before-restart/function-list.md

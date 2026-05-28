@@ -90,6 +90,7 @@ class ComplianceSuite:
         manager = ResourceManager(workspace_root / "marvis.db")
         for agent_id in sorted({step.agent for step in taskbook.steps}):
             manager.register_agent(agent_id, display_name=agent_id)
+        _seed_reconcile_state(expected.get("reconcile_on_startup", {}), manager, taskbook)
 
         executor = PipelineExecutor(
             resource_manager=manager,
@@ -98,6 +99,13 @@ class ComplianceSuite:
             step_runner=step_runner,
         )
         protected_snapshot = _snapshot_forbidden_paths(workspace_root, expected.get("forbidden_modified", []))
+        if expected.get("reconcile_on_startup"):
+            run_id = _first_pipeline_run_id(manager)
+            summary = manager.reconcile_on_startup()
+            return (
+                _assert_expected(taskbook, expected, manager, workspace_root, run_id, protected_snapshot, reconcile_summary=summary),
+                expected.get("expected_result", "passed"),
+            )
         run_id = executor.run(taskbook)
         return _assert_expected(taskbook, expected, manager, workspace_root, run_id, protected_snapshot), expected.get("expected_result", "passed")
 
@@ -123,6 +131,32 @@ def _install_case_fixtures(fixture_root: Path, workspace_root: Path) -> None:
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(item, target)
+
+
+def _seed_reconcile_state(reconcile_expected: dict[str, Any], manager: ResourceManager, taskbook: TaskBook) -> None:
+    if not reconcile_expected:
+        return
+    run_id = manager.create_pipeline_run(taskbook.title, taskbook_path="compliance-restart-recovery")
+    for step in taskbook.steps:
+        manager.create_step_run(
+            run_id,
+            step_id=step.step_id,
+            agent_id=step.agent,
+            objective=step.objective,
+            depends_on=step.depends_on,
+            outputs=[item.path for item in step.outputs],
+            self_check=step.self_check,
+        )
+    manager.acquire_lease(taskbook.steps[0].agent, run_id, owner="compliance-reconcile")
+    manager.update_pipeline_status(run_id, reconcile_expected.get("initial_run_status", "running"))
+    manager.update_step_status(run_id, taskbook.steps[0].step_id, reconcile_expected.get("initial_step_status", "running"))
+
+
+def _first_pipeline_run_id(manager: ResourceManager) -> str:
+    runs = manager.list_pipeline_runs()
+    if not runs:
+        raise RuntimeError("missing seeded pipeline run")
+    return runs[-1]["run_id"]
 
 
 def write_compliance_report(result: ComplianceResult, report_dir: str | Path) -> Path:
@@ -176,11 +210,25 @@ def _assert_expected(
     workspace_root: Path,
     run_id: str,
     protected_snapshot: dict[str, str | None] | None = None,
+    reconcile_summary: dict[str, int] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     expected_run_status = expected.get("run_status")
     if expected_run_status and manager.get_pipeline_run(run_id)["status"] != expected_run_status:
         errors.append(f"expected run_status {expected_run_status}")
+
+    reconcile_expected = expected.get("reconcile_on_startup", {})
+    if reconcile_expected:
+        for key, expected_value in reconcile_expected.get("summary", {}).items():
+            actual_value = (reconcile_summary or {}).get(key)
+            if actual_value != expected_value:
+                errors.append(f"expected reconcile summary {key}={expected_value}, got {actual_value}")
+        expected_agent_status = reconcile_expected.get("agent_status")
+        if expected_agent_status:
+            for agent_id in sorted({step.agent for step in taskbook.steps}):
+                actual = manager.get_agent_state(agent_id)["status"]
+                if actual != expected_agent_status:
+                    errors.append(f"expected agent {agent_id} status {expected_agent_status}, got {actual}")
 
     for input_path in expected.get("input_exists", []):
         resolved = workspace_root / input_path.replace("{run_id}", run_id)

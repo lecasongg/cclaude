@@ -127,6 +127,7 @@ def test_repository_compliance_suite_runs(tmp_path):
         "legacy-login",
         "legacy-modernization",
         "missing-input-contract",
+        "restart-recovery-contract",
     }
     assert all(case["status"] == "passed" for case in result.cases)
 
@@ -195,12 +196,30 @@ def test_compliance_installs_case_fixtures_before_run(tmp_path):
     assert installed.read_text(encoding="utf-8") == "<form>login</form>"
 
 
+def test_compliance_can_assert_restart_recovery_contract(tmp_path):
+    suite_root = _write_suite(
+        tmp_path,
+        expected_output=None,
+        expected_run_status="blocked",
+        expected_step_status="blocked",
+        reconcile_on_startup=True,
+    )
+
+    result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace")
+
+    assert result.success is True
+    assert result.cases[0]["status"] == "passed"
+
+
 def _write_suite(
     tmp_path,
     expected_output="artifacts/runs/{run_id}/reverse-login/function-list.md",
     output_contains=None,
     forbidden_modified=None,
     input_exists=None,
+    reconcile_on_startup=False,
+    expected_run_status="succeeded",
+    expected_step_status="succeeded",
     expected_result="passed",
 ):
     suite_root = tmp_path / "suite"
@@ -223,27 +242,44 @@ def _write_suite(
     )
     contains_yaml = ""
     if output_contains:
+        output_path = expected_output or "artifacts/runs/{run_id}/reverse-login/function-list.md"
         contains_yaml = "\n                  output_contains:\n" + "".join(
-            f"                    - path: {expected_output}\n                      text: {text}\n" for text in output_contains
+            f"                    - path: {output_path}\n                      text: {text}\n" for text in output_contains
         )
+    output_exists_yaml = ""
+    if expected_output:
+        output_exists_yaml = f"\n                  output_exists:\n                    - {expected_output}"
     forbidden_yaml = ""
     if forbidden_modified:
         forbidden_yaml = "\n              forbidden_modified:\n" + "".join(f"                - {path}\n" for path in forbidden_modified)
     input_exists_yaml = ""
     if input_exists:
         input_exists_yaml = "\n              input_exists:\n" + "".join(f"                - {path}\n" for path in input_exists)
+    reconcile_yaml = ""
+    if reconcile_on_startup:
+        reconcile_yaml = """
+              reconcile_on_startup:
+                initial_run_status: running
+                initial_step_status: running
+                agent_status: idle
+                summary:
+                  released_leases: 1
+                  blocked_runs: 1
+                  blocked_steps: 1
+                  reset_agents: 1
+"""
     (suite_root / "expected" / "legacy-login.assert.yml").write_text(
         textwrap.dedent(
             f"""
             assert:
               expected_result: {expected_result}
-              run_status: succeeded
+              run_status: {expected_run_status}
 {input_exists_yaml}
+{reconcile_yaml}
               steps:
                 reverse-login:
-                  status: succeeded
-                  output_exists:
-                    - {expected_output}{contains_yaml}{forbidden_yaml}
+                  status: {expected_step_status}
+{output_exists_yaml}{contains_yaml}{forbidden_yaml}
             """
         ),
         encoding="utf-8",
