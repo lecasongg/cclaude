@@ -104,7 +104,7 @@
     .line-blue{--lane:#d7e7ee;--lane2:#c7dce7;--edge:#4d85a8}.line-green{--lane:#dcebdd;--lane2:#cde0cf;--edge:#5e9b70}.line-yellow{--lane:#f2e8bd;--lane2:#e6d9a4;--edge:#b99a3c}.belt-crate{position:absolute;z-index:5;top:58px;left:48%;width:48px;height:38px;transform:skewY(8deg);background:var(--iso-paper);border:2px solid var(--iso-line);box-shadow:7px 7px 0 rgba(0,0,0,.16);font-size:9px;font-weight:900;display:grid;place-items:center}.pipe.running .belt-crate{animation:moveCrate 3.2s linear infinite}.pipe.queued .belt-crate{left:20%;background:var(--iso-yellow-soft)}.pipe.succeeded .belt-crate{left:76%;background:var(--iso-green-soft)}.pipe.failed .belt-crate{left:50%;background:var(--iso-red-soft)}@keyframes moveCrate{0%{left:18%}100%{left:78%}}.qa-stamp{position:absolute;right:108px;top:30px;z-index:6;transform:rotate(-12deg);border:3px solid var(--iso-green);color:var(--iso-green);background:rgba(255,255,255,.72);padding:4px 8px;font-size:11px;font-weight:900;display:none}.pipe.succeeded .qa-stamp{display:block}
     .filebox{height:30px;border:2px solid var(--iso-line);background:#fffdf4;box-shadow:3px 3px 0 rgba(0,0,0,.13);font-size:9px;font-weight:900;display:flex;align-items:center;padding-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.filebox.ok{border-left:8px solid var(--iso-green)}.filebox.warn{border-left:8px solid var(--iso-yellow)}.filebox.fail{border-left:8px solid var(--iso-red)}
     .glass{position:relative;border:3px solid var(--iso-line);background:linear-gradient(135deg,rgba(185,214,215,.75),rgba(255,255,255,.25));height:150px;clip-path:polygon(9% 0,100% 18%,91% 100%,0 82%);box-shadow:inset 0 0 0 6px rgba(255,255,255,.25)}.desk{position:absolute;left:42px;top:38px;width:96px;height:62px;background:#233137;color:#eef3ed;border:3px solid #0d1416;transform:skewY(8deg);display:grid;place-items:center;text-align:center;font-weight:900;font-size:12px}.control-note{position:absolute;right:18px;top:24px;width:170px;z-index:2;font-size:11px;line-height:1.45;font-weight:700}.control-note b{font-size:13px}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.buttons .industrial{height:44px}.board,.shelf,.preview,.quality,.log-panel,.contract,.editor-panel{border:3px solid var(--iso-line);background:rgba(255,255,255,.38);padding:10px;overflow:hidden}.board{display:grid;gap:7px;font-size:11px;font-weight:900}.board-row{display:flex;justify-content:space-between;gap:10px;border-bottom:2px dotted rgba(43,56,61,.3);padding-bottom:5px}.warehouse-content{grid-template-columns:320px 1fr 300px;align-items:stretch}.shelf,.preview,.quality{min-height:100%;overflow:auto}.shelf{display:grid;align-content:start;gap:8px}.preview pre,.editor-panel textarea,.editor-panel pre{font:11px/1.45 var(--iso-font);white-space:pre-wrap}.preview pre{max-height:150px;overflow:auto;margin:8px 0 0;border-top:2px solid var(--iso-line);padding-top:8px}.quality{display:grid;align-content:start;gap:7px}.assertion{border:2px solid var(--iso-line);background:#fffdf4;padding:6px;font-size:10px;font-weight:900}.log-panel{height:100%;display:grid;grid-template-rows:28px 1fr;box-shadow:8px 8px 0 rgba(0,0,0,.16);background:#eef0e5}.log-list{overflow:auto;font-size:10px;line-height:1.45}.log-line{border-top:1px dotted rgba(43,56,61,.45);padding:4px 0}.contracts{display:grid;gap:8px}.contract{display:grid;grid-template-columns:36px 1fr 48px;gap:8px;align-items:center;cursor:pointer}.contract-icon{width:34px;height:34px;border:2px solid var(--iso-line);background:var(--iso-paper);display:grid;place-items:center;font-weight:900}.contract strong{display:block;font-size:11px}.contract small{display:block;font-size:9px;color:#526064;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.state{border:2px solid var(--iso-line);font-size:9px;font-weight:900;text-align:center;padding:3px}.state.run{background:var(--iso-green-soft)}.state.fail{background:var(--iso-red-soft)}.state.queue{background:var(--iso-yellow-soft)}
-    .editor-panel{position:absolute;left:1034px;top:668px;width:384px;height:234px;z-index:5;display:grid;grid-template-rows:26px 1fr 34px 58px;gap:6px}.editor-panel textarea{width:100%;height:100%;resize:none;border:2px solid var(--iso-line);background:#fffdf4;padding:7px;color:var(--iso-ink);outline:0}.editor-actions{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}.field-iso{width:100%;height:30px;border:0;border-bottom:2px solid var(--iso-line);background:rgba(255,255,255,.45);padding:0 6px;font:12px var(--iso-font);outline:0}.drawer{position:absolute;right:0;top:0;z-index:50;width:430px;height:100%;transform:translateX(100%);transition:transform .2s;background:#f4f1e4;border-left:4px solid #10191c;box-shadow:-10px 0 0 rgba(0,0,0,.16)}.drawer.open{transform:translateX(0)}.drawer-head{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--iso-line);padding:14px}.drawer-body{height:calc(100% - 64px);overflow:auto;padding:14px}.rerun-box,.factory-form{display:grid;gap:8px;margin-top:10px;border:2px solid var(--iso-line);background:#fffdf4;padding:8px}.rerun-box textarea,.factory-form textarea{height:90px;resize:none;border:2px solid var(--iso-line);background:#f8f3df;padding:7px;font:11px/1.45 var(--iso-font);outline:0}.factory-form input,.factory-form select{height:32px;border:2px solid var(--iso-line);background:#f8f3df;padding:0 7px;font:11px var(--iso-font);outline:0}.rerun-box button,.factory-form button{height:36px}.agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.agent-tile{border:2px solid var(--iso-line);background:#fffdf4;padding:7px;font-size:10px;font-weight:900;cursor:pointer}.agent-tile.selected{background:var(--iso-blue-soft);box-shadow:inset 0 0 0 3px rgba(77,133,168,.22)}.room-title{font-weight:900;letter-spacing:.04em}.room-sub{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--iso-muted)}.mono{font:11px/1.45 var(--iso-font);color:#465357}.mini-metric{border:2px solid var(--iso-line);background:rgba(255,255,255,.48);padding:8px}.mini-metric span{display:block;font-size:9px;color:var(--iso-muted);letter-spacing:.1em;text-transform:uppercase}.mini-metric strong{display:block;margin-top:4px;font-weight:900}.mini-metric em{display:block;margin-top:4px;font-style:normal;font-size:10px;color:#526064}.chip{display:inline-flex;align-items:center;gap:4px;border:2px solid var(--iso-line);background:#fffdf4;padding:2px 5px;font-size:9px;font-weight:900;text-transform:uppercase}.chip.success{background:var(--iso-green-soft)}.chip.failed{background:var(--iso-red-soft)}.chip.blocked,.chip.running{background:var(--iso-yellow-soft)}
+    .editor-panel{position:absolute;left:1034px;top:668px;width:384px;height:234px;z-index:5;display:grid;grid-template-rows:26px 1fr 34px 58px;gap:6px}.editor-panel textarea{width:100%;height:100%;resize:none;border:2px solid var(--iso-line);background:#fffdf4;padding:7px;color:var(--iso-ink);outline:0}.editor-actions{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}.field-iso{width:100%;height:30px;border:0;border-bottom:2px solid var(--iso-line);background:rgba(255,255,255,.45);padding:0 6px;font:12px var(--iso-font);outline:0}.drawer{position:absolute;right:0;top:0;z-index:50;width:430px;height:100%;transform:translateX(100%);transition:transform .2s;background:#f4f1e4;border-left:4px solid #10191c;box-shadow:-10px 0 0 rgba(0,0,0,.16)}.drawer.open{transform:translateX(0)}.drawer-head{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--iso-line);padding:14px}.drawer-body{height:calc(100% - 64px);overflow:auto;padding:14px}.rerun-box,.factory-form{display:grid;gap:8px;margin-top:10px;border:2px solid var(--iso-line);background:#fffdf4;padding:8px}.rerun-box textarea,.factory-form textarea{height:90px;resize:none;border:2px solid var(--iso-line);background:#f8f3df;padding:7px;font:11px/1.45 var(--iso-font);outline:0}.factory-form input,.factory-form select{height:32px;border:2px solid var(--iso-line);background:#f8f3df;padding:0 7px;font:11px var(--iso-font);outline:0}.rerun-box button,.factory-form button{height:36px}.agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.agent-tile{border:2px solid var(--iso-line);background:#fffdf4;padding:7px;font-size:10px;font-weight:900;cursor:pointer}.agent-tile.selected{background:var(--iso-blue-soft);box-shadow:inset 0 0 0 3px rgba(77,133,168,.22)}.factory-controls{display:grid;grid-template-columns:1fr 82px 82px;gap:6px;margin-bottom:6px}.pipe.compact{min-height:120px}.pipe.compact .machine{height:76px}.pipe.focused-out{opacity:.28;filter:grayscale(.7)}.room-title{font-weight:900;letter-spacing:.04em}.room-sub{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--iso-muted)}.mono{font:11px/1.45 var(--iso-font);color:#465357}.mini-metric{border:2px solid var(--iso-line);background:rgba(255,255,255,.48);padding:8px}.mini-metric span{display:block;font-size:9px;color:var(--iso-muted);letter-spacing:.1em;text-transform:uppercase}.mini-metric strong{display:block;margin-top:4px;font-weight:900}.mini-metric em{display:block;margin-top:4px;font-style:normal;font-size:10px;color:#526064}.chip{display:inline-flex;align-items:center;gap:4px;border:2px solid var(--iso-line);background:#fffdf4;padding:2px 5px;font-size:9px;font-weight:900;text-transform:uppercase}.chip.success{background:var(--iso-green-soft)}.chip.failed{background:var(--iso-red-soft)}.chip.blocked,.chip.running{background:var(--iso-yellow-soft)}
   </style>
 </head>
 <body>
@@ -138,7 +138,8 @@
       <article class="room core"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content core-content">
         <aside class="yard"><div class="yard-title">Input Source</div><div class="cube blue"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>legacy module</b></div><div class="cube queued"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>taskbook</b></div><div class="cube ok"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>context</b></div></aside>
         <div class="pipes">
-          <template x-for="(run, index) in runs.slice(0, 3)" :key="run.run_id"><section class="pipe" :class="[lineClass(index), pipeStatusClass(run.status), selectedRun && selectedRun.run_id === run.run_id ? 'selected' : '']" @click="selectRun(run)"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="qa-stamp">质检通过</div><div class="belt-crate">产物</div><div class="pipe-content"><div class="pipe-label"><div><small x-text="`LINE ${index + 1} · ${run.status}`"></small><strong x-text="run.title || run.run_id"></strong></div><div class="task-chip" x-text="run.run_id"></div></div><div class="machines"><template x-for="step in paddedSteps(run)" :key="step.step_id"><div class="machine" :class="machineStatusClass(step.status)" @click.stop="step.real && selectStep(step)"><span class="lamp" :class="lampClass(step.status)"></span><div class="m-top" :data-name="step.step_id"></div><div class="m-side"></div><div class="m-front"></div></div></template></div><div class="exports"><template x-for="artifact in outputFilesForRun(run).slice(0, 3)" :key="artifact"><div class="filebox ok" x-text="artifact.split('/').slice(-1)[0]"></div></template></div></div></section></template>
+          <div class="factory-controls"><input class="field-iso" x-model="runFilter" placeholder="filter runs"><button class="industrial" @click="runStatusFocus = runStatusFocus === 'failed' ? '' : 'failed'">FAILED</button><button class="industrial" @click="lineDensity = lineDensity === 'compact' ? 'normal' : 'compact'" x-text="lineDensity.toUpperCase()"></button></div>
+          <template x-for="(run, index) in visibleRuns().slice(0, lineDensity === 'compact' ? 4 : 3)" :key="run.run_id"><section class="pipe" :class="[lineClass(index), pipeStatusClass(run.status), selectedRun && selectedRun.run_id === run.run_id ? 'selected' : '', lineDensity === 'compact' ? 'compact' : '', runStatusFocus && run.status !== runStatusFocus ? 'focused-out' : '']" @click="selectRun(run)"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="qa-stamp">质检通过</div><div class="belt-crate">产物</div><div class="pipe-content"><div class="pipe-label"><div><small x-text="`LINE ${index + 1} · ${run.status}`"></small><strong x-text="run.title || run.run_id"></strong></div><div class="task-chip" x-text="run.run_id"></div></div><div class="machines"><template x-for="step in paddedSteps(run)" :key="step.step_id"><div class="machine" :class="machineStatusClass(step.status)" @click.stop="step.real && selectStep(step)"><span class="lamp" :class="lampClass(step.status)"></span><div class="m-top" :data-name="step.step_id"></div><div class="m-side"></div><div class="m-front"></div></div></template></div><div class="exports"><template x-for="artifact in outputFilesForRun(run).slice(0, 3)" :key="artifact"><div class="filebox ok" x-text="artifact.split('/').slice(-1)[0]"></div></template></div></div></section></template>
           <template x-if="runs.length === 0"><section class="pipe line-blue queued selected"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="belt-crate">待命</div><div class="pipe-content"><div class="pipe-label"><div><small>LINE 1 · idle</small><strong>等待任务书入闸</strong></div><div class="task-chip">TaskBook Dispatch Rack</div></div></div></section></template>
         </div>
         <aside class="dock"><div class="yard-title">Output Dock</div><template x-for="artifact in runArtifacts.slice(0, 3)" :key="artifact.path"><div class="cube ok" @click="loadRunArtifact(artifact)"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b x-text="artifact.path.split('/').slice(-1)[0]"></b></div></template></aside>
@@ -146,7 +147,7 @@
 
       <article class="room control"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content control-content"><section class="glass"><div class="desk">主 Agent<br>独立<br>办公室</div><div class="control-note"><b>调度室</b><br><span x-text="`正在调度 ${runs.length} 条流水线、${workers.length} 个工位与 ${tasks.length} 个任务。`"></span></div></section><section class="buttons"><button class="industrial" @click="runPreflight" :disabled="isRunningPreflight" x-text="isRunningPreflight ? 'CHECKING' : 'PREFLIGHT'"></button><button class="industrial dark" @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button><button class="industrial" @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" x-text="isRunningCompliance ? 'RUNNING' : 'COMPLIANCE'"></button><button class="industrial" @click="openRunManifest" :disabled="!selectedRun">MANIFEST</button></section><section class="board"><input class="field-iso" x-model="taskbookPath" placeholder="taskbook path"><input class="field-iso" x-model="sourcePath" placeholder="source path or directory"><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>Blueprint</span><b x-text="marvisProgressLabel()"></b></div><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>Milestones</span><b x-text="milestoneSummaryLabel()"></b></div><div class="board-row"><span>Preflight</span><b x-text="preflightResult ? preflightResult.status.toUpperCase() : 'IDLE'"></b></div><div class="board-row"><span>Selected Worker</span><b x-text="selectedWorker"></b></div><div class="board-row"><span>Selected TaskBook</span><b x-text="selectedTaskbookFilename || 'NONE'"></b></div><div class="board-row"><span>Compliance</span><b x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></b></div></section></div></article>
 
-      <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><div class="room-title">Artifact Vault</div><template x-for="artifact in runArtifacts.slice(0, 4)" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifactLabel(artifact)"></button></template><input class="field-iso" x-model="artifactQuery" @change="refreshFactoryArtifacts" placeholder="search factory artifacts"><template x-for="artifact in factoryArtifacts.slice(0, 6)" :key="artifact.run_id + artifact.path"><button class="filebox warn" @click="loadFactoryArtifact(artifact)" :title="artifact.run_id + ' · ' + artifact.path" x-text="factoryArtifactLabel(artifact)"></button></template><div x-show="runArtifacts.length === 0 && factoryArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">Artifact Preview</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">Quality Gate</div><div class="assertion" :class="qualityPassed() ? 'ok' : 'fail'"><b x-text="qualityScoreLabel()"></b><br><span x-text="qualitySummaryLabel()"></span></div><template x-for="step in qualitySteps()" :key="step.step_id"><div class="assertion" :class="step.summary && step.summary.failed ? 'fail' : 'ok'" @click="openQualityStep(step)"><b x-text="step.step_id"></b><br><span x-text="`${step.summary.passed}/${step.summary.total} checks passed`"></span></div></template><div x-show="complianceResult" class="assertion" :class="complianceResult && complianceResult.success ? 'ok' : 'fail'" x-text="complianceSummary()"></div><template x-for="report in complianceReports.slice(0, 2)" :key="report.filename"><div class="assertion ok" @click="openComplianceReport(report)"><b x-text="report.filename"></b><br><span x-text="`${report.size} bytes`"></span></div></template><div x-show="!selectedRunQuality && !complianceResult && complianceReports.length === 0" class="assertion">断言测试集待运行</div></section></div></article>
+      <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><div class="room-title">Artifact Vault</div><template x-for="artifact in runArtifacts.slice(0, 4)" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifactLabel(artifact)"></button></template><input class="field-iso" x-model="artifactQuery" @change="refreshFactoryArtifacts" placeholder="search factory artifacts"><template x-for="artifact in factoryArtifacts.slice(0, 6)" :key="artifact.run_id + artifact.path"><button class="filebox warn" @click="loadFactoryArtifact(artifact)" :title="artifact.run_id + ' · ' + artifact.path" x-text="factoryArtifactLabel(artifact)"></button></template><div x-show="runArtifacts.length === 0 && factoryArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">Artifact Preview</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">Quality Gate</div><div class="assertion" :class="qualityPassed() ? 'ok' : 'fail'"><b x-text="qualityScoreLabel()"></b><br><span x-text="qualitySummaryLabel()"></span></div><template x-for="step in qualitySteps()" :key="step.step_id"><div class="assertion" :class="step.summary && step.summary.failed ? 'fail' : 'ok'" @click="openQualityStep(step)"><b x-text="step.step_id"></b><br><span x-text="`${step.summary.passed}/${step.summary.total} checks passed`"></span></div></template><div x-show="complianceResult" class="assertion" :class="complianceResult && complianceResult.success ? 'ok' : 'fail'" x-text="complianceSummary()"></div><template x-for="report in complianceReports.slice(0, 2)" :key="report.filename"><div class="assertion ok" @click="openComplianceReport(report)"><b x-text="report.filename"></b><br><span x-text="`${report.size} bytes`"></span></div></template><template x-for="baseline in complianceBaselines.slice(0, 2)" :key="baseline.name"><div class="assertion ok" @click="openComplianceBaseline(baseline)"><b x-text="`BASE · ${baseline.name}`"></b><br><span x-text="`${baseline.mode || 'mode'} · ${baseline.cases} cases`"></span></div></template><div x-show="!selectedRunQuality && !complianceResult && complianceReports.length === 0 && complianceBaselines.length === 0" class="assertion">断言测试集待运行</div></section></div></article>
 
       <aside class="log-strip"><section class="log-panel"><div class="room-title">Step Timeline / Run Log</div><div class="log-list"><template x-for="step in selectedRunSteps()" :key="step.step_id"><div class="log-line"><b x-text="step.step_id"></b> · <span x-text="step.status"></span> · <span x-text="step.objective"></span></div></template><template x-for="event in selectedRunEvents.slice(0, 8)" :key="event.event_id"><div class="log-line" x-text="`${event.time || ''} · ${event.type}`"></div></template></div></section></aside>
 
@@ -177,6 +178,9 @@
         workerHealthSummary: {summary: null, workers: []},
         tasks: [],
         runs: [],
+        runFilter: '',
+        runStatusFocus: '',
+        lineDensity: 'normal',
         taskbooks: [],
         selectedRun: null,
         selectedRunEvents: [],
@@ -202,6 +206,7 @@
         complianceMode: 'quick',
         complianceResult: null,
         complianceReports: [],
+        complianceBaselines: [],
         preflightResult: null,
         correctionText: '',
         workerHealth: {},
@@ -209,8 +214,8 @@
         selectedTask: null,
         artifactContent: '',
         selectedTaskResultText: '',
-        configForm: {backend_type: '', provider: '', base_url: '', model: '', role: '', api_key: ''},
-        workerCreateForm: {worker_id: '', display_name: '', provider: 'test', base_url: '', model: 'fake-model', backend_type: 'fake', role: '通用交付工位', api_key: ''},
+        configForm: {backend_type: '', provider: '', base_url: '', model: '', role: '', group: '', tags: '', capabilities: '', api_key: ''},
+        workerCreateForm: {worker_id: '', display_name: '', provider: 'test', base_url: '', model: 'fake-model', backend_type: 'fake', role: '通用交付工位', group: 'general', tags: '', capabilities: '', api_key: '', template: 'general', count: 1},
         documentInstallWorker: null,
         documentLabels: {task_manual: '任务手册', conversion_rules: '转换规则'},
         alert: null,
@@ -249,6 +254,8 @@
           window.__marvisRerunSelectedStep = () => this.rerunSelectedStep();
           window.__marvisToggleComposerAgent = (workerId) => this.toggleComposerAgent(workerId);
           window.__marvisComposeTaskbookFromWorkers = () => this.composeTaskbookFromWorkers();
+          window.__marvisSaveComplianceBaseline = (filename) => this.saveComplianceBaseline(filename);
+          window.__marvisCompareComplianceBaseline = (baseline, filename) => this.compareComplianceBaseline(baseline, filename);
           this.refreshAll();
         },
         headers(contentType = 'application/json') {
@@ -270,7 +277,7 @@
           if (this.isRefreshing) return;
           this.isRefreshing = true;
           try {
-            await Promise.all([this.refreshHealth(), this.refreshMarvisStatus(), this.refreshWorkers(), this.refreshWorkerHealthSummary(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks(), this.refreshComplianceReports(), this.refreshFactoryArtifacts()]);
+            await Promise.all([this.refreshHealth(), this.refreshMarvisStatus(), this.refreshWorkers(), this.refreshWorkerHealthSummary(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks(), this.refreshComplianceReports(), this.refreshComplianceBaselines(), this.refreshFactoryArtifacts()]);
             this.notify('Factory sync complete');
           } catch (error) {
             this.notifyError(error);
@@ -744,17 +751,77 @@
           const body = await this.requestJson('/api/compliance/reports');
           this.complianceReports = body.reports || [];
         },
+        async refreshComplianceBaselines() {
+          const body = await this.requestJson('/api/compliance/baselines');
+          this.complianceBaselines = body.baselines || [];
+        },
         async openComplianceReport(report) {
           if (!report) return;
           const body = await this.requestJson(`/api/compliance/reports/${report.filename}`);
           const payload = body.report || {};
           this.drawerTitle = `COMPLIANCE · ${report.filename}`;
           this.drawerSubtitle = payload.success ? 'passed' : 'failed';
+          const defaultBaseline = this.escapeHtml((report.filename || 'baseline').replace(/^compliance-/, '').replace(/\.json$/, '').slice(0, 54));
           this.drawerHtml = `
             <div class="space-y-3">
               <div class="mini-metric"><span>Suite</span><strong class="!text-base">${this.escapeHtml(payload.mode || '')}</strong><em>${this.escapeHtml(payload.suite_path || '')}</em></div>
               <div class="mini-metric"><span>Cases</span><strong class="!text-base">${(payload.cases || []).length} cases</strong><em>${(payload.errors || []).length} errors</em></div>
+              <div class="factory-form">
+                <div class="room-title">Model Baseline Gate</div>
+                <label><span class="room-sub">baseline name</span><input id="compliance-baseline-name" value="${defaultBaseline}"></label>
+                <button class="industrial dark" onclick="window.__marvisSaveComplianceBaseline && window.__marvisSaveComplianceBaseline('${this.escapeHtml(report.filename)}')">SAVE BASELINE</button>
+                <div class="room-sub">Compare this report with an existing Moon Bridge / DeepSeek baseline</div>
+                ${this.complianceBaselines.map((baseline) => `
+                  <button class="industrial" onclick="window.__marvisCompareComplianceBaseline && window.__marvisCompareComplianceBaseline('${this.escapeHtml(baseline.name)}', '${this.escapeHtml(report.filename)}')">${this.escapeHtml(baseline.name)}</button>
+                `).join('') || '<div class="mono">no baselines saved yet</div>'}
+              </div>
               <pre class="mono">${this.escapeHtml(JSON.stringify(payload, null, 2))}</pre>
+            </div>
+          `;
+          this.drawerOpen = true;
+        },
+        async saveComplianceBaseline(filename) {
+          const input = document.getElementById('compliance-baseline-name');
+          const name = input && input.value.trim() ? input.value.trim() : `baseline-${Date.now()}`;
+          try {
+            await this.requestJson('/api/compliance/baselines', {
+              method: 'POST',
+              body: JSON.stringify({name, report_filename: filename})
+            });
+            await this.refreshComplianceBaselines();
+            this.notify(`Compliance baseline saved: ${name}`);
+          } catch (error) {
+            this.notifyError(error);
+          }
+        },
+        async compareComplianceBaseline(name, filename) {
+          try {
+            const result = await this.requestJson(`/api/compliance/baselines/${encodeURIComponent(name)}/compare/${encodeURIComponent(filename)}`, {method: 'POST'});
+            this.drawerTitle = `BASELINE COMPARE · ${name}`;
+            this.drawerSubtitle = result.passed ? 'no regression' : 'regression detected';
+            this.drawerHtml = `
+              <div class="space-y-3">
+                <div class="mini-metric"><span>Result</span><strong class="!text-base">${result.passed ? 'PASSED' : 'FAILED'}</strong><em>${this.escapeHtml(result.report || filename)}</em></div>
+                <div class="mini-metric"><span>Regressions</span><strong class="!text-base">${(result.regressions || []).length}</strong><em>new failures ${(result.new_failures || []).length}</em></div>
+                <pre class="mono">${this.escapeHtml(JSON.stringify(result, null, 2))}</pre>
+              </div>
+            `;
+            this.drawerOpen = true;
+            this.notify(result.passed ? `Baseline compare passed: ${name}` : `Baseline compare failed: ${name}`, result.passed ? 'ok' : 'error');
+          } catch (error) {
+            this.notifyError(error);
+          }
+        },
+        openComplianceBaseline(baseline) {
+          if (!baseline) return;
+          const latestReport = this.complianceReports[0] ? this.complianceReports[0].filename : '';
+          this.drawerTitle = `BASELINE · ${baseline.name}`;
+          this.drawerSubtitle = `${baseline.mode || 'mode'} · ${baseline.cases || 0} cases`;
+          this.drawerHtml = `
+            <div class="space-y-3">
+              <div class="mini-metric"><span>Baseline</span><strong class="!text-base">${this.escapeHtml(baseline.name)}</strong><em>${this.escapeHtml(baseline.path || '')}</em></div>
+              <div class="mini-metric"><span>Status</span><strong class="!text-base">${baseline.success ? 'PASS' : 'FAIL'}</strong><em>${baseline.size || 0} bytes</em></div>
+              ${latestReport ? `<button class="industrial dark" onclick="window.__marvisCompareComplianceBaseline && window.__marvisCompareComplianceBaseline('${this.escapeHtml(baseline.name)}', '${this.escapeHtml(latestReport)}')">COMPARE LATEST REPORT</button>` : '<div class="mono">no reports available for compare</div>'}
             </div>
           `;
           this.drawerOpen = true;
@@ -805,18 +872,28 @@
             model: 'fake-model',
             backend_type: 'fake',
             role: '通用交付工位',
-            api_key: ''
+            group: 'general',
+            tags: 'general',
+            capabilities: 'delivery',
+            api_key: '',
+            template: 'general',
+            count: 1
           };
           this.drawerTitle = 'NEW AGENT BAY · CREATE WORKER';
           this.drawerSubtitle = 'persisted into runtime_config.json';
           this.drawerHtml = `
             <div class="factory-form" id="workerCreateForm">
+              <label><span class="room-sub">template clone</span><select id="create-template"><option value="general">general delivery</option><option value="reverse">legacy reverse engineer</option><option value="requirements">requirements writer</option><option value="test">test planner</option></select></label>
+              <label><span class="room-sub">batch count</span><input id="create-count" type="number" min="1" max="20" value="1"></label>
               <label><span class="room-sub">worker_id</span><input id="create-worker-id" value="${this.escapeHtml(this.workerCreateForm.worker_id)}"></label>
               <label><span class="room-sub">display_name</span><input id="create-display-name" value="${this.escapeHtml(this.workerCreateForm.display_name)}"></label>
               <label><span class="room-sub">backend_type</span><select id="create-backend-type"><option value="fake">fake</option><option value="codex_cli">codex_cli</option><option value="claude_cli">claude_cli</option><option value="openai_compatible">openai_compatible</option></select></label>
               <label><span class="room-sub">provider</span><input id="create-provider" value="${this.escapeHtml(this.workerCreateForm.provider)}"></label>
               <label><span class="room-sub">base_url</span><input id="create-base-url" value="${this.escapeHtml(this.workerCreateForm.base_url)}" placeholder="http://127.0.0.1:38440/v1"></label>
               <label><span class="room-sub">model</span><input id="create-model" value="${this.escapeHtml(this.workerCreateForm.model)}"></label>
+              <label><span class="room-sub">group</span><input id="create-group" value="${this.escapeHtml(this.workerCreateForm.group)}"></label>
+              <label><span class="room-sub">tags comma separated</span><input id="create-tags" value="${this.escapeHtml(this.workerCreateForm.tags)}"></label>
+              <label><span class="room-sub">skills / capabilities</span><input id="create-capabilities" value="${this.escapeHtml(this.workerCreateForm.capabilities)}"></label>
               <label><span class="room-sub">role</span><textarea id="create-role">${this.escapeHtml(this.workerCreateForm.role)}</textarea></label>
               <label><span class="room-sub">api_key optional</span><input id="create-api-key" type="password" placeholder="saved locally when provided"></label>
               <button class="industrial dark" onclick="window.__marvisCreateWorker && window.__marvisCreateWorker()">CREATE AGENT</button>
@@ -830,35 +907,47 @@
             const element = document.getElementById(id);
             return element ? element.value.trim() : '';
           };
-          const payload = {
-            worker_id: valueOf('create-worker-id'),
-            display_name: valueOf('create-display-name'),
-            backend_type: valueOf('create-backend-type') || 'fake',
-            provider: valueOf('create-provider') || 'test',
-            base_url: valueOf('create-base-url'),
-            model: valueOf('create-model') || 'fake-model',
-            role: valueOf('create-role') || '通用交付工位'
-          };
+          const template = this.workerTemplate(valueOf('create-template') || 'general');
+          const count = Math.max(1, Math.min(20, Number(valueOf('create-count') || '1')));
+          const baseWorkerId = valueOf('create-worker-id');
+          const baseDisplayName = valueOf('create-display-name');
           const apiKey = valueOf('create-api-key');
           this.isCreatingWorker = true;
           try {
-            const body = await this.requestJson('/api/workers', {
-              method: 'POST',
-              body: JSON.stringify(payload)
-            });
-            this.selectedWorker = body.worker.worker_id;
-            if (apiKey) {
-              await this.requestJson(`/api/workers/${body.worker.worker_id}/config`, {
-                method: 'PATCH',
-                body: JSON.stringify({api_key: apiKey})
+            const created = [];
+            for (let index = 0; index < count; index += 1) {
+              const suffix = count === 1 ? '' : `-${index + 1}`;
+              const payload = {
+                worker_id: `${baseWorkerId}${suffix}`,
+                display_name: `${baseDisplayName}${suffix}`,
+                backend_type: valueOf('create-backend-type') || template.backend_type,
+                provider: valueOf('create-provider') || template.provider,
+                base_url: valueOf('create-base-url') || template.base_url,
+                model: valueOf('create-model') || template.model,
+                group: valueOf('create-group') || template.group,
+                tags: this.csvList(valueOf('create-tags') || template.tags.join(',')),
+                capabilities: this.csvList(valueOf('create-capabilities') || template.capabilities.join(',')),
+                role: valueOf('create-role') || template.role
+              };
+              const body = await this.requestJson('/api/workers', {
+                method: 'POST',
+                body: JSON.stringify(payload)
               });
+              created.push(body.worker.worker_id);
+              if (apiKey) {
+                await this.requestJson(`/api/workers/${body.worker.worker_id}/config`, {
+                  method: 'PATCH',
+                  body: JSON.stringify({api_key: apiKey})
+                });
+              }
             }
             await Promise.all([this.refreshWorkers(), this.refreshWorkerHealthSummary(), this.refreshMarvisStatus()]);
-            if (!this.selectedComposerAgents.includes(body.worker.worker_id)) {
-              this.selectedComposerAgents = [...this.selectedComposerAgents, body.worker.worker_id];
+            this.selectedWorker = created[0];
+            for (const workerId of created) {
+              if (!this.selectedComposerAgents.includes(workerId)) this.selectedComposerAgents = [...this.selectedComposerAgents, workerId];
             }
-            this.notify(`Agent created: ${body.worker.worker_id}`);
-            this.selectWorker(body.worker.worker_id);
+            this.notify(`Agents created: ${created.join(', ')}`);
+            this.selectWorker(created[0]);
           } catch (error) {
             this.notifyError(error);
           } finally {
@@ -911,6 +1000,9 @@
             base_url: worker.base_url || '',
             model: worker.model || '',
             role: worker.role || '',
+            group: worker.group || '',
+            tags: (worker.tags || []).join(', '),
+            capabilities: (worker.capabilities || []).join(', '),
             api_key: ''
           };
           this.drawerTitle = `WORKER CONFIG · ${worker.worker_id}`;
@@ -922,6 +1014,9 @@
                 <label><span class="room-sub">provider</span><input id="config-provider" value="${this.escapeHtml(this.configForm.provider)}"></label>
                 <label><span class="room-sub">base_url</span><input id="config-base-url" value="${this.escapeHtml(this.configForm.base_url)}"></label>
                 <label><span class="room-sub">model</span><input id="config-model" value="${this.escapeHtml(this.configForm.model)}"></label>
+                <label><span class="room-sub">group</span><input id="config-group" value="${this.escapeHtml(this.configForm.group)}"></label>
+                <label><span class="room-sub">tags</span><input id="config-tags" value="${this.escapeHtml(this.configForm.tags)}"></label>
+                <label><span class="room-sub">skills / capabilities</span><input id="config-capabilities" value="${this.escapeHtml(this.configForm.capabilities)}"></label>
                 <label><span class="room-sub">role</span><textarea id="config-role">${this.escapeHtml(this.configForm.role)}</textarea></label>
                 <label><span class="room-sub">api_key optional</span><input id="config-api-key" type="password" placeholder="leave blank to keep existing"></label>
                 <button class="industrial dark" onclick="window.__marvisSaveWorkerConfig && window.__marvisSaveWorkerConfig()">SAVE CONFIG</button>
@@ -940,6 +1035,9 @@
           this.configForm.base_url = updateFromDrawer('config-base-url', this.configForm.base_url);
           this.configForm.model = updateFromDrawer('config-model', this.configForm.model);
           this.configForm.role = updateFromDrawer('config-role', this.configForm.role);
+          this.configForm.group = updateFromDrawer('config-group', this.configForm.group);
+          this.configForm.tags = updateFromDrawer('config-tags', this.configForm.tags);
+          this.configForm.capabilities = updateFromDrawer('config-capabilities', this.configForm.capabilities);
           this.configForm.api_key = updateFromDrawer('config-api-key', this.configForm.api_key);
           this.isSavingConfig = true;
           try {
@@ -950,6 +1048,9 @@
                 base_url: this.configForm.base_url,
                 model: this.configForm.model,
                 role: this.configForm.role,
+                group: this.configForm.group,
+                tags: this.csvList(this.configForm.tags),
+                capabilities: this.csvList(this.configForm.capabilities),
                 api_key: this.configForm.api_key
               })
             });
@@ -1015,6 +1116,14 @@
         outputFilesForRun(run) {
           return (run.steps || []).flatMap((step) => step.outputs || []);
         },
+        visibleRuns() {
+          const query = this.runFilter.trim().toLowerCase();
+          return this.runs.filter((run) => {
+            const matchesQuery = !query || [run.run_id, run.title, run.status, run.taskbook_path, run.source_path].some((value) => String(value || '').toLowerCase().includes(query));
+            const matchesFocus = !this.runStatusFocus || run.status === this.runStatusFocus;
+            return matchesQuery && matchesFocus;
+          });
+        },
         artifactLabel(artifact) {
           const fileName = artifact.path.split('/').slice(-1)[0];
           return `${artifact.step_id || 'artifact'} · ${fileName}`;
@@ -1041,6 +1150,18 @@
           const summary = this.workerHealthSummary.summary;
           if (!summary) return 'idle';
           return summary.warning ? 'failed' : 'ok';
+        },
+        workerTemplate(name) {
+          const templates = {
+            reverse: {provider: 'test', model: 'fake-model', backend_type: 'fake', base_url: '', group: 'legacy-modernization', tags: ['jsp', 'sql', 'reverse-engineering'], capabilities: ['reverse-engineering', 'sql-analysis'], role: 'JSP/JS/SQL 老系统逆向分析工位'},
+            requirements: {provider: 'test', model: 'fake-model', backend_type: 'fake', base_url: '', group: 'legacy-modernization', tags: ['requirements', 'documentation'], capabilities: ['requirements-doc-writer'], role: '需求文档撰写工位'},
+            test: {provider: 'test', model: 'fake-model', backend_type: 'fake', base_url: '', group: 'legacy-modernization', tags: ['testing', 'quality'], capabilities: ['test-plan-writer'], role: '测试计划工位'},
+            general: {provider: 'test', model: 'fake-model', backend_type: 'fake', base_url: '', group: 'general', tags: ['general'], capabilities: ['delivery'], role: '通用交付工位'}
+          };
+          return templates[name] || templates.general;
+        },
+        csvList(text) {
+          return String(text || '').split(',').map((item) => item.trim()).filter(Boolean);
         },
         marvisProgressLabel() {
           const product = this.marvisStatus.product || {};
@@ -1189,6 +1310,8 @@
             this.drawerHtml = `
               <div class="space-y-3">
                 <div class="mini-metric"><span>Role</span><strong class="!text-base">${this.escapeHtml(worker.role || '')}</strong><em>${this.escapeHtml(worker.model || '')}</em></div>
+                <div class="mini-metric"><span>Group / Tags</span><strong class="!text-base">${this.escapeHtml(worker.group || 'default')}</strong><em>${this.escapeHtml((worker.tags || []).join(' · ') || 'no tags')}</em></div>
+                <div class="mini-metric"><span>Skills</span><strong class="!text-base">${this.escapeHtml((worker.capabilities || []).join(' · ') || 'not declared')}</strong><em>used by TaskBook Composer and audits</em></div>
                 <div class="mini-metric"><span>BACKEND</span><strong class="!text-base">${this.escapeHtml(worker.backend_type || '')}</strong><em>${this.escapeHtml(worker.base_url || '')}</em></div>
                 <div class="grid grid-cols-2 gap-2">
                   <button class="btn" onclick="window.__marvisOpenWorkerConfig && window.__marvisOpenWorkerConfig('${worker.worker_id}')">CONFIG</button>

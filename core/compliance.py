@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from hashlib import sha256
 import json
 from pathlib import Path
+import re
 import shutil
 from typing import Any
 
@@ -201,6 +202,73 @@ def read_compliance_report(report_dir: str | Path, filename: str) -> dict[str, A
     if not path.exists():
         raise FileNotFoundError("compliance report not found")
     return {"filename": filename, "path": str(path), "report": json.loads(path.read_text(encoding="utf-8"))}
+
+
+def write_compliance_baseline(report_dir: str | Path, name: str, report_filename: str) -> Path:
+    if not _valid_baseline_name(name):
+        raise FileNotFoundError("compliance baseline not found")
+    report = read_compliance_report(report_dir, report_filename)
+    baseline_dir = Path(report_dir) / "baselines"
+    baseline_dir.mkdir(parents=True, exist_ok=True)
+    path = baseline_dir / f"{name}.json"
+    path.write_text(json.dumps(report["report"], ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
+def list_compliance_baselines(report_dir: str | Path) -> list[dict[str, Any]]:
+    root = Path(report_dir) / "baselines"
+    baselines = []
+    if root.exists():
+        for path in sorted(root.glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+            report = json.loads(path.read_text(encoding="utf-8"))
+            baselines.append(
+                {
+                    "name": path.stem,
+                    "filename": path.name,
+                    "path": str(path),
+                    "size": path.stat().st_size,
+                    "updated_at": path.stat().st_mtime,
+                    "success": bool(report.get("success")),
+                    "mode": report.get("mode", ""),
+                    "cases": len(report.get("cases", [])),
+                }
+            )
+    return baselines
+
+
+def compare_compliance_baseline(report_dir: str | Path, name: str, report_filename: str) -> dict[str, Any]:
+    if not _valid_baseline_name(name):
+        raise FileNotFoundError("compliance baseline not found")
+    baseline_path = Path(report_dir) / "baselines" / f"{name}.json"
+    if not baseline_path.exists():
+        raise FileNotFoundError("compliance baseline not found")
+    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+    current = read_compliance_report(report_dir, report_filename)["report"]
+    baseline_cases = {case["name"]: case.get("status", "") for case in baseline.get("cases", [])}
+    current_cases = {case["name"]: case.get("status", "") for case in current.get("cases", [])}
+    regressions = [
+        {"name": name, "baseline": baseline_cases[name], "current": current_cases.get(name, "missing")}
+        for name in sorted(baseline_cases)
+        if baseline_cases[name] == "passed" and current_cases.get(name) != "passed"
+    ]
+    new_failures = [
+        {"name": name, "current": status}
+        for name, status in sorted(current_cases.items())
+        if name not in baseline_cases and status != "passed"
+    ]
+    return {
+        "baseline": name,
+        "report": report_filename,
+        "passed": not regressions and not new_failures and bool(current.get("success")),
+        "regressions": regressions,
+        "new_failures": new_failures,
+        "baseline_success": bool(baseline.get("success")),
+        "current_success": bool(current.get("success")),
+    }
+
+
+def _valid_baseline_name(name: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,79}", name.strip()))
 
 
 def _load_expected(path: Path) -> dict[str, Any]:

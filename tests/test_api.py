@@ -482,11 +482,33 @@ def test_console_has_agent_creation_and_configuration_flow():
     assert "openWorkerCreateForm" in html
     assert "createWorker" in html
     assert "CREATE AGENT" in html
+    assert "template clone" in html
+    assert "batch count" in html
+    assert "create-tags" in html
+    assert "create-capabilities" in html
+    assert "workerTemplate" in html
     assert "workerConfigForm" in html
     assert "SAVE CONFIG" in html
     assert "USE IN TASKBOOK" in html
     assert "/api/workers" in html
     assert "/api/workers/${body.worker.worker_id}/config" in html
+
+
+def test_console_has_pipeline_filter_density_and_compliance_baselines():
+    console = Path(__file__).parents[1] / "web" / "console.html"
+    html = console.read_text(encoding="utf-8")
+
+    assert "runFilter" in html
+    assert "runStatusFocus" in html
+    assert "lineDensity" in html
+    assert "visibleRuns" in html
+    assert "SAVE BASELINE" in html
+    assert "COMPARE LATEST REPORT" in html
+    assert "refreshComplianceBaselines" in html
+    assert "saveComplianceBaseline" in html
+    assert "compareComplianceBaseline" in html
+    assert "/api/compliance/baselines" in html
+    assert "/api/compliance/baselines/${encodeURIComponent(name)}/compare/${encodeURIComponent(filename)}" in html
 
 
 def test_api_lists_workers_with_token(tmp_path):
@@ -509,6 +531,9 @@ def test_api_lists_workers_with_token(tmp_path):
             "api_key_configured": False,
             "base_url": "",
             "role": "通用交付工位",
+            "group": "",
+            "tags": [],
+            "capabilities": [],
             "workspace_dir": "workspaces/niuma-1",
             "skills_dir": "skills/niuma-1",
             "installed_documents": {
@@ -529,6 +554,9 @@ def test_api_lists_workers_with_token(tmp_path):
             "api_key_configured": False,
             "base_url": "",
             "role": "通用交付工位",
+            "group": "",
+            "tags": [],
+            "capabilities": [],
             "workspace_dir": "workspaces/niuma-2",
             "skills_dir": "skills/niuma-2",
             "installed_documents": {
@@ -586,12 +614,23 @@ def test_api_creates_worker_and_runs_taskbook_with_new_agent(tmp_path):
     created = client.post(
         "/api/workers",
         headers={"x-hermes-token": "local-token"},
-        json={"worker_id": "niuma-3", "display_name": "牛马3", "role": "测试用例工位"},
+        json={
+            "worker_id": "niuma-3",
+            "display_name": "牛马3",
+            "role": "测试用例工位",
+            "group": "qa",
+            "tags": ["pytest", "docs"],
+            "capabilities": ["test-plan"],
+        },
     )
 
     assert created.status_code == 200
     assert created.json()["worker"]["worker_id"] == "niuma-3"
+    assert created.json()["worker"]["group"] == "qa"
+    assert created.json()["worker"]["tags"] == ["pytest", "docs"]
+    assert created.json()["worker"]["capabilities"] == ["test-plan"]
     assert resource_manager.get_agent("niuma-3")["display_name"] == "牛马3"
+    assert resource_manager.get_agent("niuma-3")["group_name"] == "qa"
     assert "niuma-3" in json.loads(runtime_config_path.read_text(encoding="utf-8"))["workers"]
 
     taskbook_path = tmp_path / "new-agent.yml"
@@ -662,6 +701,9 @@ def test_api_updates_worker_runtime_config_without_exposing_key(tmp_path, monkey
             "provider": "smarthse",
             "model": "deepseek-v4-pro",
             "role": "JSP 逆向工位",
+            "group": "legacy-modernization",
+            "tags": ["jsp", "sql"],
+            "capabilities": ["reverse"],
             "base_url": "http://smarthse.51vip.biz:53001/v1",
             "api_key": "sk-secret",
         },
@@ -671,6 +713,9 @@ def test_api_updates_worker_runtime_config_without_exposing_key(tmp_path, monkey
     assert response.json()["worker"]["provider"] == "smarthse"
     assert response.json()["worker"]["model"] == "deepseek-v4-pro"
     assert response.json()["worker"]["role"] == "JSP 逆向工位"
+    assert response.json()["worker"]["group"] == "legacy-modernization"
+    assert response.json()["worker"]["tags"] == ["jsp", "sql"]
+    assert response.json()["worker"]["capabilities"] == ["reverse"]
     assert response.json()["worker"]["api_key_configured"] is True
     assert response.json()["worker"]["base_url"] == "http://smarthse.51vip.biz:53001/v1"
     assert "sk-secret" not in response.text
@@ -682,6 +727,9 @@ def test_api_updates_worker_runtime_config_without_exposing_key(tmp_path, monkey
         "provider": "smarthse",
         "model": "deepseek-v4-pro",
         "role": "JSP 逆向工位",
+        "group": "legacy-modernization",
+        "tags": ["jsp", "sql"],
+        "capabilities": ["reverse"],
         "base_url": "http://smarthse.51vip.biz:53001/v1",
         "api_key": "sk-secret",
     }

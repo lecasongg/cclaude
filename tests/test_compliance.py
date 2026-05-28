@@ -2,7 +2,14 @@ import textwrap
 import json
 
 import marvisctl
-from agent_factory.core.compliance import ComplianceSuite, list_compliance_reports, read_compliance_report
+from agent_factory.core.compliance import (
+    ComplianceSuite,
+    compare_compliance_baseline,
+    list_compliance_baselines,
+    list_compliance_reports,
+    read_compliance_report,
+    write_compliance_baseline,
+)
 from agent_factory.core.pipeline_executor import StepExecutionContext
 
 
@@ -44,6 +51,43 @@ def test_compliance_report_helpers_list_and_read_reports(tmp_path):
 
     assert listed[0]["filename"] == report.name
     assert read["report"]["success"] is True
+
+
+def test_compliance_baseline_helpers_detect_regression(tmp_path):
+    report_dir = tmp_path / "reports"
+    report_dir.mkdir()
+    baseline_report = report_dir / "compliance-model-20260101T000000Z-passed.json"
+    baseline_report.write_text(
+        json.dumps({"success": True, "mode": "model", "cases": [{"name": "legacy-login", "status": "passed"}]}),
+        encoding="utf-8",
+    )
+    current_report = report_dir / "compliance-model-20260102T000000Z-failed.json"
+    current_report.write_text(
+        json.dumps({"success": False, "mode": "model", "cases": [{"name": "legacy-login", "status": "failed"}]}),
+        encoding="utf-8",
+    )
+
+    baseline_path = write_compliance_baseline(report_dir, "moon-bridge-deepseek", baseline_report.name)
+    comparison = compare_compliance_baseline(report_dir, "moon-bridge-deepseek", current_report.name)
+
+    assert baseline_path.exists()
+    assert list_compliance_baselines(report_dir)[0]["name"] == "moon-bridge-deepseek"
+    assert comparison["passed"] is False
+    assert comparison["regressions"] == [{"name": "legacy-login", "baseline": "passed", "current": "failed"}]
+
+
+def test_compliance_baseline_rejects_unsafe_names(tmp_path):
+    report_dir = tmp_path / "reports"
+    report_dir.mkdir()
+    report = report_dir / "compliance-model-20260101T000000Z-passed.json"
+    report.write_text(json.dumps({"success": True, "mode": "model", "cases": []}), encoding="utf-8")
+
+    try:
+        write_compliance_baseline(report_dir, "../escape", report.name)
+    except FileNotFoundError:
+        pass
+    else:
+        raise AssertionError("unsafe baseline name should be rejected")
 
 
 def test_compliance_quick_suite_reports_failed_assertion(tmp_path):

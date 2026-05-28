@@ -9,7 +9,14 @@ from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from agent_factory.core.config import save_runtime_config
-from agent_factory.core.compliance import ComplianceSuite, list_compliance_reports as list_report_files, read_compliance_report as read_report_file
+from agent_factory.core.compliance import (
+    ComplianceSuite,
+    compare_compliance_baseline,
+    list_compliance_baselines,
+    list_compliance_reports as list_report_files,
+    read_compliance_report as read_report_file,
+    write_compliance_baseline,
+)
 from agent_factory.core.event_log import EventLog
 from agent_factory.core.marvis_status import build_marvis_status
 from agent_factory.core.models import TaskRecord, WorkerConfig
@@ -73,6 +80,11 @@ class PreflightRequest(BaseModel):
     compliance_suite_path: str = ""
 
 
+class ComplianceBaselineRequest(BaseModel):
+    name: str
+    report_filename: str
+
+
 REQUIRED_DOCUMENT_WORKER_ID = "niuma-1"
 TASK_MANUAL = "task_manual"
 CONVERSION_RULES = "conversion_rules"
@@ -87,6 +99,9 @@ class WorkerConfigUpdate(BaseModel):
     provider: str | None = None
     model: str | None = None
     role: str | None = None
+    group: str | None = None
+    tags: list[str] | None = None
+    capabilities: list[str] | None = None
     base_url: str | None = None
     api_key: str | None = None
     persist: bool = True
@@ -99,6 +114,9 @@ class WorkerCreateRequest(BaseModel):
     model: str = "fake-model"
     backend_type: str = "fake"
     role: str = "通用交付工位"
+    group: str = ""
+    tags: list[str] = []
+    capabilities: list[str] = []
     base_url: str = ""
     api_key_env: str = ""
     persist: bool = True
@@ -247,6 +265,9 @@ def create_app(
             "api_key_configured": bool(os.environ.get(worker.api_key_env)),
             "base_url": base_url,
             "role": worker.role,
+            "group": worker.group,
+            "tags": worker.tags,
+            "capabilities": worker.capabilities,
             "workspace_dir": worker.workspace_dir,
             "skills_dir": worker.skills_dir,
             "installed_documents": document_status(worker_documents(worker.worker_id)),
@@ -256,7 +277,7 @@ def create_app(
         if resource_manager is None:
             return
         for worker in workers:
-            resource_manager.register_agent(worker.worker_id, display_name=worker.display_name)
+            resource_manager.register_agent(worker.worker_id, display_name=worker.display_name, group=worker.group, tags=worker.tags)
 
     def taskbooks_root() -> Path:
         return (pipeline_workspace_root or Path.cwd()) / "taskbooks"
@@ -320,6 +341,9 @@ def create_app(
             skills_dir=f"skills/{worker_id}",
             base_url=request.base_url,
             role=request.role,
+            group=request.group,
+            tags=request.tags,
+            capabilities=request.capabilities,
             backend_type=request.backend_type,
             backend_options={"response_text": f"{worker_id} completed task"} if request.backend_type == "fake" else {},
         )
@@ -327,7 +351,7 @@ def create_app(
         bus.register_worker(worker_id)
         rebuild_worker_runtime(worker)
         if resource_manager is not None:
-            resource_manager.register_agent(worker.worker_id, display_name=worker.display_name)
+            resource_manager.register_agent(worker.worker_id, display_name=worker.display_name, group=worker.group, tags=worker.tags)
         if request.persist and runtime_config_path:
             saved_worker = runtime_data.setdefault("workers", {}).setdefault(worker_id, {})
             saved_worker.update(
@@ -341,6 +365,9 @@ def create_app(
                     "skills_dir": worker.skills_dir,
                     "base_url": worker.base_url,
                     "role": worker.role,
+                    "group": worker.group,
+                    "tags": worker.tags,
+                    "capabilities": worker.capabilities,
                     "backend_type": worker.backend_type,
                     "backend_options": worker.backend_options,
                     "enabled": True,
@@ -457,6 +484,28 @@ def create_app(
         except (FileNotFoundError, json.JSONDecodeError) as exc:
             raise HTTPException(status_code=404, detail="compliance report not found") from exc
 
+    @app.get("/api/compliance/baselines")
+    async def list_compliance_baseline_entries(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        return {"baselines": list_compliance_baselines(compliance_reports_root())}
+
+    @app.post("/api/compliance/baselines")
+    async def create_compliance_baseline(request: ComplianceBaselineRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        try:
+            path = write_compliance_baseline(compliance_reports_root(), request.name, request.report_filename)
+            return {"baseline": {"name": request.name, "path": str(path)}, "notice": "baseline saved"}
+        except (FileNotFoundError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=404, detail="compliance baseline not found") from exc
+
+    @app.post("/api/compliance/baselines/{name}/compare/{filename}")
+    async def compare_baseline(name: str, filename: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        try:
+            return compare_compliance_baseline(compliance_reports_root(), name, filename)
+        except (FileNotFoundError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=404, detail="compliance baseline not found") from exc
+
     @app.get("/api/workers/{worker_id}/installed-documents")
     async def get_installed_documents(worker_id: str, x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
@@ -489,6 +538,12 @@ def create_app(
             worker.model = request.model
         if request.role is not None:
             worker.role = request.role
+        if request.group is not None:
+            worker.group = request.group
+        if request.tags is not None:
+            worker.tags = request.tags
+        if request.capabilities is not None:
+            worker.capabilities = request.capabilities
         if request.api_key:
             os.environ[worker.api_key_env] = request.api_key
         if request.base_url is not None:
@@ -502,11 +557,19 @@ def create_app(
                 saved_worker["model"] = request.model
             if request.role is not None:
                 saved_worker["role"] = request.role
+            if request.group is not None:
+                saved_worker["group"] = request.group
+            if request.tags is not None:
+                saved_worker["tags"] = request.tags
+            if request.capabilities is not None:
+                saved_worker["capabilities"] = request.capabilities
             if request.base_url is not None:
                 saved_worker["base_url"] = request.base_url
             if request.api_key:
                 saved_worker["api_key"] = request.api_key
             save_runtime_config(runtime_config_path, runtime_data)
+        if resource_manager is not None:
+            resource_manager.register_agent(worker.worker_id, display_name=worker.display_name, group=worker.group, tags=worker.tags)
         notice = "配置已保存，重启后仍会生效。" if request.persist and runtime_config_path else "配置已更新，仅对当前 Worker Server 进程生效。"
         return {"worker": worker_to_dict(worker), "notice": notice}
 
