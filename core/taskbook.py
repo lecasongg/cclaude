@@ -90,6 +90,9 @@ def validate_taskbook(taskbook: TaskBook) -> None:
             raise TaskBookError(f"missing objective for step {step.step_id}")
         if not step.outputs:
             raise TaskBookError(f"missing outputs for step {step.step_id}")
+        for input_path in step.inputs:
+            if not _valid_input_path(input_path.path):
+                raise TaskBookError(f"invalid input path for step {step.step_id}: {input_path.path}")
         for output in step.outputs:
             if not _valid_artifact_output_path(output.path):
                 raise TaskBookError(f"invalid output path for step {step.step_id}: {output.path}")
@@ -140,10 +143,19 @@ def _paths_from_list(values: Any) -> list[TaskBookPath]:
 
 
 def _valid_artifact_output_path(path: str) -> bool:
+    return _valid_relative_path(path) and path.replace("\\", "/").startswith("artifacts/runs/")
+
+
+def _valid_input_path(path: str) -> bool:
+    normalized = path.replace("\\", "/")
+    return _valid_relative_path(path) and (normalized.startswith("artifacts/runs/") or normalized.startswith("shared/"))
+
+
+def _valid_relative_path(path: str) -> bool:
     normalized = path.replace("\\", "/")
     if normalized.startswith("/") or re.match(r"^[A-Za-z]:", normalized):
         return False
     parts = PurePosixPath(normalized).parts
     if ".." in parts:
         return False
-    return normalized.startswith("artifacts/runs/")
+    return bool(parts)

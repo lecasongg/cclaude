@@ -150,6 +150,89 @@ def test_taskbook_rejects_output_paths_outside_artifacts(tmp_path):
         load_taskbook(taskbook_path)
 
 
+def test_taskbook_rejects_input_paths_outside_shared_or_artifacts(tmp_path):
+    taskbook_path = tmp_path / "bad-input.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: 越界输入
+            objective: 测试
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: 逆向
+                inputs:
+                  - path: ../../secret.txt
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TaskBookError, match="invalid input path for step reverse-login"):
+        load_taskbook(taskbook_path)
+
+
+def test_taskbook_rejects_absolute_input_paths(tmp_path):
+    taskbook_path = tmp_path / "absolute-input.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: 绝对输入
+            objective: 测试
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: 逆向
+                inputs:
+                  - path: C:/Users/12799/secret.txt
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TaskBookError, match="invalid input path for step reverse-login"):
+        load_taskbook(taskbook_path)
+
+
+def test_taskbook_allows_shared_and_artifact_inputs(tmp_path):
+    taskbook_path = tmp_path / "good-input.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: 合法输入
+            objective: 测试
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: 逆向
+                inputs:
+                  - path: shared/references/login.jsp
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+              - id: write-requirements
+                agent: niuma-2
+                depends_on:
+                  - reverse-login
+                objective: 写需求
+                inputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+                outputs:
+                  - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    taskbook = load_taskbook(taskbook_path)
+
+    assert taskbook.step("reverse-login").inputs[0].path == "shared/references/login.jsp"
+    assert taskbook.step("write-requirements").inputs[0].path == "artifacts/runs/{run_id}/reverse-login/function-list.md"
+
+
 def test_repository_sample_taskbooks_are_valid():
     taskbook_dir = Path(__file__).parents[1] / "taskbooks"
     sample_paths = sorted(taskbook_dir.glob("*.yml"))
