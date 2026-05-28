@@ -63,6 +63,62 @@ def test_marvisctl_doctor_reports_worker_health_summary(tmp_path, capsys, monkey
     assert "path_warnings=1" in output
 
 
+def test_marvisctl_status_reports_factory_status(tmp_path, capsys):
+    config_path = tmp_path / "factory_config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "workers": [
+                    {
+                        "worker_id": "niuma-1",
+                        "display_name": "niuma-1",
+                        "provider": "test",
+                        "model": "fake-model",
+                        "api_key_env": "NIUMA_1_API_KEY",
+                        "profile_dir": "profiles/niuma-1",
+                        "workspace_dir": "workspaces/niuma-1",
+                        "skills_dir": "skills/niuma-1",
+                        "backend_type": "fake",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    report_dir = tmp_path / "artifacts" / "compliance"
+    report_dir.mkdir(parents=True)
+    (report_dir / "compliance-quick-20260101T000000Z-passed.json").write_text("{}", encoding="utf-8")
+
+    assert marvisctl.main(["status", "--config", str(config_path), "--workspace", str(tmp_path)]) == 0
+
+    output = capsys.readouterr().out
+    assert "Marvis AI Factory Console" in output
+    assert "80%" in output
+    assert "reports 1" in output
+
+
+def test_marvisctl_status_can_print_json(tmp_path, capsys):
+    config_path = tmp_path / "factory_config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "workers": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    assert marvisctl.main(["status", "--config", str(config_path), "--workspace", str(tmp_path), "--json"]) == 0
+
+    body = json.loads(capsys.readouterr().out)
+    assert body["product"]["name"] == "Marvis AI Factory Console"
+    assert body["metrics"]["compliance_reports_total"] == 0
+
+
 def test_marvisctl_preflight_reports_launch_gate(tmp_path, capsys, monkeypatch):
     workspace = tmp_path / "workspaces" / "niuma-1"
     profile = tmp_path / "profiles" / "niuma-1"

@@ -20,6 +20,7 @@ from agent_factory.core.backends import build_backend
 from agent_factory.core.config import apply_runtime_config, load_factory_config, load_runtime_config
 from agent_factory.core.config_registry import ConfigRegistryError, load_config_registry
 from agent_factory.core.event_log import EventLog
+from agent_factory.core.marvis_status import build_marvis_status
 from agent_factory.core.preflight import run_preflight
 from agent_factory.core.resource_manager import ResourceManager
 from agent_factory.core.run_manifest import build_run_manifest
@@ -47,6 +48,12 @@ def _build_parser() -> argparse.ArgumentParser:
     doctor = subparsers.add_parser("doctor")
     _add_config_arg(doctor)
     doctor.set_defaults(handler=_doctor)
+
+    status = subparsers.add_parser("status")
+    _add_config_arg(status)
+    status.add_argument("--workspace", default=".")
+    status.add_argument("--json", action="store_true")
+    status.set_defaults(handler=_status)
 
     preflight = subparsers.add_parser("preflight")
     _add_config_arg(preflight)
@@ -127,6 +134,39 @@ def _doctor(args: argparse.Namespace) -> int:
             f"path_warnings={health['path_warnings']}, "
             f"backend_command_warnings={health['backend_command_warnings']}"
         )
+    return 0
+
+
+def _status(args: argparse.Namespace) -> int:
+    config_path = Path(_resolve_config_path(args.config))
+    config = load_factory_config(config_path)
+    runtime_config = load_runtime_config(config_path.parent / "runtime_config.json")
+    apply_runtime_config(config, runtime_config)
+    workers = [worker for worker in config.workers if worker.enabled]
+    workspace = Path(args.workspace)
+    manager = ResourceManager(workspace / "marvis.db")
+    status = build_marvis_status(
+        workers,
+        TaskBus([worker.worker_id for worker in workers]),
+        manager,
+        config_path.parent / "runtime_config.json",
+    )
+    reports = sorted((workspace / "artifacts" / "compliance").glob("compliance-*.json")) if (workspace / "artifacts" / "compliance").exists() else []
+    status["metrics"]["compliance_reports_total"] = len(reports)
+    if reports:
+        status["metrics"]["latest_compliance_report"] = str(reports[-1])
+    if args.json:
+        print(json.dumps(status, ensure_ascii=False, indent=2))
+    else:
+        product = status["product"]
+        metrics = status["metrics"]
+        print(f"{product['name']} {product['blueprint_version']} | {product['progress_percent']}%")
+        print(
+            f"workers {metrics['workers_ready']}/{metrics['workers_total']} ready | "
+            f"runs {metrics['runs_total']} total | reports {metrics['compliance_reports_total']}"
+        )
+        for risk in status["risks"]:
+            print(f"{risk['level']}\t{risk['message']}")
     return 0
 
 
