@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+import re
+from pathlib import Path, PurePosixPath
 from typing import Callable
 
 from agent_factory.core.event_log import EventLog
@@ -191,8 +192,8 @@ class PipelineExecutor:
         self.event_log.write_event(run_id, "step_succeeded", agent_id=step.agent, step_id=step.step_id)
 
     def _build_context(self, run_id: str, step: TaskBookStep, correction: str = "") -> StepExecutionContext:
-        input_paths = [str(self._resolve_run_path(item.path, run_id)) for item in step.inputs]
-        output_paths = [str(self._resolve_run_path(item.path, run_id)) for item in step.outputs]
+        input_paths = [str(self._resolve_run_path(item.path, run_id, kind="input")) for item in step.inputs]
+        output_paths = [str(self._resolve_run_path(item.path, run_id, kind="output")) for item in step.outputs]
         input_files = {path: Path(path).read_text(encoding="utf-8") for path in input_paths}
         return StepExecutionContext(
             run_id=run_id,
@@ -203,8 +204,19 @@ class PipelineExecutor:
             correction=correction,
         )
 
-    def _resolve_run_path(self, path: str, run_id: str) -> Path:
-        return self.workspace_root / path.replace("{run_id}", run_id)
+    def _resolve_run_path(self, path: str, run_id: str, kind: str) -> Path:
+        normalized = path.replace("\\", "/")
+        if not _valid_relative_path(normalized):
+            raise RuntimeError(f"{kind} path escapes workspace: {path}")
+        if kind == "input" and not (normalized.startswith("shared/") or normalized.startswith("artifacts/runs/")):
+            raise RuntimeError(f"input path is outside allowed roots: {path}")
+        if kind == "output" and not normalized.startswith("artifacts/runs/"):
+            raise RuntimeError(f"output path is outside artifacts: {path}")
+        resolved = (self.workspace_root / normalized.replace("{run_id}", run_id)).resolve()
+        workspace = self.workspace_root.resolve()
+        if not resolved.is_relative_to(workspace):
+            raise RuntimeError(f"{kind} path escapes workspace: {path}")
+        return resolved
 
     def _block_downstream(
         self,
@@ -254,3 +266,10 @@ class PipelineExecutor:
             elif self.resource_manager.get_step_run(run_id, dependency)["status"] != "succeeded":
                 return False
         return True
+
+
+def _valid_relative_path(path: str) -> bool:
+    if path.startswith("/") or re.match(r"^[A-Za-z]:", path):
+        return False
+    parts = PurePosixPath(path).parts
+    return bool(parts) and ".." not in parts

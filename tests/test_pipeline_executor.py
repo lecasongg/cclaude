@@ -3,7 +3,7 @@ import textwrap
 from agent_factory.core.event_log import EventLog
 from agent_factory.core.pipeline_executor import PipelineExecutor, StepExecutionContext
 from agent_factory.core.resource_manager import ResourceManager
-from agent_factory.core.taskbook import load_taskbook
+from agent_factory.core.taskbook import TaskBook, TaskBookPath, TaskBookStep, load_taskbook
 
 
 def test_pipeline_executor_runs_steps_with_file_level_handoff(tmp_path):
@@ -109,6 +109,71 @@ def test_pipeline_executor_reruns_failed_step_with_correction_and_downstream(tmp
     assert "step_rerun_requested" in event_types
     assert "correction_added" in event_types
     assert event_types[-1] == "run_succeeded"
+
+
+def test_pipeline_executor_rejects_runtime_input_path_escape(tmp_path):
+    taskbook = TaskBook(
+        title="runtime guard",
+        objective="reject escaped input",
+        steps=[
+            TaskBookStep(
+                step_id="bad-input",
+                agent="niuma-1",
+                objective="read escaped input",
+                inputs=[TaskBookPath("../secret.txt")],
+                outputs=[TaskBookPath("artifacts/runs/{run_id}/bad-input/out.md")],
+            )
+        ],
+    )
+    manager = ResourceManager(tmp_path / "marvis.db")
+    manager.register_agent("niuma-1", display_name="niuma-1")
+    called = False
+
+    def runner(context: StepExecutionContext) -> dict[str, str]:
+        nonlocal called
+        called = True
+        return {context.output_paths[0]: "should not write"}
+
+    event_log = EventLog(tmp_path / "events")
+    executor = PipelineExecutor(manager, event_log, tmp_path, runner)
+
+    run_id = executor.run(taskbook)
+
+    assert called is False
+    assert manager.get_pipeline_run(run_id)["status"] == "failed"
+    assert manager.get_step_run(run_id, "bad-input")["status"] == "failed"
+    assert "input path escapes workspace" in event_log.read_events(run_id)[2]["payload"]["error"]
+
+
+def test_pipeline_executor_rejects_runtime_output_path_escape(tmp_path):
+    taskbook = TaskBook(
+        title="runtime guard",
+        objective="reject escaped output",
+        steps=[
+            TaskBookStep(
+                step_id="bad-output",
+                agent="niuma-1",
+                objective="write escaped output",
+                outputs=[TaskBookPath("../outside.md")],
+            )
+        ],
+    )
+    manager = ResourceManager(tmp_path / "marvis.db")
+    manager.register_agent("niuma-1", display_name="niuma-1")
+    called = False
+
+    def runner(context: StepExecutionContext) -> dict[str, str]:
+        nonlocal called
+        called = True
+        return {context.output_paths[0]: "should not write"}
+
+    executor = PipelineExecutor(manager, EventLog(tmp_path / "events"), tmp_path, runner)
+
+    run_id = executor.run(taskbook)
+
+    assert called is False
+    assert manager.get_pipeline_run(run_id)["status"] == "failed"
+    assert not (tmp_path.parent / "outside.md").exists()
 
 
 def _write_taskbook(tmp_path):
