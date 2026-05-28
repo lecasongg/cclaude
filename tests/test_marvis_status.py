@@ -1,4 +1,10 @@
-from agent_factory.core.marvis_status import CAPABILITY_LEDGER, BLUEPRINT_TARGET_PERCENT, blueprint_progress_percent, build_marvis_status
+from agent_factory.core.marvis_status import (
+    BLUEPRINT_MILESTONES,
+    BLUEPRINT_TARGET_PERCENT,
+    CAPABILITY_LEDGER,
+    blueprint_progress_percent,
+    build_marvis_status,
+)
 from agent_factory.core.models import WorkerConfig
 from agent_factory.core.resource_manager import ResourceManager
 from agent_factory.core.task_bus import TaskBus
@@ -40,6 +46,13 @@ def test_marvis_status_reports_blueprint_progress_and_capabilities(tmp_path):
         "run-preflight",
     }
     assert all("weight" in capability and "earned" in capability for capability in status["capabilities"])
+    assert {milestone["key"] for milestone in status["milestones"]} >= {
+        "quick-compliance",
+        "pipeline-god-view",
+        "agent-isolation",
+    }
+    assert status["milestone_summary"]["P0"]["ready"] >= 8
+    assert status["milestone_summary"]["P1"]["partial"] >= 4
 
 
 def test_marvis_blueprint_progress_is_calculated_from_capability_ledger():
@@ -48,3 +61,8 @@ def test_marvis_blueprint_progress_is_calculated_from_capability_ledger():
 
     assert total == 100
     assert blueprint_progress_percent() == round((earned / total) * 100)
+
+
+def test_marvis_blueprint_milestones_are_phase_grouped():
+    assert {item["phase"] for item in BLUEPRINT_MILESTONES} >= {"P0", "P1", "P2"}
+    assert all({"phase", "key", "title", "status", "evidence", "next_step"} <= set(item) for item in BLUEPRINT_MILESTONES)

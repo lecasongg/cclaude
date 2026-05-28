@@ -91,6 +91,129 @@ CAPABILITY_LEDGER = [
     },
 ]
 
+BLUEPRINT_MILESTONES = [
+    {
+        "phase": "P0",
+        "key": "config-registry",
+        "title": "ConfigRegistry",
+        "status": "ready",
+        "evidence": "defaults/template/agent merge plus marvisctl config validate/render",
+        "next_step": "Expose template cloning in the factory console",
+    },
+    {
+        "phase": "P0",
+        "key": "resource-manager",
+        "title": "SQLite ResourceManager",
+        "status": "ready",
+        "evidence": "agent registry, leases, pipeline runs and step runs persist in SQLite",
+        "next_step": "Add richer lease timeout diagnostics",
+    },
+    {
+        "phase": "P0",
+        "key": "event-log",
+        "title": "Append-only EventLog",
+        "status": "ready",
+        "evidence": "run-scoped jsonl events are exposed through API and UI",
+        "next_step": "Index event severity and progress payloads",
+    },
+    {
+        "phase": "P0",
+        "key": "taskbook-linter",
+        "title": "TaskBook Loader And Linter",
+        "status": "ready",
+        "evidence": "YAML parsing, required fields, dependency DAG and output path checks",
+        "next_step": "Add stronger input allowlist and forbidden path schema",
+    },
+    {
+        "phase": "P0",
+        "key": "pipeline-executor",
+        "title": "Pipeline Executor",
+        "status": "ready",
+        "evidence": "multi-step dependency execution, artifacts, failure blocking and correction reruns",
+        "next_step": "Support resumable running steps after server restart",
+    },
+    {
+        "phase": "P0",
+        "key": "marvisctl",
+        "title": "marvisctl Operator CLI",
+        "status": "ready",
+        "evidence": "doctor/config/agent/taskbook/preflight/compliance/status commands",
+        "next_step": "Add agent template clone and bulk validation commands",
+    },
+    {
+        "phase": "P0",
+        "key": "quick-compliance",
+        "title": "Taskbook Compliance Quick Suite",
+        "status": "ready",
+        "evidence": "mock-mode suite covers handoff, dependency, missing-input and forbidden-write contracts",
+        "next_step": "Add correction-loop and restart-recovery compliance cases",
+    },
+    {
+        "phase": "P0",
+        "key": "api-expansion",
+        "title": "Factory API",
+        "status": "ready",
+        "evidence": "runs, events, artifacts, quality, manifest, preflight and compliance endpoints",
+        "next_step": "Add paginated artifact search and report comparison",
+    },
+    {
+        "phase": "P0",
+        "key": "minimal-pipeline-ui",
+        "title": "Minimum Pipeline UI",
+        "status": "ready",
+        "evidence": "2.5D factory console can start runs, inspect steps, open artifacts and run gates",
+        "next_step": "Verify desktop/mobile layout with browser automation",
+    },
+    {
+        "phase": "P1",
+        "key": "workstation-center",
+        "title": "Workstation Center",
+        "status": "partial",
+        "evidence": "worker cards, health summary and config editing are present",
+        "next_step": "Add tag/group management and template-based worker creation",
+    },
+    {
+        "phase": "P1",
+        "key": "pipeline-god-view",
+        "title": "Pipeline God View",
+        "status": "partial",
+        "evidence": "isometric floor shows multiple lines and step machines",
+        "next_step": "Increase spatial clarity, density controls and multi-run filtering",
+    },
+    {
+        "phase": "P1",
+        "key": "artifact-audit",
+        "title": "Artifact Library And Audit",
+        "status": "partial",
+        "evidence": "run manifests and artifact drawers expose provenance per run",
+        "next_step": "Add cross-run artifact index and diffable report views",
+    },
+    {
+        "phase": "P1",
+        "key": "model-compliance",
+        "title": "Model Compliance Suite",
+        "status": "partial",
+        "evidence": "model mode can run against configured worker backends",
+        "next_step": "Add baseline reports for Moon Bridge / DeepSeek model changes",
+    },
+    {
+        "phase": "P1",
+        "key": "agent-isolation",
+        "title": "Agent Isolation And Permission Boundary",
+        "status": "partial",
+        "evidence": "per-worker workspace/profile/skills paths exist; policy enforcement is still light",
+        "next_step": "Add path policy checks before worker execution",
+    },
+    {
+        "phase": "P2",
+        "key": "scalable-platform",
+        "title": "Scalable Multi-scheduler Platform",
+        "status": "planned",
+        "evidence": "single-machine factory runtime is the current scope",
+        "next_step": "Design multi-scheduler coordination after P1 stabilizes",
+    },
+]
+
 
 def build_marvis_status(
     workers: list[WorkerConfig],
@@ -122,6 +245,8 @@ def build_marvis_status(
             "runtime_config_persistence": runtime_config_path is not None,
         },
         "capabilities": [dict(item) for item in CAPABILITY_LEDGER],
+        "milestones": [dict(item) for item in BLUEPRINT_MILESTONES],
+        "milestone_summary": _milestone_summary(BLUEPRINT_MILESTONES),
         "risks": _risks(worker_health["summary"]),
     }
 
@@ -134,6 +259,17 @@ def blueprint_progress_percent() -> int:
 
 def _count_status(rows: list[dict[str, Any]], status: str) -> int:
     return sum(1 for row in rows if row.get("status") == status)
+
+
+def _milestone_summary(milestones: list[dict[str, str]]) -> dict[str, dict[str, int]]:
+    summary: dict[str, dict[str, int]] = {}
+    for milestone in milestones:
+        phase = milestone["phase"]
+        status = milestone["status"]
+        phase_summary = summary.setdefault(phase, {"ready": 0, "partial": 0, "planned": 0, "total": 0})
+        phase_summary[status] = phase_summary.get(status, 0) + 1
+        phase_summary["total"] += 1
+    return summary
 
 
 def _risks(summary: dict[str, int | bool]) -> list[dict[str, str]]:

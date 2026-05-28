@@ -97,6 +97,7 @@ def test_marvisctl_status_reports_factory_status(tmp_path, capsys):
     assert "Marvis AI Factory Console" in output
     assert "80%" in output
     assert "reports 1" in output
+    assert "blueprint P0" in output
 
 
 def test_marvisctl_status_can_print_json(tmp_path, capsys):
@@ -117,6 +118,7 @@ def test_marvisctl_status_can_print_json(tmp_path, capsys):
     body = json.loads(capsys.readouterr().out)
     assert body["product"]["name"] == "Marvis AI Factory Console"
     assert body["metrics"]["compliance_reports_total"] == 0
+    assert body["milestone_summary"]["P0"]["ready"] >= 8
 
 
 def test_marvisctl_lists_and_shows_compliance_reports(tmp_path, capsys):

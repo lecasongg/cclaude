@@ -173,6 +173,13 @@ def _status(args: argparse.Namespace) -> int:
             f"workers {metrics['workers_ready']}/{metrics['workers_total']} ready | "
             f"runs {metrics['runs_total']} total | reports {metrics['compliance_reports_total']}"
         )
+        milestone_summary = status.get("milestone_summary", {})
+        if milestone_summary:
+            summary_text = " | ".join(
+                f"{phase} {values.get('ready', 0)}/{values.get('total', 0)} ready"
+                for phase, values in sorted(milestone_summary.items())
+            )
+            print(f"blueprint {summary_text}")
         for risk in status["risks"]:
             print(f"{risk['level']}\t{risk['message']}")
     return 0

@@ -93,6 +93,8 @@ def test_api_reports_marvis_factory_status(tmp_path):
     assert body["product"]["progress_percent"] == blueprint_progress_percent()
     assert body["metrics"]["workers_total"] == 2
     assert {capability["key"] for capability in body["capabilities"]} >= {"taskbook-pipeline", "factory-console-ui"}
+    assert body["milestone_summary"]["P0"]["ready"] >= 8
+    assert {milestone["key"] for milestone in body["milestones"]} >= {"quick-compliance", "pipeline-god-view"}
 
 
 def test_api_runs_preflight(tmp_path):
