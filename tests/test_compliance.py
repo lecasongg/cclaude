@@ -128,6 +128,7 @@ def test_repository_compliance_suite_runs(tmp_path):
         "legacy-modernization",
         "missing-input-contract",
         "restart-recovery-contract",
+        "correction-loop-contract",
     }
     assert all(case["status"] == "passed" for case in result.cases)
 
@@ -204,6 +205,15 @@ def test_compliance_can_assert_restart_recovery_contract(tmp_path):
         expected_step_status="blocked",
         reconcile_on_startup=True,
     )
+
+    result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace")
+
+    assert result.success is True
+    assert result.cases[0]["status"] == "passed"
+
+
+def test_compliance_can_assert_correction_loop_contract(tmp_path):
+    suite_root = _write_correction_suite(tmp_path)
 
     result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace")
 
@@ -330,6 +340,60 @@ def _write_two_step_suite(tmp_path, depends_after=None):
                   status: succeeded
                 write-requirements:
                   status: succeeded{depends_yaml}
+            """
+        ),
+        encoding="utf-8",
+    )
+    return suite_root
+
+
+def _write_correction_suite(tmp_path):
+    suite_root = tmp_path / "suite"
+    (suite_root / "taskbooks").mkdir(parents=True)
+    (suite_root / "expected").mkdir(parents=True)
+    (suite_root / "taskbooks" / "legacy-login.yml").write_text(
+        textwrap.dedent(
+            """
+            title: correction loop
+            objective: verify correction rerun and downstream recovery
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: fail-before-correction reverse login
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+              - id: write-requirements
+                agent: niuma-2
+                depends_on:
+                  - reverse-login
+                objective: write requirements
+                inputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+                outputs:
+                  - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+            """
+        ),
+        encoding="utf-8",
+    )
+    (suite_root / "expected" / "legacy-login.assert.yml").write_text(
+        textwrap.dedent(
+            """
+            assert:
+              run_status: succeeded
+              correction_loop:
+                step_id: reverse-login
+                text: parse JSP login guards
+              steps:
+                reverse-login:
+                  status: succeeded
+                  output_exists:
+                    - artifacts/runs/{run_id}/reverse-login/function-list.md
+                write-requirements:
+                  status: succeeded
+                  output_exists:
+                    - artifacts/runs/{run_id}/write-requirements/requirements.md
+                  depends_after:
+                    - reverse-login
             """
         ),
         encoding="utf-8",

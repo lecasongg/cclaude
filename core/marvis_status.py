@@ -145,8 +145,8 @@ BLUEPRINT_MILESTONES = [
         "key": "quick-compliance",
         "title": "Taskbook Compliance Quick Suite",
         "status": "ready",
-        "evidence": "mock-mode suite covers handoff, dependency, missing-input, forbidden-write and restart-recovery contracts",
-        "next_step": "Add correction-loop compliance case",
+        "evidence": "mock-mode suite covers handoff, dependency, missing-input, forbidden-write, restart-recovery and correction-loop contracts",
+        "next_step": "Add more legacy-modernization business fixtures",
     },
     {
         "phase": "P0",

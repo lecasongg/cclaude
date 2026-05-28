@@ -1,0 +1,16 @@
+assert:
+  run_status: succeeded
+  correction_loop:
+    step_id: reverse-needs-correction
+    text: parse JSP login guards
+  steps:
+    reverse-needs-correction:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/reverse-needs-correction/function-list.md
+    write-after-correction:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/write-after-correction/requirements.md
+      depends_after:
+        - reverse-needs-correction

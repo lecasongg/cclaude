@@ -106,11 +106,18 @@ class ComplianceSuite:
                 _assert_expected(taskbook, expected, manager, workspace_root, run_id, protected_snapshot, reconcile_summary=summary),
                 expected.get("expected_result", "passed"),
             )
+        if expected.get("correction_loop"):
+            run_id = executor.run(taskbook)
+            correction = expected["correction_loop"]
+            executor.rerun_from_step(run_id, taskbook, correction["step_id"], correction=correction.get("text", ""))
+            return _assert_expected(taskbook, expected, manager, workspace_root, run_id, protected_snapshot), expected.get("expected_result", "passed")
         run_id = executor.run(taskbook)
         return _assert_expected(taskbook, expected, manager, workspace_root, run_id, protected_snapshot), expected.get("expected_result", "passed")
 
 
 def _mock_step_runner(context: StepExecutionContext) -> dict[str, str]:
+    if "fail-before-correction" in context.step.objective and not context.correction:
+        raise RuntimeError("compliance correction required")
     return {output_path: f"mock output for {context.step.step_id}" for output_path in context.output_paths}
 
 
@@ -216,6 +223,14 @@ def _assert_expected(
     expected_run_status = expected.get("run_status")
     if expected_run_status and manager.get_pipeline_run(run_id)["status"] != expected_run_status:
         errors.append(f"expected run_status {expected_run_status}")
+
+    correction_expected = expected.get("correction_loop", {})
+    if correction_expected:
+        events = EventLog(workspace_root / "events").read_events(run_id)
+        event_types = [event["type"] for event in events]
+        for event_type in ("step_failed", "step_rerun_requested", "correction_added", "run_succeeded"):
+            if event_type not in event_types:
+                errors.append(f"missing correction-loop event: {event_type}")
 
     reconcile_expected = expected.get("reconcile_on_startup", {})
     if reconcile_expected:
