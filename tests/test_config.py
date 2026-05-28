@@ -216,3 +216,44 @@ def test_apply_runtime_config_updates_workers_and_environment(tmp_path, monkeypa
     assert config.workers[1].base_url == "http://relay-b.local/v1"
     assert os.environ["NIUMA_1_API_KEY"] == "sk-secret"
     assert "OPENAI_COMPATIBLE_API_URL" not in os.environ
+
+
+def test_apply_runtime_config_adds_persisted_dynamic_workers(tmp_path):
+    config_path = tmp_path / "factory.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "workers": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    config = load_factory_config(config_path)
+
+    apply_runtime_config(
+        config,
+        {
+            "workers": {
+                "niuma-3": {
+                    "display_name": "牛马3",
+                    "provider": "test",
+                    "model": "fake-model",
+                    "api_key_env": "NIUMA_3_API_KEY",
+                    "profile_dir": "profiles/niuma-3",
+                    "workspace_dir": "workspaces/niuma-3",
+                    "skills_dir": "skills/niuma-3",
+                    "role": "测试工位",
+                    "backend_type": "fake",
+                    "backend_options": {"response_text": "done"},
+                    "enabled": True,
+                }
+            }
+        },
+    )
+
+    assert len(config.workers) == 1
+    assert config.workers[0].worker_id == "niuma-3"
+    assert config.workers[0].display_name == "牛马3"
+    assert config.workers[0].backend_type == "fake"

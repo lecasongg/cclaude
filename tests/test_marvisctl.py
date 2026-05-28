@@ -4,6 +4,7 @@ import sys
 import textwrap
 
 import marvisctl
+from agent_factory.core.marvis_status import blueprint_progress_percent
 from agent_factory.core.resource_manager import ResourceManager
 
 
@@ -95,7 +96,7 @@ def test_marvisctl_status_reports_factory_status(tmp_path, capsys):
 
     output = capsys.readouterr().out
     assert "Marvis AI Factory Console" in output
-    assert "80%" in output
+    assert f"{blueprint_progress_percent()}%" in output
     assert "reports 1" in output
     assert "blueprint P0" in output
 

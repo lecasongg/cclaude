@@ -67,6 +67,27 @@ def save_runtime_config(path: str | Path, data: dict) -> None:
 
 def apply_runtime_config(config: FactoryConfig, runtime_data: dict) -> None:
     worker_data_by_id = runtime_data.get("workers", {})
+    existing_worker_ids = {worker.worker_id for worker in config.workers}
+    for worker_id, worker_data in worker_data_by_id.items():
+        if worker_id in existing_worker_ids or worker_data.get("enabled") is False:
+            continue
+        config.workers.append(
+            WorkerConfig(
+                worker_id=worker_id,
+                display_name=worker_data.get("display_name", worker_id),
+                provider=worker_data.get("provider", "test"),
+                model=worker_data.get("model", "fake-model"),
+                api_key_env=worker_data.get("api_key_env", f"{worker_id.upper().replace('-', '_')}_API_KEY"),
+                profile_dir=worker_data.get("profile_dir", f"profiles/{worker_id}"),
+                workspace_dir=worker_data.get("workspace_dir", f"workspaces/{worker_id}"),
+                skills_dir=worker_data.get("skills_dir", f"skills/{worker_id}"),
+                base_url=worker_data.get("base_url", ""),
+                role=worker_data.get("role", "通用交付工位"),
+                backend_type=worker_data.get("backend_type", "fake"),
+                backend_options=worker_data.get("backend_options", {}),
+                backend_configured=True,
+            )
+        )
     default_base_url = runtime_data.get("model_base_url", "")
     for worker in config.workers:
         worker_data = worker_data_by_id.get(worker.worker_id, {})

@@ -464,8 +464,28 @@ def test_console_has_taskbook_studio_editor():
     assert "write-test-plan" in html
     assert "loadTaskbook" in html
     assert "saveTaskbook" in html
+    assert "openTaskbookComposer" in html
+    assert "composeTaskbookFromWorkers" in html
+    assert "selectedComposerAgents" in html
+    assert "AGENT COMPOSER" in html
     assert "/api/taskbooks/${filename}" in html
     assert "/api/taskbooks" in html
+
+
+def test_console_has_agent_creation_and_configuration_flow():
+    console = Path(__file__).parents[1] / "web" / "console.html"
+    html = console.read_text(encoding="utf-8")
+
+    assert "NEW AGENT BAY" in html
+    assert "workerCreateForm" in html
+    assert "openWorkerCreateForm" in html
+    assert "createWorker" in html
+    assert "CREATE AGENT" in html
+    assert "workerConfigForm" in html
+    assert "SAVE CONFIG" in html
+    assert "USE IN TASKBOOK" in html
+    assert "/api/workers" in html
+    assert "/api/workers/${body.worker.worker_id}/config" in html
 
 
 def test_api_lists_workers_with_token(tmp_path):
@@ -540,6 +560,80 @@ def test_api_exposes_worker_health_summary(tmp_path, monkeypatch):
     assert response.json()["summary"]["total"] == 2
     assert response.json()["summary"]["missing_api_key"] == 1
     assert {worker["worker_id"] for worker in response.json()["workers"]} == {"niuma-1", "niuma-2"}
+
+
+def test_api_creates_worker_and_runs_taskbook_with_new_agent(tmp_path):
+    bus = TaskBus(["niuma-1"])
+    artifacts = ArtifactStore(tmp_path / "worker-artifacts")
+    existing = worker_config("niuma-1")
+    supervisor = HermesSupervisor(bus, artifacts, {"niuma-1": WorkerRuntime(existing, bus, artifacts, FakeWorkerBackend("existing"))})
+    resource_manager = ResourceManager(tmp_path / "marvis.db")
+    runtime_config_path = tmp_path / "runtime_config.json"
+    app = create_app(
+        supervisor,
+        bus,
+        [existing],
+        SecurityGate("local-token"),
+        runtime_config_path=runtime_config_path,
+        runtime_config={"workers": {}},
+        resource_manager=resource_manager,
+        event_log=EventLog(tmp_path / "events"),
+        pipeline_workspace_root=tmp_path,
+    )
+    client = TestClient(app)
+
+    created = client.post(
+        "/api/workers",
+        headers={"x-hermes-token": "local-token"},
+        json={"worker_id": "niuma-3", "display_name": "牛马3", "role": "测试用例工位"},
+    )
+
+    assert created.status_code == 200
+    assert created.json()["worker"]["worker_id"] == "niuma-3"
+    assert resource_manager.get_agent("niuma-3")["display_name"] == "牛马3"
+    assert "niuma-3" in json.loads(runtime_config_path.read_text(encoding="utf-8"))["workers"]
+
+    taskbook_path = tmp_path / "new-agent.yml"
+    taskbook_path.write_text(
+        """
+title: new agent flow
+objective: verify newly created agent can run
+steps:
+  - id: write-tests
+    agent: niuma-3
+    objective: write tests
+    outputs:
+      - path: artifacts/runs/{run_id}/write-tests/test-plan.md
+""",
+        encoding="utf-8",
+    )
+    run = client.post(
+        "/api/runs",
+        headers={"x-hermes-token": "local-token"},
+        json={"taskbook_path": str(taskbook_path)},
+    )
+
+    assert run.status_code == 200
+    assert run.json()["steps"][0]["agent_id"] == "niuma-3"
+    assert run.json()["run"]["status"] == "succeeded"
+
+
+def test_api_rejects_duplicate_or_invalid_worker_create(tmp_path):
+    client = build_client(tmp_path)
+
+    duplicate = client.post(
+        "/api/workers",
+        headers={"x-hermes-token": "local-token"},
+        json={"worker_id": "niuma-1"},
+    )
+    invalid = client.post(
+        "/api/workers",
+        headers={"x-hermes-token": "local-token"},
+        json={"worker_id": "bad/worker"},
+    )
+
+    assert duplicate.status_code == 400
+    assert invalid.status_code == 400
 
 
 def test_api_updates_worker_runtime_config_without_exposing_key(tmp_path, monkeypatch):

@@ -64,9 +64,9 @@ CAPABILITY_LEDGER = [
     {
         "key": "factory-console-ui",
         "status": "partial",
-        "evidence": "2.5D factory floor control room with live API wiring",
+        "evidence": "2.5D factory floor with worker creation, config, TaskBook composition and live API wiring",
         "weight": 10,
-        "earned": 6,
+        "earned": 8,
     },
     {
         "key": "run-preflight",
@@ -168,16 +168,16 @@ BLUEPRINT_MILESTONES = [
         "phase": "P1",
         "key": "workstation-center",
         "title": "Workstation Center",
-        "status": "partial",
-        "evidence": "worker cards, health summary and config editing are present",
-        "next_step": "Add tag/group management and template-based worker creation",
+        "status": "ready",
+        "evidence": "worker cards, health summary, config editing, document installation and dynamic worker creation are present",
+        "next_step": "Add tag/group management and reusable worker templates",
     },
     {
         "phase": "P1",
         "key": "pipeline-god-view",
         "title": "Pipeline God View",
         "status": "partial",
-        "evidence": "isometric floor shows multiple lines and step machines",
+        "evidence": "isometric floor shows multiple lines, step machines and selected workers can compose new TaskBooks",
         "next_step": "Increase spatial clarity, density controls and multi-run filtering",
     },
     {

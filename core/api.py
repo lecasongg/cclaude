@@ -92,6 +92,18 @@ class WorkerConfigUpdate(BaseModel):
     persist: bool = True
 
 
+class WorkerCreateRequest(BaseModel):
+    worker_id: str
+    display_name: str = ""
+    provider: str = "test"
+    model: str = "fake-model"
+    backend_type: str = "fake"
+    role: str = "通用交付工位"
+    base_url: str = ""
+    api_key_env: str = ""
+    persist: bool = True
+
+
 def task_to_dict(task: TaskRecord) -> dict:
     data = asdict(task)
     data["status"] = task.status.value
@@ -174,6 +186,14 @@ def create_app(
 
     def worker_documents(worker_id: str) -> dict:
         return worker_runtime_entry(worker_id).setdefault("installed_documents", {})
+
+    def rebuild_worker_runtime(worker: WorkerConfig) -> None:
+        from agent_factory.core.backends import build_backend
+        from agent_factory.core.artifacts import ArtifactStore
+        from agent_factory.core.worker_runtime import WorkerRuntime
+
+        artifacts_root = (pipeline_workspace_root or Path.cwd()) / "artifacts"
+        supervisor.runtimes[worker.worker_id] = WorkerRuntime(worker, bus, ArtifactStore(artifacts_root), build_backend(worker))
 
     def build_installed_document_prompt(worker_id: str) -> str:
         if worker_id != REQUIRED_DOCUMENT_WORKER_ID:
@@ -279,6 +299,55 @@ def create_app(
     async def list_workers(x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
         return {"workers": [worker_to_dict(worker) for worker in workers]}
+
+    @app.post("/api/workers")
+    async def create_worker(request: WorkerCreateRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        worker_id = request.worker_id.strip()
+        if not worker_id or any(char in worker_id for char in "/\\ "):
+            raise HTTPException(status_code=400, detail="invalid worker_id")
+        if any(worker.worker_id == worker_id for worker in workers):
+            raise HTTPException(status_code=400, detail="worker already exists")
+        api_key_env = request.api_key_env.strip() or f"{worker_id.upper().replace('-', '_')}_API_KEY"
+        worker = WorkerConfig(
+            worker_id=worker_id,
+            display_name=request.display_name.strip() or worker_id,
+            provider=request.provider,
+            model=request.model,
+            api_key_env=api_key_env,
+            profile_dir=f"profiles/{worker_id}",
+            workspace_dir=f"workspaces/{worker_id}",
+            skills_dir=f"skills/{worker_id}",
+            base_url=request.base_url,
+            role=request.role,
+            backend_type=request.backend_type,
+            backend_options={"response_text": f"{worker_id} completed task"} if request.backend_type == "fake" else {},
+        )
+        workers.append(worker)
+        bus.register_worker(worker_id)
+        rebuild_worker_runtime(worker)
+        if resource_manager is not None:
+            resource_manager.register_agent(worker.worker_id, display_name=worker.display_name)
+        if request.persist and runtime_config_path:
+            saved_worker = runtime_data.setdefault("workers", {}).setdefault(worker_id, {})
+            saved_worker.update(
+                {
+                    "display_name": worker.display_name,
+                    "provider": worker.provider,
+                    "model": worker.model,
+                    "api_key_env": worker.api_key_env,
+                    "profile_dir": worker.profile_dir,
+                    "workspace_dir": worker.workspace_dir,
+                    "skills_dir": worker.skills_dir,
+                    "base_url": worker.base_url,
+                    "role": worker.role,
+                    "backend_type": worker.backend_type,
+                    "backend_options": worker.backend_options,
+                    "enabled": True,
+                }
+            )
+            save_runtime_config(runtime_config_path, runtime_data)
+        return {"worker": worker_to_dict(worker), "notice": "worker created"}
 
     @app.get("/api/workers/health-summary")
     async def get_workers_health_summary(x_hermes_token: str | None = Header(default=None)):

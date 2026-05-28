@@ -7,8 +7,13 @@ from agent_factory.core.models import TaskRecord, TaskStatus, WorkerState
 class TaskBus:
     def __init__(self, worker_ids: list[str]):
         self._tasks: dict[str, TaskRecord] = {}
-        self._worker_ids = worker_ids
+        self._worker_ids = list(worker_ids)
         self._current_task_by_worker: dict[str, str] = {worker_id: "" for worker_id in worker_ids}
+
+    def register_worker(self, worker_id: str) -> None:
+        if worker_id not in self._worker_ids:
+            self._worker_ids.append(worker_id)
+        self._current_task_by_worker.setdefault(worker_id, "")
 
     def create_task(
         self,
