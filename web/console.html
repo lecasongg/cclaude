@@ -145,7 +145,7 @@
 
       <article class="room control"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content control-content"><section class="glass"><div class="desk">主 Agent<br>独立<br>办公室</div><div class="control-note"><b>调度室</b><br><span x-text="`正在调度 ${runs.length} 条流水线、${workers.length} 个工位与 ${tasks.length} 个任务。`"></span></div></section><section class="buttons"><button class="industrial" @click="runPreflight" :disabled="isRunningPreflight" x-text="isRunningPreflight ? 'CHECKING' : 'PREFLIGHT'"></button><button class="industrial dark" @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button><button class="industrial" @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" x-text="isRunningCompliance ? 'RUNNING' : 'COMPLIANCE'"></button><button class="industrial" @click="openRunManifest" :disabled="!selectedRun">MANIFEST</button></section><section class="board"><input class="field-iso" x-model="taskbookPath" placeholder="taskbook path"><input class="field-iso" x-model="sourcePath" placeholder="source path or directory"><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>Blueprint</span><b x-text="marvisProgressLabel()"></b></div><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>Milestones</span><b x-text="milestoneSummaryLabel()"></b></div><div class="board-row"><span>Preflight</span><b x-text="preflightResult ? preflightResult.status.toUpperCase() : 'IDLE'"></b></div><div class="board-row"><span>Selected Worker</span><b x-text="selectedWorker"></b></div><div class="board-row"><span>Selected TaskBook</span><b x-text="selectedTaskbookFilename || 'NONE'"></b></div><div class="board-row"><span>Compliance</span><b x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></b></div></section></div></article>
 
-      <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><template x-for="artifact in runArtifacts" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifactLabel(artifact)"></button></template><div x-show="runArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">Artifact Preview</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">Quality Gate</div><div class="assertion" :class="qualityPassed() ? 'ok' : 'fail'"><b x-text="qualityScoreLabel()"></b><br><span x-text="qualitySummaryLabel()"></span></div><template x-for="step in qualitySteps()" :key="step.step_id"><div class="assertion" :class="step.summary && step.summary.failed ? 'fail' : 'ok'" @click="openQualityStep(step)"><b x-text="step.step_id"></b><br><span x-text="`${step.summary.passed}/${step.summary.total} checks passed`"></span></div></template><div x-show="complianceResult" class="assertion" :class="complianceResult && complianceResult.success ? 'ok' : 'fail'" x-text="complianceSummary()"></div><template x-for="report in complianceReports.slice(0, 2)" :key="report.filename"><div class="assertion ok" @click="openComplianceReport(report)"><b x-text="report.filename"></b><br><span x-text="`${report.size} bytes`"></span></div></template><div x-show="!selectedRunQuality && !complianceResult && complianceReports.length === 0" class="assertion">断言测试集待运行</div></section></div></article>
+      <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><div class="room-title">Artifact Vault</div><template x-for="artifact in runArtifacts.slice(0, 4)" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifactLabel(artifact)"></button></template><input class="field-iso" x-model="artifactQuery" @change="refreshFactoryArtifacts" placeholder="search factory artifacts"><template x-for="artifact in factoryArtifacts.slice(0, 6)" :key="artifact.run_id + artifact.path"><button class="filebox warn" @click="loadFactoryArtifact(artifact)" :title="artifact.run_id + ' · ' + artifact.path" x-text="factoryArtifactLabel(artifact)"></button></template><div x-show="runArtifacts.length === 0 && factoryArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">Artifact Preview</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">Quality Gate</div><div class="assertion" :class="qualityPassed() ? 'ok' : 'fail'"><b x-text="qualityScoreLabel()"></b><br><span x-text="qualitySummaryLabel()"></span></div><template x-for="step in qualitySteps()" :key="step.step_id"><div class="assertion" :class="step.summary && step.summary.failed ? 'fail' : 'ok'" @click="openQualityStep(step)"><b x-text="step.step_id"></b><br><span x-text="`${step.summary.passed}/${step.summary.total} checks passed`"></span></div></template><div x-show="complianceResult" class="assertion" :class="complianceResult && complianceResult.success ? 'ok' : 'fail'" x-text="complianceSummary()"></div><template x-for="report in complianceReports.slice(0, 2)" :key="report.filename"><div class="assertion ok" @click="openComplianceReport(report)"><b x-text="report.filename"></b><br><span x-text="`${report.size} bytes`"></span></div></template><div x-show="!selectedRunQuality && !complianceResult && complianceReports.length === 0" class="assertion">断言测试集待运行</div></section></div></article>
 
       <aside class="log-strip"><section class="log-panel"><div class="room-title">Step Timeline / Run Log</div><div class="log-list"><template x-for="step in selectedRunSteps()" :key="step.step_id"><div class="log-line"><b x-text="step.step_id"></b> · <span x-text="step.status"></span> · <span x-text="step.objective"></span></div></template><template x-for="event in selectedRunEvents.slice(0, 8)" :key="event.event_id"><div class="log-line" x-text="`${event.time || ''} · ${event.type}`"></div></template></div></section></aside>
 
@@ -181,6 +181,8 @@
         selectedRunEvents: [],
         selectedRunQuality: null,
         runArtifacts: [],
+        factoryArtifacts: [],
+        artifactQuery: '',
         selectedRunArtifactContent: '',
         selectedRunArtifactPath: '',
         selectedTaskbookFilename: '',
@@ -259,7 +261,7 @@
           if (this.isRefreshing) return;
           this.isRefreshing = true;
           try {
-            await Promise.all([this.refreshHealth(), this.refreshMarvisStatus(), this.refreshWorkers(), this.refreshWorkerHealthSummary(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks(), this.refreshComplianceReports()]);
+            await Promise.all([this.refreshHealth(), this.refreshMarvisStatus(), this.refreshWorkers(), this.refreshWorkerHealthSummary(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks(), this.refreshComplianceReports(), this.refreshFactoryArtifacts()]);
             this.notify('Factory sync complete');
           } catch (error) {
             this.notifyError(error);
@@ -319,6 +321,11 @@
           const body = await this.requestJson(`/api/runs/${runId}/artifacts`);
           this.runArtifacts = body.artifacts || [];
         },
+        async refreshFactoryArtifacts() {
+          const query = this.artifactQuery.trim();
+          const body = await this.requestJson(`/api/artifacts?limit=24${query ? `&q=${encodeURIComponent(query)}` : ''}`);
+          this.factoryArtifacts = body.artifacts || [];
+        },
         async selectRun(run) {
           const body = await this.requestJson(`/api/runs/${run.run_id}`);
           this.selectedRun = {...(body.run || run), steps: body.steps || []};
@@ -377,7 +384,8 @@
             await Promise.all([
               this.refreshRuns(),
               this.refreshRunArtifacts(this.selectedRun.run_id),
-              this.refreshRunQuality(this.selectedRun.run_id)
+              this.refreshRunQuality(this.selectedRun.run_id),
+              this.refreshFactoryArtifacts()
             ]);
             this.notify(`Rerun complete: ${this.selectedStep.step_id}`);
           } catch (error) {
@@ -397,6 +405,14 @@
           this.selectedRunArtifactPath = artifact.path;
           const body = await this.requestJson(`/api/runs/${this.selectedRun.run_id}/artifacts/${artifact.path}`);
           this.selectedRunArtifactContent = body.content || '';
+        },
+        async loadFactoryArtifact(artifact) {
+          if (!artifact || !artifact.run_id) return;
+          const run = this.runs.find((item) => item.run_id === artifact.run_id) || {run_id: artifact.run_id};
+          if (!this.selectedRun || this.selectedRun.run_id !== artifact.run_id) {
+            await this.selectRun(run);
+          }
+          await this.loadRunArtifact(artifact);
         },
         async openRunManifest() {
           if (!this.selectedRun) return;
@@ -814,6 +830,11 @@
         artifactLabel(artifact) {
           const fileName = artifact.path.split('/').slice(-1)[0];
           return `${artifact.step_id || 'artifact'} · ${fileName}`;
+        },
+        factoryArtifactLabel(artifact) {
+          const fileName = artifact.path.split('/').slice(-1)[0];
+          const run = artifact.run_id ? artifact.run_id.slice(4, 10) : 'run';
+          return `${run} · ${artifact.step_id || 'artifact'} · ${fileName}`;
         },
         workersWithKeys() {
           return this.workers.filter((worker) => worker.api_key_configured).length;

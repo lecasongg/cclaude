@@ -400,6 +400,12 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "runCompliance" in html
     assert "selectedRunEvents" in html
     assert "selectedRunArtifactContent" in html
+    assert "factoryArtifacts" in html
+    assert "artifactQuery" in html
+    assert "refreshFactoryArtifacts" in html
+    assert "loadFactoryArtifact" in html
+    assert "factoryArtifactLabel" in html
+    assert "/api/artifacts?limit=24" in html
     assert "selectedRunQuality" in html
     assert "Quality Gate" in html
     assert "qualityScoreLabel" in html
