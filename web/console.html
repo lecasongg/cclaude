@@ -138,9 +138,9 @@
       <article class="room core"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content core-content">
         <aside class="yard"><div class="yard-title">输入材料</div><div class="cube blue"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>旧系统模块</b></div><div class="cube queued"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>任务书</b></div><div class="cube ok"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>上下文</b></div></aside>
         <div class="pipes">
-          <div class="factory-controls"><input class="field-iso" x-model="runFilter" placeholder="筛选流水线"><button class="industrial" @click="runStatusFocus = runStatusFocus === 'failed' ? '' : 'failed'">只看失败</button><button class="industrial" @click="lineDensity = lineDensity === 'compact' ? 'normal' : 'compact'" x-text="lineDensity === 'compact' ? '紧凑' : '标准'"></button></div>
+          <div class="factory-controls"><input class="field-iso" x-model="runFilter" placeholder="筛选本次流水线"><button class="industrial" @click="showRunHistory = !showRunHistory" x-text="showRunHistory ? '隐藏历史' : '显示历史'"></button><button class="industrial" @click="clearTestBench">清空台面</button></div>
           <template x-for="(run, index) in visibleRuns().slice(0, lineDensity === 'compact' ? 4 : 3)" :key="run.run_id"><section class="pipe" :class="[lineClass(index), pipeStatusClass(run.status), selectedRun && selectedRun.run_id === run.run_id ? 'selected' : '', lineDensity === 'compact' ? 'compact' : '', runStatusFocus && run.status !== runStatusFocus ? 'focused-out' : '']" @click="selectRun(run)"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="qa-stamp">质检通过</div><div class="belt-crate">产物</div><div class="pipe-content"><div class="pipe-label"><div><small x-text="`流水线 ${index + 1} · ${statusLabel(run.status)}`"></small><strong x-text="run.title || run.run_id"></strong></div><div class="task-chip" x-text="run.run_id"></div></div><div class="machines"><template x-for="step in paddedSteps(run)" :key="step.step_id"><div class="machine" :class="machineStatusClass(step.status)" @click.stop="step.real && selectStep(step)"><span class="lamp" :class="lampClass(step.status)"></span><div class="m-top" :data-name="step.step_id"></div><div class="m-side"></div><div class="m-front"></div></div></template></div><div class="exports"><template x-for="artifact in outputFilesForRun(run).slice(0, 3)" :key="artifact"><div class="filebox ok" x-text="artifact.split('/').slice(-1)[0]"></div></template></div></div></section></template>
-          <template x-if="runs.length === 0"><section class="pipe line-blue queued selected"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="belt-crate">待命</div><div class="pipe-content"><div class="pipe-label"><div><small>流水线 1 · 空闲</small><strong>等待任务书入闸</strong></div><div class="task-chip">任务书调度架</div></div></div></section></template>
+          <template x-if="visibleRuns().length === 0"><section class="pipe line-blue queued selected"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="belt-crate">待命</div><div class="pipe-content"><div class="pipe-label"><div><small>流水线 1 · 空闲</small><strong>空测试台：请从创建子 Agent 开始</strong></div><div class="task-chip">创建子 Agent → 组合子 Agent → 填任务/规则/文件位置 → 产出</div></div></div></section></template>
         </div>
         <aside class="dock"><div class="yard-title">产物出口</div><template x-for="artifact in runArtifacts.slice(0, 3)" :key="artifact.path"><div class="cube ok" @click="loadRunArtifact(artifact)"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b x-text="artifact.path.split('/').slice(-1)[0]"></b></div></template></aside>
       </div></article>
@@ -178,6 +178,8 @@
         workerHealthSummary: {summary: null, workers: []},
         tasks: [],
         runs: [],
+        sessionRunIds: [],
+        showRunHistory: false,
         runFilter: '',
         runStatusFocus: '',
         lineDensity: 'normal',
@@ -625,6 +627,7 @@
               method: 'POST',
               body: JSON.stringify(payload)
             });
+            if (!this.sessionRunIds.includes(body.run.run_id)) this.sessionRunIds = [body.run.run_id, ...this.sessionRunIds];
             this.selectedRun = {...body.run, steps: body.steps || []};
             this.selectedStep = this.selectedRun.steps && this.selectedRun.steps[0] ? this.selectedRun.steps[0] : null;
             await this.refreshRunEvents(body.run.run_id);
@@ -1064,10 +1067,25 @@
         visibleRuns() {
           const query = this.runFilter.trim().toLowerCase();
           return this.runs.filter((run) => {
+            const inSession = this.sessionRunIds.includes(run.run_id);
+            if (!this.showRunHistory && !inSession) return false;
             const matchesQuery = !query || [run.run_id, run.title, run.status, run.taskbook_path, run.source_path].some((value) => String(value || '').toLowerCase().includes(query));
             const matchesFocus = !this.runStatusFocus || run.status === this.runStatusFocus;
             return matchesQuery && matchesFocus;
           });
+        },
+        clearTestBench() {
+          this.sessionRunIds = [];
+          this.selectedRun = null;
+          this.selectedStep = null;
+          this.selectedRunEvents = [];
+          this.selectedRunQuality = null;
+          this.runArtifacts = [];
+          this.selectedRunArtifactContent = '';
+          this.selectedRunArtifactPath = '';
+          this.runFilter = '';
+          this.showRunHistory = false;
+          this.notify('测试台已清空，历史流水线已隐藏。');
         },
         artifactLabel(artifact) {
           const fileName = artifact.path.split('/').slice(-1)[0];

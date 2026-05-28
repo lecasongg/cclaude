@@ -403,6 +403,7 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "runCompliance" in html
     assert "selectedRunEvents" in html
     assert "this.selectRun(this.runs[0])" not in html
+    assert "if (!this.showRunHistory && !inSession) return false" in html
     assert "selectedRunArtifactContent" in html
     assert "factoryArtifacts" in html
     assert "artifactQuery" in html
@@ -504,6 +505,13 @@ def test_console_has_pipeline_filter_density_and_compliance_baselines():
     assert "runStatusFocus" in html
     assert "lineDensity" in html
     assert "visibleRuns" in html
+    assert "sessionRunIds" in html
+    assert "showRunHistory" in html
+    assert "clearTestBench" in html
+    assert "空测试台：请从创建子 Agent 开始" in html
+    assert "创建子 Agent → 组合子 Agent → 填任务/规则/文件位置 → 产出" in html
+    assert "显示历史" in html
+    assert "清空台面" in html
     assert "保存基线" in html
     assert "对比最新报告" in html
     assert "refreshComplianceBaselines" in html
