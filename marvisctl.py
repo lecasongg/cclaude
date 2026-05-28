@@ -23,7 +23,7 @@ from agent_factory.core.event_log import EventLog
 from agent_factory.core.marvis_status import build_marvis_status
 from agent_factory.core.preflight import run_preflight
 from agent_factory.core.resource_manager import ResourceManager
-from agent_factory.core.run_manifest import build_run_manifest
+from agent_factory.core.run_manifest import build_run_manifest, list_artifacts_across_runs
 from agent_factory.core.task_bus import TaskBus
 from agent_factory.core.taskbook import TaskBookError, load_taskbook
 from agent_factory.core.worker_runtime import WorkerRuntime
@@ -116,6 +116,12 @@ def _build_parser() -> argparse.ArgumentParser:
     artifact_manifest.add_argument("run_id")
     artifact_manifest.add_argument("--workspace", default=".")
     artifact_manifest.set_defaults(handler=_artifact_manifest)
+    artifact_list = artifact_subparsers.add_parser("list")
+    artifact_list.add_argument("--workspace", default=".")
+    artifact_list.add_argument("--query", default="")
+    artifact_list.add_argument("--limit", type=int, default=50)
+    artifact_list.add_argument("--json", action="store_true")
+    artifact_list.set_defaults(handler=_artifact_list)
 
     return parser
 
@@ -301,6 +307,22 @@ def _artifact_manifest(args: argparse.Namespace) -> int:
     event_log_path = workspace / "events"
     event_log = EventLog(event_log_path) if event_log_path.exists() else None
     print(json.dumps(build_run_manifest(manager, workspace, args.run_id, event_log), ensure_ascii=False, indent=2))
+    return 0
+
+
+def _artifact_list(args: argparse.Namespace) -> int:
+    workspace = Path(args.workspace)
+    manager = ResourceManager(workspace / "marvis.db")
+    artifacts = list_artifacts_across_runs(manager, workspace, query=args.query, limit=args.limit)
+    if args.json:
+        print(json.dumps({"artifacts": artifacts}, ensure_ascii=False, indent=2))
+    elif not artifacts:
+        print("no artifacts")
+    else:
+        for artifact in artifacts:
+            print(
+                f"{artifact['run_id']}\t{artifact['step_id']}\t{artifact['size']}\t{artifact['path']}"
+            )
     return 0
 
 

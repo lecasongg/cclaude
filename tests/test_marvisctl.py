@@ -344,6 +344,31 @@ def test_marvisctl_artifact_manifest_prints_run_manifest(tmp_path, capsys):
     assert manifest["artifacts"][0]["step_id"] == "reverse-login"
 
 
+def test_marvisctl_artifact_list_searches_across_runs(tmp_path, capsys):
+    manager = ResourceManager(tmp_path / "marvis.db")
+    manager.register_agent("niuma-1", display_name="niuma-1")
+    run_id = manager.create_pipeline_run("login modernization")
+    manager.create_step_run(
+        run_id,
+        "reverse-login",
+        "niuma-1",
+        "reverse login",
+        outputs=["artifacts/runs/{run_id}/reverse-login/function-list.md"],
+    )
+    manager.update_pipeline_status(run_id, "succeeded")
+    manager.update_step_status(run_id, "reverse-login", "succeeded")
+    output = tmp_path / "artifacts" / "runs" / run_id / "reverse-login" / "function-list.md"
+    output.parent.mkdir(parents=True)
+    output.write_text("function list", encoding="utf-8")
+
+    assert marvisctl.main(["artifact", "list", "--workspace", str(tmp_path), "--query", "function"]) == 0
+
+    text = capsys.readouterr().out
+    assert run_id in text
+    assert "reverse-login" in text
+    assert "function-list.md" in text
+
+
 def _write_agent_config(tmp_path):
     config_path = tmp_path / "agents.json"
     config_path.write_text(

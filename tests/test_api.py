@@ -784,6 +784,16 @@ steps:
         "run_succeeded",
     ]
 
+    all_artifacts_response = client.get(
+        "/api/artifacts?q=function-list",
+        headers={"x-hermes-token": "local-token"},
+    )
+    assert all_artifacts_response.status_code == 200
+    all_artifacts = all_artifacts_response.json()["artifacts"]
+    assert all_artifacts[0]["path"] == artifact_id
+    assert all_artifacts[0]["run_id"] == body["run"]["run_id"]
+    assert all_artifacts[0]["run_status"] == "succeeded"
+
 
 def test_api_lints_taskbook_path(tmp_path):
     client = build_client(tmp_path)

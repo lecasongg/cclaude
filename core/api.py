@@ -17,7 +17,7 @@ from agent_factory.core.pipeline_executor import PipelineExecutor
 from agent_factory.core.preflight import run_preflight
 from agent_factory.core.quality import evaluate_run_quality
 from agent_factory.core.resource_manager import ResourceManager, ResourceManagerError
-from agent_factory.core.run_manifest import build_run_manifest
+from agent_factory.core.run_manifest import build_run_manifest, list_artifacts_across_runs
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
@@ -543,6 +543,20 @@ def create_app(
                 for path in sorted(run_root.rglob("*"))
                 if path.is_file()
             ]
+        }
+
+    @app.get("/api/artifacts")
+    async def list_artifacts(q: str = "", limit: int = 100, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None:
+            return {"artifacts": []}
+        return {
+            "artifacts": list_artifacts_across_runs(
+                resource_manager,
+                pipeline_workspace_root or Path.cwd(),
+                query=q,
+                limit=limit,
+            )
         }
 
     @app.get("/api/runs/{run_id}/artifacts/{artifact_path:path}")

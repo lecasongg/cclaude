@@ -27,6 +27,41 @@ def build_run_manifest(
     }
 
 
+def list_artifacts_across_runs(
+    manager: ResourceManager,
+    workspace_root: str | Path,
+    query: str = "",
+    limit: int = 100,
+) -> list[dict]:
+    workspace_root = Path(workspace_root)
+    normalized_query = query.lower().strip()
+    artifacts: list[dict] = []
+    for run in manager.list_pipeline_runs():
+        run_id = run["run_id"]
+        for artifact in _list_artifacts(workspace_root, run_id, manager.list_step_runs(run_id)):
+            indexed = {
+                **artifact,
+                "run_id": run_id,
+                "run_title": run["title"],
+                "run_status": run["status"],
+                "updated_at": run["updated_at"],
+            }
+            haystack = " ".join(
+                [
+                    indexed["path"],
+                    indexed.get("step_id", ""),
+                    indexed["run_id"],
+                    indexed["run_title"],
+                    indexed["run_status"],
+                ]
+            ).lower()
+            if normalized_query and normalized_query not in haystack:
+                continue
+            artifacts.append(indexed)
+    artifacts.sort(key=lambda item: (item["updated_at"], item["path"]), reverse=True)
+    return artifacts[: max(limit, 0)]
+
+
 def _list_artifacts(workspace_root: Path, run_id: str, steps: list[dict]) -> list[dict]:
     step_by_output: dict[str, str] = {}
     for step in steps:
