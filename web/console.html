@@ -170,7 +170,7 @@
   <script>
     function factoryRoom() {
       return {
-        baseUrl: window.location.origin,
+        baseUrl: window.location.protocol === 'file:' ? 'http://127.0.0.1:8846' : window.location.origin,
         token: 'local-token',
         health: {},
         marvisStatus: {product: null, metrics: {}, capabilities: [], risks: []},
@@ -234,9 +234,9 @@
         isLoadingFileContext: false,
         isLoadingTaskbooks: false,
         drawerOpen: false,
-        drawerTitle: 'DETAIL',
+        drawerTitle: '详情',
         drawerSubtitle: '',
-        drawerHtml: '<div class="mono">select a node to inspect</div>',
+        drawerHtml: '<div class="mono">请选择一个节点查看详情</div>',
         init() {
           window.__marvisRoom = this;
           window.__marvisOpenWorkerConfig = (workerId) => {
@@ -265,13 +265,23 @@
         },
         async requestJson(path, options = {}) {
           const contentType = options.body instanceof FormData ? null : 'application/json';
-          const response = await fetch(`${this.baseUrl}${path}`, {
-            ...options,
-            headers: {...this.headers(contentType), ...(options.headers || {})}
-          });
+          let response;
+          try {
+            response = await fetch(`${this.normalizedBaseUrl()}${path}`, {
+              ...options,
+              headers: {...this.headers(contentType), ...(options.headers || {})}
+            });
+          } catch (error) {
+            throw new Error(`无法连接 Worker Server：${this.normalizedBaseUrl()}。请确认已在 D:\\codex\\cclaude 运行 python serve.py。`);
+          }
           const body = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(body.detail || body.error || `HTTP ${response.status}`);
           return body;
+        },
+        normalizedBaseUrl() {
+          const value = (this.baseUrl || '').trim();
+          if (!value || value === 'file://') return 'http://127.0.0.1:8846';
+          return value.replace(/\/+$/, '');
         },
         async refreshAll() {
           if (this.isRefreshing) return;
