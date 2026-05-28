@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from hashlib import sha256
 import json
 from pathlib import Path
+import shutil
 from typing import Any
 
 import yaml
@@ -85,6 +86,7 @@ class ComplianceSuite:
         taskbook = load_taskbook(taskbook_path)
         expected_path = self.root / "expected" / f"{taskbook_path.stem}.assert.yml"
         expected = _load_expected(expected_path)
+        _install_case_fixtures(self.root / "fixtures" / taskbook_path.stem, workspace_root)
         manager = ResourceManager(workspace_root / "marvis.db")
         for agent_id in sorted({step.agent for step in taskbook.steps}):
             manager.register_agent(agent_id, display_name=agent_id)
@@ -108,6 +110,19 @@ def _case_passed(case_errors: list[str], expected_result: str) -> bool:
     if expected_result == "failed":
         return bool(case_errors)
     return not case_errors
+
+
+def _install_case_fixtures(fixture_root: Path, workspace_root: Path) -> None:
+    if not fixture_root.exists():
+        return
+    workspace_root.mkdir(parents=True, exist_ok=True)
+    for item in fixture_root.iterdir():
+        target = workspace_root / item.name
+        if item.is_dir():
+            shutil.copytree(item, target, dirs_exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(item, target)
 
 
 def write_compliance_report(result: ComplianceResult, report_dir: str | Path) -> Path:

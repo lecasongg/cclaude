@@ -122,7 +122,12 @@ def test_repository_compliance_suite_runs(tmp_path):
     result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace")
 
     assert result.success is True
-    assert {case["name"] for case in result.cases} == {"legacy-login", "legacy-modernization", "missing-input-contract"}
+    assert {case["name"] for case in result.cases} == {
+        "forbidden-write-contract",
+        "legacy-login",
+        "legacy-modernization",
+        "missing-input-contract",
+    }
     assert all(case["status"] == "passed" for case in result.cases)
 
 
@@ -177,11 +182,25 @@ def test_compliance_asserts_forbidden_paths_are_unchanged(tmp_path):
     assert "forbidden path modified" in result.errors[0]
 
 
+def test_compliance_installs_case_fixtures_before_run(tmp_path):
+    suite_root = _write_suite(tmp_path, input_exists=["shared/references/login.jsp"])
+    fixture = suite_root / "fixtures" / "legacy-login" / "shared" / "references" / "login.jsp"
+    fixture.parent.mkdir(parents=True)
+    fixture.write_text("<form>login</form>", encoding="utf-8")
+
+    result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace")
+
+    assert result.success is True
+    installed = tmp_path / "workspace" / "legacy-login" / "shared" / "references" / "login.jsp"
+    assert installed.read_text(encoding="utf-8") == "<form>login</form>"
+
+
 def _write_suite(
     tmp_path,
     expected_output="artifacts/runs/{run_id}/reverse-login/function-list.md",
     output_contains=None,
     forbidden_modified=None,
+    input_exists=None,
     expected_result="passed",
 ):
     suite_root = tmp_path / "suite"
@@ -210,12 +229,16 @@ def _write_suite(
     forbidden_yaml = ""
     if forbidden_modified:
         forbidden_yaml = "\n              forbidden_modified:\n" + "".join(f"                - {path}\n" for path in forbidden_modified)
+    input_exists_yaml = ""
+    if input_exists:
+        input_exists_yaml = "\n              input_exists:\n" + "".join(f"                - {path}\n" for path in input_exists)
     (suite_root / "expected" / "legacy-login.assert.yml").write_text(
         textwrap.dedent(
             f"""
             assert:
               expected_result: {expected_result}
               run_status: succeeded
+{input_exists_yaml}
               steps:
                 reverse-login:
                   status: succeeded

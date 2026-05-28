@@ -1,0 +1,10 @@
+title: forbidden write contract
+objective: verify compliance protects source fixtures from agent writes
+steps:
+  - id: inspect-protected-source
+    agent: niuma-1
+    objective: inspect a protected legacy source file without modifying it
+    inputs:
+      - path: shared/references/protected-login.jsp
+    outputs:
+      - path: artifacts/runs/{run_id}/inspect-protected-source/source-notes.md
