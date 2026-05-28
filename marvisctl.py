@@ -20,6 +20,7 @@ from agent_factory.core.backends import build_backend
 from agent_factory.core.config import apply_runtime_config, load_factory_config, load_runtime_config
 from agent_factory.core.config_registry import ConfigRegistryError, load_config_registry
 from agent_factory.core.event_log import EventLog
+from agent_factory.core.preflight import run_preflight
 from agent_factory.core.resource_manager import ResourceManager
 from agent_factory.core.run_manifest import build_run_manifest
 from agent_factory.core.task_bus import TaskBus
@@ -46,6 +47,14 @@ def _build_parser() -> argparse.ArgumentParser:
     doctor = subparsers.add_parser("doctor")
     _add_config_arg(doctor)
     doctor.set_defaults(handler=_doctor)
+
+    preflight = subparsers.add_parser("preflight")
+    _add_config_arg(preflight)
+    preflight.add_argument("--taskbook", default="")
+    preflight.add_argument("--source", default="")
+    preflight.add_argument("--suite", default="")
+    preflight.add_argument("--json", action="store_true")
+    preflight.set_defaults(handler=_preflight)
 
     config = subparsers.add_parser("config")
     config_subparsers = config.add_subparsers(dest="config_command", required=True)
@@ -119,6 +128,27 @@ def _doctor(args: argparse.Namespace) -> int:
             f"backend_command_warnings={health['backend_command_warnings']}"
         )
     return 0
+
+
+def _preflight(args: argparse.Namespace) -> int:
+    config_path = Path(_resolve_config_path(args.config))
+    config = load_factory_config(config_path)
+    runtime_config = load_runtime_config(config_path.parent / "runtime_config.json")
+    apply_runtime_config(config, runtime_config)
+    workers = [worker for worker in config.workers if worker.enabled]
+    result = run_preflight(workers, args.taskbook, args.source, args.suite)
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    else:
+        summary = result["summary"]
+        print(
+            f"preflight {result['status']}: "
+            f"{summary['passed']}/{summary['total']} passed, "
+            f"warnings={summary['warnings']}, failed={summary['failed']}"
+        )
+        for check in result["checks"]:
+            print(f"{check['status']}\t{check['name']}\t{check['message']}")
+    return 0 if result["status"] != "failed" else 1
 
 
 def _config_validate(args: argparse.Namespace) -> int:

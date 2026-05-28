@@ -63,6 +63,90 @@ def test_marvisctl_doctor_reports_worker_health_summary(tmp_path, capsys, monkey
     assert "path_warnings=1" in output
 
 
+def test_marvisctl_preflight_reports_launch_gate(tmp_path, capsys, monkeypatch):
+    workspace = tmp_path / "workspaces" / "niuma-1"
+    profile = tmp_path / "profiles" / "niuma-1"
+    skills = tmp_path / "skills" / "niuma-1"
+    for path in (workspace, profile, skills):
+        path.mkdir(parents=True)
+    config_path = tmp_path / "factory_config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "workers": [
+                    {
+                        "worker_id": "niuma-1",
+                        "display_name": "niuma-1",
+                        "provider": "test",
+                        "model": "fake-model",
+                        "api_key_env": "NIUMA_1_API_KEY",
+                        "profile_dir": str(profile),
+                        "workspace_dir": str(workspace),
+                        "skills_dir": str(skills),
+                        "backend_type": "fake",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    taskbook_path = tmp_path / "legacy.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: legacy login
+            objective: reverse login
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: reverse login
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+            """
+        ),
+        encoding="utf-8",
+    )
+    source_path = tmp_path / "login.jsp"
+    source_path.write_text("<form>login</form>", encoding="utf-8")
+    monkeypatch.setenv("NIUMA_1_API_KEY", "sk-test")
+
+    assert marvisctl.main(
+        [
+            "preflight",
+            "--config",
+            str(config_path),
+            "--taskbook",
+            str(taskbook_path),
+            "--source",
+            str(source_path),
+        ]
+    ) == 0
+
+    output = capsys.readouterr().out
+    assert "preflight passed" in output
+    assert "taskbook_agents" in output
+
+
+def test_marvisctl_preflight_returns_nonzero_on_failed_gate(tmp_path, capsys):
+    config_path = tmp_path / "factory_config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "workers": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    assert marvisctl.main(["preflight", "--config", str(config_path), "--taskbook", str(tmp_path / "missing.yml")]) == 1
+
+    assert "preflight failed" in capsys.readouterr().out
+
+
 def test_marvisctl_reads_factory_config_shape(tmp_path, capsys):
     config_path = tmp_path / "factory_config.example.json"
     config_path.write_text(
