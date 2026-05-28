@@ -392,6 +392,7 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "任务书工作间" in html
     assert "taskbookPath" in html
     assert "sourcePath" in html
+    assert "baseUrl: window.location.origin" in html
     assert "lintTaskbook" in html
     assert "startTaskbookRun" in html
     assert "runPreflight" in html

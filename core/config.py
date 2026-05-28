@@ -25,7 +25,7 @@ class FactoryConfig:
 
 
 def load_factory_config(path: str | Path) -> FactoryConfig:
-    data = loads(Path(path).read_text(encoding="utf-8"))
+    data = loads(Path(path).read_text(encoding="utf-8-sig"))
     server_data = data["server"]
     workers = [_load_worker_config(worker_data) for worker_data in data["workers"]]
     seen: set[str] = set()
@@ -54,7 +54,7 @@ def load_runtime_config(path: str | Path) -> dict:
     runtime_path = Path(path)
     if not runtime_path.exists():
         return {}
-    return loads(runtime_path.read_text(encoding="utf-8"))
+    return loads(runtime_path.read_text(encoding="utf-8-sig"))
 
 
 def save_runtime_config(path: str | Path, data: dict) -> None:

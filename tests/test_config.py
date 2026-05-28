@@ -152,6 +152,26 @@ def test_runtime_config_round_trips_unicode_and_keys(tmp_path):
     assert load_runtime_config(runtime_path) == data
 
 
+def test_config_loaders_accept_utf8_bom_files(tmp_path):
+    config_path = tmp_path / "factory.json"
+    config_path.write_text(
+        "\ufeff"
+        + json.dumps(
+            {
+                "server": {"host": "127.0.0.1", "port": 8846, "token": "local-token"},
+                "workers": [],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    runtime_path = tmp_path / "runtime_config.json"
+    runtime_path.write_text("\ufeff{\"workers\": {}}", encoding="utf-8")
+
+    assert load_factory_config(config_path).server.port == 8846
+    assert load_runtime_config(runtime_path) == {"workers": {}}
+
+
 def test_apply_runtime_config_updates_workers_and_environment(tmp_path, monkeypatch):
     config_path = tmp_path / "factory.json"
     config_path.write_text(

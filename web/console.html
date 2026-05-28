@@ -169,7 +169,7 @@
   <script>
     function factoryRoom() {
       return {
-        baseUrl: 'http://127.0.0.1:8846',
+        baseUrl: window.location.origin,
         token: 'local-token',
         health: {},
         marvisStatus: {product: null, metrics: {}, capabilities: [], risks: []},
