@@ -113,6 +113,31 @@ def write_compliance_report(result: ComplianceResult, report_dir: str | Path) ->
     return path
 
 
+def list_compliance_reports(report_dir: str | Path) -> list[dict[str, Any]]:
+    root = Path(report_dir)
+    reports = []
+    if root.exists():
+        for path in sorted(root.glob("compliance-*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+            reports.append(
+                {
+                    "filename": path.name,
+                    "path": str(path),
+                    "size": path.stat().st_size,
+                    "updated_at": path.stat().st_mtime,
+                }
+            )
+    return reports
+
+
+def read_compliance_report(report_dir: str | Path, filename: str) -> dict[str, Any]:
+    if "/" in filename or "\\" in filename or not filename.endswith(".json"):
+        raise FileNotFoundError("compliance report not found")
+    path = Path(report_dir) / filename
+    if not path.exists():
+        raise FileNotFoundError("compliance report not found")
+    return {"filename": filename, "path": str(path), "report": json.loads(path.read_text(encoding="utf-8"))}
+
+
 def _load_expected(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}

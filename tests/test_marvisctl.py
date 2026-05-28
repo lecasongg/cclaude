@@ -119,6 +119,21 @@ def test_marvisctl_status_can_print_json(tmp_path, capsys):
     assert body["metrics"]["compliance_reports_total"] == 0
 
 
+def test_marvisctl_lists_and_shows_compliance_reports(tmp_path, capsys):
+    report_dir = tmp_path / "artifacts" / "compliance"
+    report_dir.mkdir(parents=True)
+    report = report_dir / "compliance-quick-20260101T000000Z-passed.json"
+    report.write_text(json.dumps({"success": True, "cases": [{"name": "legacy-login"}]}), encoding="utf-8")
+
+    assert marvisctl.main(["compliance", "reports", "--workspace", str(tmp_path)]) == 0
+    assert report.name in capsys.readouterr().out
+
+    assert marvisctl.main(["compliance", "show", report.name, "--workspace", str(tmp_path)]) == 0
+    shown = json.loads(capsys.readouterr().out)
+    assert shown["success"] is True
+    assert shown["cases"][0]["name"] == "legacy-login"
+
+
 def test_marvisctl_preflight_reports_launch_gate(tmp_path, capsys, monkeypatch):
     workspace = tmp_path / "workspaces" / "niuma-1"
     profile = tmp_path / "profiles" / "niuma-1"

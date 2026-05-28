@@ -14,7 +14,7 @@ if "agent_factory" not in sys.modules:
     pkg.__path__ = [str(_ROOT)]
     sys.modules["agent_factory"] = pkg
 
-from agent_factory.core.compliance import ComplianceSuite
+from agent_factory.core.compliance import ComplianceSuite, list_compliance_reports, read_compliance_report
 from agent_factory.core.artifacts import ArtifactStore
 from agent_factory.core.backends import build_backend
 from agent_factory.core.config import apply_runtime_config, load_factory_config, load_runtime_config
@@ -101,6 +101,14 @@ def _build_parser() -> argparse.ArgumentParser:
     compliance_run.add_argument("--workspace")
     compliance_run.add_argument("--report-dir")
     compliance_run.set_defaults(handler=_compliance_run)
+    compliance_reports = compliance_subparsers.add_parser("reports")
+    compliance_reports.add_argument("--workspace", default=".")
+    compliance_reports.add_argument("--json", action="store_true")
+    compliance_reports.set_defaults(handler=_compliance_reports)
+    compliance_show = compliance_subparsers.add_parser("show")
+    compliance_show.add_argument("filename")
+    compliance_show.add_argument("--workspace", default=".")
+    compliance_show.set_defaults(handler=_compliance_show)
 
     artifact = subparsers.add_parser("artifact")
     artifact_subparsers = artifact.add_subparsers(dest="artifact_command", required=True)
@@ -260,6 +268,24 @@ def _compliance_run(args: argparse.Namespace) -> int:
         print(error, file=sys.stderr)
     print(f"report: {result.report_path}", file=sys.stderr)
     return 1
+
+
+def _compliance_reports(args: argparse.Namespace) -> int:
+    reports = list_compliance_reports(Path(args.workspace) / "artifacts" / "compliance")
+    if args.json:
+        print(json.dumps({"reports": reports}, ensure_ascii=False, indent=2))
+    else:
+        if not reports:
+            print("no compliance reports")
+        for report in reports:
+            print(f"{report['filename']}\t{report['size']}\t{report['path']}")
+    return 0
+
+
+def _compliance_show(args: argparse.Namespace) -> int:
+    report = read_compliance_report(Path(args.workspace) / "artifacts" / "compliance", args.filename)
+    print(json.dumps(report["report"], ensure_ascii=False, indent=2))
+    return 0
 
 
 def _artifact_manifest(args: argparse.Namespace) -> int:

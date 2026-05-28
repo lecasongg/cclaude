@@ -2,7 +2,7 @@ import textwrap
 import json
 
 import marvisctl
-from agent_factory.core.compliance import ComplianceSuite
+from agent_factory.core.compliance import ComplianceSuite, list_compliance_reports, read_compliance_report
 from agent_factory.core.pipeline_executor import StepExecutionContext
 
 
@@ -31,6 +31,19 @@ def test_compliance_quick_suite_writes_report(tmp_path):
     assert report["success"] is True
     assert report["mode"] == "quick"
     assert report["cases"][0]["name"] == "legacy-login"
+
+
+def test_compliance_report_helpers_list_and_read_reports(tmp_path):
+    report_dir = tmp_path / "reports"
+    report_dir.mkdir()
+    report = report_dir / "compliance-quick-20260101T000000Z-passed.json"
+    report.write_text('{"success": true, "cases": []}', encoding="utf-8")
+
+    listed = list_compliance_reports(report_dir)
+    read = read_compliance_report(report_dir, report.name)
+
+    assert listed[0]["filename"] == report.name
+    assert read["report"]["success"] is True
 
 
 def test_compliance_quick_suite_reports_failed_assertion(tmp_path):

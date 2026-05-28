@@ -9,7 +9,7 @@ from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from agent_factory.core.config import save_runtime_config
-from agent_factory.core.compliance import ComplianceSuite
+from agent_factory.core.compliance import ComplianceSuite, list_compliance_reports as list_report_files, read_compliance_report as read_report_file
 from agent_factory.core.event_log import EventLog
 from agent_factory.core.marvis_status import build_marvis_status
 from agent_factory.core.models import TaskRecord, WorkerConfig
@@ -376,31 +376,17 @@ def create_app(
         return result.to_dict()
 
     @app.get("/api/compliance/reports")
-    async def list_compliance_reports(x_hermes_token: str | None = Header(default=None)):
+    async def list_compliance_report_files(x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
-        root = compliance_reports_root()
-        reports = []
-        if root.exists():
-            for path in sorted(root.glob("compliance-*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
-                reports.append(
-                    {
-                        "filename": path.name,
-                        "path": str(path),
-                        "size": path.stat().st_size,
-                        "updated_at": path.stat().st_mtime,
-                    }
-                )
-        return {"reports": reports}
+        return {"reports": list_report_files(compliance_reports_root())}
 
     @app.get("/api/compliance/reports/{filename}")
-    async def read_compliance_report(filename: str, x_hermes_token: str | None = Header(default=None)):
+    async def read_compliance_report_file(filename: str, x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
-        if "/" in filename or "\\" in filename or not filename.endswith(".json"):
-            raise HTTPException(status_code=404, detail="compliance report not found")
-        path = compliance_reports_root() / filename
-        if not path.exists():
-            raise HTTPException(status_code=404, detail="compliance report not found")
-        return {"filename": filename, "path": str(path), "report": json.loads(path.read_text(encoding="utf-8"))}
+        try:
+            return read_report_file(compliance_reports_root(), filename)
+        except (FileNotFoundError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=404, detail="compliance report not found") from exc
 
     @app.get("/api/workers/{worker_id}/installed-documents")
     async def get_installed_documents(worker_id: str, x_hermes_token: str | None = Header(default=None)):
