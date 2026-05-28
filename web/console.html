@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Marvis AI Factory Control Room</title>
+  <title>Marvis AI 工厂控制台</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <style type="text/tailwindcss">
@@ -110,50 +110,50 @@
 <body>
   <main x-data="factoryRoom()" x-init="init()" class="viewport" aria-label="Marvis AI 工厂控制台 2.5D 沙盘">
     <header class="topbar pixel">
-      <div class="brand"><div class="mark" aria-hidden="true"></div><div><h1>Marvis AI Factory Console</h1><div class="subtitle">工厂屋顶掀开后的上帝视角总控图 · 2.5D 工厂沙盘</div></div></div>
+      <div class="brand"><div class="mark" aria-hidden="true"></div><div><h1>Marvis AI 工厂控制台</h1><div class="subtitle">工厂屋顶掀开后的上帝视角总控图 · 2.5D 工厂沙盘</div></div></div>
       <div class="stats">
-        <div class="stat"><label>Server</label><strong x-text="health.status === 'ok' ? 'ONLINE' : 'OFFLINE'"></strong><small x-text="baseUrl"></small></div>
-        <div class="stat"><label>Workers</label><strong x-text="workers.length"></strong><small x-text="`${workersWithKeys()} keys ready`"></small></div>
-        <div class="stat"><label>Runs</label><strong x-text="runs.length"></strong><small x-text="`${runningRuns()} running`"></small></div>
-        <div class="stat"><label>Queue</label><strong x-text="tasks.length"></strong><small x-text="`${queuedTasks()} queued`"></small></div>
-        <div class="stat"><label>Compliance</label><strong x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></strong><small x-text="complianceSummary()"></small></div>
-        <div class="stat"><label>Active</label><strong x-text="selectedRun ? selectedRun.run_id.slice(0, 8) : 'NONE'"></strong><small x-text="selectedWorker"></small></div>
+        <div class="stat"><label>服务状态</label><strong x-text="health.status === 'ok' ? '在线' : '离线'"></strong><small x-text="baseUrl"></small></div>
+        <div class="stat"><label>工位数量</label><strong x-text="workers.length"></strong><small x-text="`${workersWithKeys()} 个密钥就绪`"></small></div>
+        <div class="stat"><label>流水线</label><strong x-text="runs.length"></strong><small x-text="`${runningRuns()} 条运行中`"></small></div>
+        <div class="stat"><label>任务队列</label><strong x-text="tasks.length"></strong><small x-text="`${queuedTasks()} 个排队中`"></small></div>
+        <div class="stat"><label>验厂结果</label><strong x-text="complianceResult ? (complianceResult.success ? '通过' : '失败') : '待运行'"></strong><small x-text="complianceSummary()"></small></div>
+        <div class="stat"><label>当前选择</label><strong x-text="selectedRun ? selectedRun.run_id.slice(0, 8) : '无'"></strong><small x-text="selectedWorker"></small></div>
       </div>
-      <div class="top-actions"><div><input x-model="baseUrl" aria-label="Server URL"><input x-model="token" type="password" aria-label="Hermes Token"></div><button @click="refreshAll" :disabled="isRefreshing" x-text="isRefreshing ? 'SYNC' : 'REFRESH'"></button></div>
+      <div class="top-actions"><div><input x-model="baseUrl" aria-label="服务地址"><input x-model="token" type="password" aria-label="访问令牌"></div><button @click="refreshAll" :disabled="isRefreshing" x-text="isRefreshing ? '同步中' : '刷新'"></button></div>
     </header>
 
     <div class="toast" x-show="alert" x-transition :class="alert && alert.type === 'error' ? 'error' : 'ok'" x-text="alert ? alert.message : ''"></div>
-    <div class="legend"><span class="tag green"><span class="lamp ok"></span>running / ok</span><span class="tag yellow"><span class="lamp queued"></span>queued / blocked</span><span class="tag red"><span class="lamp failed"></span>failed</span><span class="tag blue"><span class="lamp idle"></span>idle</span></div>
+    <div class="legend"><span class="tag green"><span class="lamp ok"></span>运行 / 正常</span><span class="tag yellow"><span class="lamp queued"></span>排队 / 阻塞</span><span class="tag red"><span class="lamp failed"></span>失败</span><span class="tag blue"><span class="lamp idle"></span>空闲</span></div>
 
     <section class="floor"><div class="map">
-      <div class="zone-label left-title"><span>工位 / 车间区</span><small>AGENT BAYS</small></div><div class="zone-label core-title"><span>多流水线总览</span><small>ONE ROOF OPENED</small></div><div class="zone-label right-title"><span>控制中心 / 主 Agent 办公室</span><small>DISPATCH</small></div><div class="zone-label warehouse-title"><span>产物仓库 / 日志 / 断言</span><small>ARTIFACT HANDOFF</small></div><div class="zone-label task-title"><span>任务书工作间</span><small>TASKBOOK STUDIO</small></div>
+      <div class="zone-label left-title"><span>工位 / 车间区</span><small>智能体工位</small></div><div class="zone-label core-title"><span>多流水线总览</span><small>掀顶上帝视角</small></div><div class="zone-label right-title"><span>控制中心 / 主智能体办公室</span><small>调度控制</small></div><div class="zone-label warehouse-title"><span>产物仓库 / 日志 / 断言</span><small>文件级产物握手</small></div><div class="zone-label task-title"><span>任务书工作间</span><small>任务书编排</small></div>
       <div class="corridor c1"></div><div class="corridor c2"></div><div class="corridor c3"></div>
 
       <article class="room workshop" :class="selectedWorker ? 'selected' : ''"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content workshop-list">
-        <section class="bay" @click="openWorkerHealthCenter()"><div class="bench"><div class="bench-top"></div><div class="bench-side"></div><div class="bench-front"></div></div><div class="bay-head"><span><i class="lamp" :class="workerHealthLamp()"></i> CONFIG CENTER</span><span x-text="workerHealthSummaryLabel()"></span></div><div class="bay-copy" x-text="workerHealthRiskLabel()"></div><div class="meters"><span class="meter" x-text="`${workerHealthSummary.summary ? workerHealthSummary.summary.ok : 0} OK`"></span><span class="meter" x-text="`${workerHealthSummary.summary ? workerHealthSummary.summary.missing_api_key : 0} NO KEY`"></span><span class="meter" x-text="`${workerHealthSummary.summary ? workerHealthSummary.summary.path_warnings : 0} PATH`"></span></div></section>
-        <section class="bay" @click="openWorkerCreateForm()"><div class="bench"><div class="bench-top"></div><div class="bench-side"></div><div class="bench-front"></div></div><div class="bay-head"><span><i class="lamp ok"></i> NEW AGENT BAY</span><span>BUILD</span></div><div class="bay-copy">新建工位、绑定模型、写入 runtime_config，并立刻可被 TaskBook 选用。</div><div class="meters"><span class="meter">CREATE</span><span class="meter">SELECT</span><span class="meter">COMPOSE</span></div></section>
-        <template x-for="worker in workers.slice(0, 3)" :key="worker.worker_id"><section class="bay" @click="selectWorker(worker.worker_id)"><div class="bench"><div class="bench-top"></div><div class="bench-side"></div><div class="bench-front"></div></div><div class="bay-head"><span><i class="lamp" :class="lampClass(worker.status)"></i> <span x-text="worker.display_name"></span></span><span x-text="worker.status"></span></div><div class="bay-copy" x-text="worker.worker_id + ' · ' + (worker.role || 'agent bay')"></div><div class="meters"><span class="meter" x-text="worker.backend_type || 'backend'"></span><span class="meter" x-text="worker.model || 'model'"></span><span class="meter" x-text="worker.api_key_configured ? 'KEY OK' : 'NO KEY'"></span></div></section></template>
+        <section class="bay" @click="openWorkerHealthCenter()"><div class="bench"><div class="bench-top"></div><div class="bench-side"></div><div class="bench-front"></div></div><div class="bay-head"><span><i class="lamp" :class="workerHealthLamp()"></i> 配置中心</span><span x-text="workerHealthSummaryLabel()"></span></div><div class="bay-copy" x-text="workerHealthRiskLabel()"></div><div class="meters"><span class="meter" x-text="`${workerHealthSummary.summary ? workerHealthSummary.summary.ok : 0} 正常`"></span><span class="meter" x-text="`${workerHealthSummary.summary ? workerHealthSummary.summary.missing_api_key : 0} 缺密钥`"></span><span class="meter" x-text="`${workerHealthSummary.summary ? workerHealthSummary.summary.path_warnings : 0} 路径`"></span></div></section>
+        <section class="bay" @click="openWorkerCreateForm()"><div class="bench"><div class="bench-top"></div><div class="bench-side"></div><div class="bench-front"></div></div><div class="bay-head"><span><i class="lamp ok"></i> 新建智能体工位</span><span>创建</span></div><div class="bay-copy">新建工位、绑定模型、写入 runtime_config，并立刻可被任务书选用。</div><div class="meters"><span class="meter">新建</span><span class="meter">选择</span><span class="meter">组合</span></div></section>
+        <template x-for="worker in workers.slice(0, 3)" :key="worker.worker_id"><section class="bay" @click="selectWorker(worker.worker_id)"><div class="bench"><div class="bench-top"></div><div class="bench-side"></div><div class="bench-front"></div></div><div class="bay-head"><span><i class="lamp" :class="lampClass(worker.status)"></i> <span x-text="worker.display_name"></span></span><span x-text="statusLabel(worker.status)"></span></div><div class="bay-copy" x-text="worker.worker_id + ' · ' + (worker.role || '智能体工位')"></div><div class="meters"><span class="meter" x-text="worker.backend_type || '后端'"></span><span class="meter" x-text="worker.model || '模型'"></span><span class="meter" x-text="worker.api_key_configured ? '密钥正常' : '缺密钥'"></span></div></section></template>
       </div></article>
 
       <article class="room core"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content core-content">
-        <aside class="yard"><div class="yard-title">Input Source</div><div class="cube blue"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>legacy module</b></div><div class="cube queued"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>taskbook</b></div><div class="cube ok"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>context</b></div></aside>
+        <aside class="yard"><div class="yard-title">输入材料</div><div class="cube blue"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>旧系统模块</b></div><div class="cube queued"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>任务书</b></div><div class="cube ok"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b>上下文</b></div></aside>
         <div class="pipes">
-          <div class="factory-controls"><input class="field-iso" x-model="runFilter" placeholder="filter runs"><button class="industrial" @click="runStatusFocus = runStatusFocus === 'failed' ? '' : 'failed'">FAILED</button><button class="industrial" @click="lineDensity = lineDensity === 'compact' ? 'normal' : 'compact'" x-text="lineDensity.toUpperCase()"></button></div>
-          <template x-for="(run, index) in visibleRuns().slice(0, lineDensity === 'compact' ? 4 : 3)" :key="run.run_id"><section class="pipe" :class="[lineClass(index), pipeStatusClass(run.status), selectedRun && selectedRun.run_id === run.run_id ? 'selected' : '', lineDensity === 'compact' ? 'compact' : '', runStatusFocus && run.status !== runStatusFocus ? 'focused-out' : '']" @click="selectRun(run)"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="qa-stamp">质检通过</div><div class="belt-crate">产物</div><div class="pipe-content"><div class="pipe-label"><div><small x-text="`LINE ${index + 1} · ${run.status}`"></small><strong x-text="run.title || run.run_id"></strong></div><div class="task-chip" x-text="run.run_id"></div></div><div class="machines"><template x-for="step in paddedSteps(run)" :key="step.step_id"><div class="machine" :class="machineStatusClass(step.status)" @click.stop="step.real && selectStep(step)"><span class="lamp" :class="lampClass(step.status)"></span><div class="m-top" :data-name="step.step_id"></div><div class="m-side"></div><div class="m-front"></div></div></template></div><div class="exports"><template x-for="artifact in outputFilesForRun(run).slice(0, 3)" :key="artifact"><div class="filebox ok" x-text="artifact.split('/').slice(-1)[0]"></div></template></div></div></section></template>
-          <template x-if="runs.length === 0"><section class="pipe line-blue queued selected"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="belt-crate">待命</div><div class="pipe-content"><div class="pipe-label"><div><small>LINE 1 · idle</small><strong>等待任务书入闸</strong></div><div class="task-chip">TaskBook Dispatch Rack</div></div></div></section></template>
+          <div class="factory-controls"><input class="field-iso" x-model="runFilter" placeholder="筛选流水线"><button class="industrial" @click="runStatusFocus = runStatusFocus === 'failed' ? '' : 'failed'">只看失败</button><button class="industrial" @click="lineDensity = lineDensity === 'compact' ? 'normal' : 'compact'" x-text="lineDensity === 'compact' ? '紧凑' : '标准'"></button></div>
+          <template x-for="(run, index) in visibleRuns().slice(0, lineDensity === 'compact' ? 4 : 3)" :key="run.run_id"><section class="pipe" :class="[lineClass(index), pipeStatusClass(run.status), selectedRun && selectedRun.run_id === run.run_id ? 'selected' : '', lineDensity === 'compact' ? 'compact' : '', runStatusFocus && run.status !== runStatusFocus ? 'focused-out' : '']" @click="selectRun(run)"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="qa-stamp">质检通过</div><div class="belt-crate">产物</div><div class="pipe-content"><div class="pipe-label"><div><small x-text="`流水线 ${index + 1} · ${statusLabel(run.status)}`"></small><strong x-text="run.title || run.run_id"></strong></div><div class="task-chip" x-text="run.run_id"></div></div><div class="machines"><template x-for="step in paddedSteps(run)" :key="step.step_id"><div class="machine" :class="machineStatusClass(step.status)" @click.stop="step.real && selectStep(step)"><span class="lamp" :class="lampClass(step.status)"></span><div class="m-top" :data-name="step.step_id"></div><div class="m-side"></div><div class="m-front"></div></div></template></div><div class="exports"><template x-for="artifact in outputFilesForRun(run).slice(0, 3)" :key="artifact"><div class="filebox ok" x-text="artifact.split('/').slice(-1)[0]"></div></template></div></div></section></template>
+          <template x-if="runs.length === 0"><section class="pipe line-blue queued selected"><div class="pipe-top"></div><div class="pipe-side"></div><div class="pipe-front"></div><div class="gate"></div><div class="belt-crate">待命</div><div class="pipe-content"><div class="pipe-label"><div><small>流水线 1 · 空闲</small><strong>等待任务书入闸</strong></div><div class="task-chip">任务书调度架</div></div></div></section></template>
         </div>
-        <aside class="dock"><div class="yard-title">Output Dock</div><template x-for="artifact in runArtifacts.slice(0, 3)" :key="artifact.path"><div class="cube ok" @click="loadRunArtifact(artifact)"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b x-text="artifact.path.split('/').slice(-1)[0]"></b></div></template></aside>
+        <aside class="dock"><div class="yard-title">产物出口</div><template x-for="artifact in runArtifacts.slice(0, 3)" :key="artifact.path"><div class="cube ok" @click="loadRunArtifact(artifact)"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b x-text="artifact.path.split('/').slice(-1)[0]"></b></div></template></aside>
       </div></article>
 
-      <article class="room control"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content control-content"><section class="glass"><div class="desk">主 Agent<br>独立<br>办公室</div><div class="control-note"><b>调度室</b><br><span x-text="`正在调度 ${runs.length} 条流水线、${workers.length} 个工位与 ${tasks.length} 个任务。`"></span></div></section><section class="buttons"><button class="industrial" @click="runPreflight" :disabled="isRunningPreflight" x-text="isRunningPreflight ? 'CHECKING' : 'PREFLIGHT'"></button><button class="industrial dark" @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button><button class="industrial" @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" x-text="isRunningCompliance ? 'RUNNING' : 'COMPLIANCE'"></button><button class="industrial" @click="openRunManifest" :disabled="!selectedRun">MANIFEST</button></section><section class="board"><input class="field-iso" x-model="taskbookPath" placeholder="taskbook path"><input class="field-iso" x-model="sourcePath" placeholder="source path or directory"><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>Blueprint</span><b x-text="marvisProgressLabel()"></b></div><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>Milestones</span><b x-text="milestoneSummaryLabel()"></b></div><div class="board-row"><span>Preflight</span><b x-text="preflightResult ? preflightResult.status.toUpperCase() : 'IDLE'"></b></div><div class="board-row"><span>Selected Worker</span><b x-text="selectedWorker"></b></div><div class="board-row"><span>Selected TaskBook</span><b x-text="selectedTaskbookFilename || 'NONE'"></b></div><div class="board-row"><span>Compliance</span><b x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></b></div></section></div></article>
+      <article class="room control"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content control-content"><section class="glass"><div class="desk">主智能体<br>独立<br>办公室</div><div class="control-note"><b>调度室</b><br><span x-text="`正在调度 ${runs.length} 条流水线、${workers.length} 个工位与 ${tasks.length} 个任务。`"></span></div></section><section class="buttons"><button class="industrial" @click="runPreflight" :disabled="isRunningPreflight" x-text="isRunningPreflight ? '检查中' : '启动前检查'"></button><button class="industrial dark" @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" x-text="isStartingRun ? '启动中' : '启动流水线'"></button><button class="industrial" @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" x-text="isRunningCompliance ? '验厂中' : '运行验厂'"></button><button class="industrial" @click="openRunManifest" :disabled="!selectedRun">生产清单</button></section><section class="board"><input class="field-iso" x-model="taskbookPath" placeholder="任务书路径"><input class="field-iso" x-model="sourcePath" placeholder="源码路径或目录"><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>蓝图进度</span><b x-text="marvisProgressLabel()"></b></div><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>里程碑</span><b x-text="milestoneSummaryLabel()"></b></div><div class="board-row"><span>启动检查</span><b x-text="preflightResult ? statusLabel(preflightResult.status) : '待检查'"></b></div><div class="board-row"><span>选中工位</span><b x-text="selectedWorker"></b></div><div class="board-row"><span>选中任务书</span><b x-text="selectedTaskbookFilename || '无'"></b></div><div class="board-row"><span>验厂</span><b x-text="complianceResult ? (complianceResult.success ? '通过' : '失败') : '待运行'"></b></div></section></div></article>
 
-      <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><div class="room-title">Artifact Vault</div><template x-for="artifact in runArtifacts.slice(0, 4)" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifactLabel(artifact)"></button></template><input class="field-iso" x-model="artifactQuery" @change="refreshFactoryArtifacts" placeholder="search factory artifacts"><template x-for="artifact in factoryArtifacts.slice(0, 6)" :key="artifact.run_id + artifact.path"><button class="filebox warn" @click="loadFactoryArtifact(artifact)" :title="artifact.run_id + ' · ' + artifact.path" x-text="factoryArtifactLabel(artifact)"></button></template><div x-show="runArtifacts.length === 0 && factoryArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">Artifact Preview</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">Quality Gate</div><div class="assertion" :class="qualityPassed() ? 'ok' : 'fail'"><b x-text="qualityScoreLabel()"></b><br><span x-text="qualitySummaryLabel()"></span></div><template x-for="step in qualitySteps()" :key="step.step_id"><div class="assertion" :class="step.summary && step.summary.failed ? 'fail' : 'ok'" @click="openQualityStep(step)"><b x-text="step.step_id"></b><br><span x-text="`${step.summary.passed}/${step.summary.total} checks passed`"></span></div></template><div x-show="complianceResult" class="assertion" :class="complianceResult && complianceResult.success ? 'ok' : 'fail'" x-text="complianceSummary()"></div><template x-for="report in complianceReports.slice(0, 2)" :key="report.filename"><div class="assertion ok" @click="openComplianceReport(report)"><b x-text="report.filename"></b><br><span x-text="`${report.size} bytes`"></span></div></template><template x-for="baseline in complianceBaselines.slice(0, 2)" :key="baseline.name"><div class="assertion ok" @click="openComplianceBaseline(baseline)"><b x-text="`BASE · ${baseline.name}`"></b><br><span x-text="`${baseline.mode || 'mode'} · ${baseline.cases} cases`"></span></div></template><div x-show="!selectedRunQuality && !complianceResult && complianceReports.length === 0 && complianceBaselines.length === 0" class="assertion">断言测试集待运行</div></section></div></article>
+      <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><div class="room-title">产物仓库</div><template x-for="artifact in runArtifacts.slice(0, 4)" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifactLabel(artifact)"></button></template><input class="field-iso" x-model="artifactQuery" @change="refreshFactoryArtifacts" placeholder="搜索全厂产物"><template x-for="artifact in factoryArtifacts.slice(0, 6)" :key="artifact.run_id + artifact.path"><button class="filebox warn" @click="loadFactoryArtifact(artifact)" :title="artifact.run_id + ' · ' + artifact.path" x-text="factoryArtifactLabel(artifact)"></button></template><div x-show="runArtifacts.length === 0 && factoryArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">产物预览</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">质量闸口</div><div class="assertion" :class="qualityPassed() ? 'ok' : 'fail'"><b x-text="qualityScoreLabel()"></b><br><span x-text="qualitySummaryLabel()"></span></div><template x-for="step in qualitySteps()" :key="step.step_id"><div class="assertion" :class="step.summary && step.summary.failed ? 'fail' : 'ok'" @click="openQualityStep(step)"><b x-text="step.step_id"></b><br><span x-text="`${step.summary.passed}/${step.summary.total} 项检查通过`"></span></div></template><div x-show="complianceResult" class="assertion" :class="complianceResult && complianceResult.success ? 'ok' : 'fail'" x-text="complianceSummary()"></div><template x-for="report in complianceReports.slice(0, 2)" :key="report.filename"><div class="assertion ok" @click="openComplianceReport(report)"><b x-text="report.filename"></b><br><span x-text="`${report.size} 字节`"></span></div></template><template x-for="baseline in complianceBaselines.slice(0, 2)" :key="baseline.name"><div class="assertion ok" @click="openComplianceBaseline(baseline)"><b x-text="`基线 · ${baseline.name}`"></b><br><span x-text="`${baseline.mode || '模式'} · ${baseline.cases} 个用例`"></span></div></template><div x-show="!selectedRunQuality && !complianceResult && complianceReports.length === 0 && complianceBaselines.length === 0" class="assertion">断言测试集待运行</div></section></div></article>
 
-      <aside class="log-strip"><section class="log-panel"><div class="room-title">Step Timeline / Run Log</div><div class="log-list"><template x-for="step in selectedRunSteps()" :key="step.step_id"><div class="log-line"><b x-text="step.step_id"></b> · <span x-text="step.status"></span> · <span x-text="step.objective"></span></div></template><template x-for="event in selectedRunEvents.slice(0, 8)" :key="event.event_id"><div class="log-line" x-text="`${event.time || ''} · ${event.type}`"></div></template></div></section></aside>
+      <aside class="log-strip"><section class="log-panel"><div class="room-title">步骤时间线 / 运行日志</div><div class="log-list"><template x-for="step in selectedRunSteps()" :key="step.step_id"><div class="log-line"><b x-text="step.step_id"></b> · <span x-text="statusLabel(step.status)"></span> · <span x-text="step.objective"></span></div></template><template x-for="event in selectedRunEvents.slice(0, 8)" :key="event.event_id"><div class="log-line" x-text="`${event.time || ''} · ${event.type}`"></div></template></div></section></aside>
 
-      <article class="room taskbook"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content contracts"><div class="room-title">TaskBook Dispatch Rack</div><template x-for="item in taskbooks.slice(0, 3)" :key="item.filename"><section class="contract" @click="loadTaskbook(item.filename)"><div class="contract-icon">书</div><div><strong x-text="item.filename"></strong><small x-text="item.path"></small></div><div class="state" :class="selectedTaskbookFilename === item.filename ? 'run' : 'queue'" x-text="selectedTaskbookFilename === item.filename ? '选中' : '待命'"></div></section></template></div></article>
+      <article class="room taskbook"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content contracts"><div class="room-title">任务书调度架</div><template x-for="item in taskbooks.slice(0, 3)" :key="item.filename"><section class="contract" @click="loadTaskbook(item.filename)"><div class="contract-icon">书</div><div><strong x-text="item.filename"></strong><small x-text="item.path"></small></div><div class="state" :class="selectedTaskbookFilename === item.filename ? 'run' : 'queue'" x-text="selectedTaskbookFilename === item.filename ? '选中' : '待命'"></div></section></template></div></article>
 
-      <section class="editor-panel"><div class="room-title">TaskBook Studio · new-taskbook.yml</div><textarea x-model="taskbookEditorContent" placeholder="title: ..."></textarea><div class="editor-actions"><button class="industrial dark" @click="saveTaskbook" :disabled="isSavingTaskbook || !selectedTaskbookFilename.trim() || !taskbookEditorContent.trim()" x-text="isSavingTaskbook ? 'SAVING' : 'SAVE'"></button><button class="industrial" @click="newTaskbookDraft">BLANK</button><button class="industrial" @click="legacyModernizationDraft">LEGACY FLOW</button><button class="industrial" @click="openTaskbookComposer">COMPOSE</button></div><pre x-text="taskbookLint || 'lint result will appear here'"></pre></section>
+      <section class="editor-panel"><div class="room-title">任务书工作台 · new-taskbook.yml</div><textarea x-model="taskbookEditorContent" placeholder="title: ..."></textarea><div class="editor-actions"><button class="industrial dark" @click="saveTaskbook" :disabled="isSavingTaskbook || !selectedTaskbookFilename.trim() || !taskbookEditorContent.trim()" x-text="isSavingTaskbook ? '保存中' : '保存'"></button><button class="industrial" @click="newTaskbookDraft">空白</button><button class="industrial" @click="legacyModernizationDraft">老系统流程</button><button class="industrial" @click="openTaskbookComposer">组合工位</button></div><pre x-text="taskbookLint || '任务书检查结果会显示在这里'"></pre></section>
     </div></section>
     <div class="drawer" :class="drawerOpen ? 'open' : ''">
       <div class="drawer-head">
@@ -161,7 +161,7 @@
           <div class="room-title text-[12px]" x-text="drawerTitle"></div>
           <div class="room-sub" x-text="drawerSubtitle"></div>
         </div>
-        <button class="btn tiny" @click="drawerOpen = false">CLOSE</button>
+        <button class="btn tiny" @click="drawerOpen = false">关闭</button>
       </div>
       <div class="drawer-body" x-html="drawerHtml"></div>
     </div>
@@ -278,7 +278,7 @@
           this.isRefreshing = true;
           try {
             await Promise.all([this.refreshHealth(), this.refreshMarvisStatus(), this.refreshWorkers(), this.refreshWorkerHealthSummary(), this.refreshTasks(), this.refreshRuns(), this.refreshTaskbooks(), this.refreshComplianceReports(), this.refreshComplianceBaselines(), this.refreshFactoryArtifacts()]);
-            this.notify('Factory sync complete');
+          this.notify('工厂状态同步完成');
           } catch (error) {
             this.notifyError(error);
           } finally {
@@ -439,13 +439,13 @@
             this.notifyError(error);
             return;
           }
-          this.drawerTitle = `MANIFEST · ${this.selectedRun.run_id.slice(0, 12)}`;
-          this.drawerSubtitle = `${manifest.steps.length} steps · ${manifest.artifacts.length} artifacts`;
+          this.drawerTitle = `生产清单 · ${this.selectedRun.run_id.slice(0, 12)}`;
+          this.drawerSubtitle = `${manifest.steps.length} 个步骤 · ${manifest.artifacts.length} 个产物`;
           this.drawerHtml = `
             <div class="space-y-3">
-              <div class="mini-metric"><span>Run</span><strong class="!text-base">${this.escapeHtml(manifest.run.status)}</strong><em>${this.escapeHtml(manifest.run.title || '')}</em></div>
-              <div class="mini-metric"><span>TaskBook</span><strong class="!text-base">${this.escapeHtml(manifest.run.taskbook_path || '')}</strong><em>${this.escapeHtml(manifest.run.source_path || 'no source path')}</em></div>
-              <div class="mini-metric"><span>Quality</span><strong class="!text-base">${manifest.quality.summary.score}%</strong><em>${manifest.quality.summary.passed}/${manifest.quality.summary.total} checks passed</em></div>
+              <div class="mini-metric"><span>运行状态</span><strong class="!text-base">${this.escapeHtml(this.statusLabel(manifest.run.status))}</strong><em>${this.escapeHtml(manifest.run.title || '')}</em></div>
+              <div class="mini-metric"><span>任务书</span><strong class="!text-base">${this.escapeHtml(manifest.run.taskbook_path || '')}</strong><em>${this.escapeHtml(manifest.run.source_path || '未指定源码路径')}</em></div>
+              <div class="mini-metric"><span>质量分</span><strong class="!text-base">${manifest.quality.summary.score}%</strong><em>${manifest.quality.summary.passed}/${manifest.quality.summary.total} 项检查通过</em></div>
               <pre class="mono">${this.escapeHtml(JSON.stringify(manifest, null, 2))}</pre>
             </div>
           `;
@@ -458,8 +458,8 @@
           this.taskbookEditorContent = body.content || '';
           this.taskbookPath = body.path;
           this.taskbookLint = '';
-          this.drawerTitle = `TASKBOOK · ${filename}`;
-          this.drawerSubtitle = 'contract preview';
+          this.drawerTitle = `任务书 · ${filename}`;
+          this.drawerSubtitle = '契约预览';
           this.drawerHtml = `<pre class="whitespace-pre-wrap text-[11px] leading-5">${this.escapeHtml(body.content || '')}</pre>`;
         },
         newTaskbookDraft() {
@@ -489,11 +489,11 @@
         },
         openTaskbookComposer() {
           const selected = this.taskbookComposerAgentIds();
-          this.drawerTitle = 'TASKBOOK STUDIO · AGENT COMPOSER';
-          this.drawerSubtitle = `${selected.length} agents selected`;
+          this.drawerTitle = '任务书工作台 · 智能体组合器';
+          this.drawerSubtitle = `已选择 ${selected.length} 个工位`;
           this.drawerHtml = `
             <div class="space-y-3">
-              <div class="mini-metric"><span>Assembly Line</span><strong class="!text-base">${selected.join(' → ') || 'NONE'}</strong><em>选择多个工位后生成文件级产物握手任务书</em></div>
+              <div class="mini-metric"><span>装配线</span><strong class="!text-base">${selected.join(' → ') || '未选择'}</strong><em>选择多个工位后生成文件级产物握手任务书</em></div>
               <div class="agent-grid">
                 ${this.workers.map((worker) => `
                   <button class="agent-tile ${selected.includes(worker.worker_id) ? 'selected' : ''}" onclick="window.__marvisToggleComposerAgent && window.__marvisToggleComposerAgent('${worker.worker_id}')">
@@ -502,7 +502,7 @@
                   </button>
                 `).join('')}
               </div>
-              <button class="industrial dark" onclick="window.__marvisComposeTaskbookFromWorkers && window.__marvisComposeTaskbookFromWorkers()">BUILD TASKBOOK DRAFT</button>
+              <button class="industrial dark" onclick="window.__marvisComposeTaskbookFromWorkers && window.__marvisComposeTaskbookFromWorkers()">生成任务书草稿</button>
             </div>
           `;
           this.drawerOpen = true;
@@ -511,7 +511,7 @@
           const selected = this.taskbookComposerAgentIds();
           const agents = selected.length ? selected : this.workers.slice(0, 2).map((worker) => worker.worker_id);
           if (!agents.length) {
-            this.notify('No agents available for composition', 'error');
+            this.notify('没有可用于组合的工位', 'error');
             return;
           }
           this.selectedComposerAgents = agents;
@@ -567,8 +567,8 @@
             '  - 所有输出必须写入 artifacts/runs/{run_id}',
             '  - 不得编造没有证据的业务规则'
           ].join('\n');
-          this.taskbookLint = `composed with agents: ${agents.join(' -> ')}`;
-          this.notify(`TaskBook composed: ${agents.length} agents`);
+          this.taskbookLint = `已组合工位：${agents.join(' -> ')}`;
+          this.notify(`任务书已组合：${agents.length} 个工位`);
         },
         legacyModernizationDraft() {
           this.selectedTaskbookFilename = 'legacy-modernization-draft.yml';
@@ -628,7 +628,7 @@
             '  - 所有产物必须写入 artifacts/runs/{run_id}',
             '  - 不确定的信息必须标注待确认'
           ].join('\n');
-          this.taskbookLint = 'legacy modernization template ready';
+          this.taskbookLint = '老系统改造模板已就绪';
         },
         async saveTaskbook() {
           if (this.isSavingTaskbook || !this.selectedTaskbookFilename.trim() || !this.taskbookEditorContent.trim()) return;
@@ -644,7 +644,7 @@
             this.taskbookPath = body.path;
             this.taskbookLint = JSON.stringify({title: body.title, execution_order: body.execution_order}, null, 2);
             await this.refreshTaskbooks();
-            this.notify(`TaskBook saved: ${filename}`);
+            this.notify(`任务书已保存：${filename}`);
           } catch (error) {
             this.notifyError(error);
           } finally {
@@ -684,7 +684,7 @@
             this.selectedStep = this.selectedRun.steps && this.selectedRun.steps[0] ? this.selectedRun.steps[0] : null;
             await this.refreshRunEvents(body.run.run_id);
             await this.refreshRuns();
-            this.notify(`Run finished: ${body.run.status}`);
+            this.notify(`流水线结束：${this.statusLabel(body.run.status)}`);
           } catch (error) {
             this.notifyError(error);
           } finally {
@@ -701,7 +701,7 @@
             });
             this.complianceResult = body;
             await this.refreshComplianceReports();
-            this.notify(body.success ? `Compliance passed · ${body.report_path || 'report saved'}` : `Compliance failed · ${body.report_path || 'report saved'}`);
+            this.notify(body.success ? `验厂通过 · ${body.report_path || '报告已保存'}` : `验厂失败 · ${body.report_path || '报告已保存'}`);
           } catch (error) {
             this.notifyError(error);
           } finally {
@@ -722,7 +722,7 @@
             });
             this.preflightResult = body;
             this.openPreflightResult();
-            this.notify(`Preflight ${body.status}`);
+            this.notify(`启动前检查：${this.statusLabel(body.status)}`);
           } catch (error) {
             this.notifyError(error);
           } finally {
@@ -732,8 +732,8 @@
         openPreflightResult() {
           const result = this.preflightResult;
           if (!result) return;
-          this.drawerTitle = 'PREFLIGHT · LAUNCH GATE';
-          this.drawerSubtitle = `${result.summary.passed}/${result.summary.total} checks passed`;
+          this.drawerTitle = '启动前检查 · 放行闸口';
+          this.drawerSubtitle = `${result.summary.passed}/${result.summary.total} 项检查通过`;
           this.drawerHtml = `
             <div class="space-y-2">
               ${(result.checks || []).map((check) => `
@@ -759,21 +759,21 @@
           if (!report) return;
           const body = await this.requestJson(`/api/compliance/reports/${report.filename}`);
           const payload = body.report || {};
-          this.drawerTitle = `COMPLIANCE · ${report.filename}`;
-          this.drawerSubtitle = payload.success ? 'passed' : 'failed';
+          this.drawerTitle = `验厂报告 · ${report.filename}`;
+          this.drawerSubtitle = payload.success ? '通过' : '失败';
           const defaultBaseline = this.escapeHtml((report.filename || 'baseline').replace(/^compliance-/, '').replace(/\.json$/, '').slice(0, 54));
           this.drawerHtml = `
             <div class="space-y-3">
-              <div class="mini-metric"><span>Suite</span><strong class="!text-base">${this.escapeHtml(payload.mode || '')}</strong><em>${this.escapeHtml(payload.suite_path || '')}</em></div>
-              <div class="mini-metric"><span>Cases</span><strong class="!text-base">${(payload.cases || []).length} cases</strong><em>${(payload.errors || []).length} errors</em></div>
+              <div class="mini-metric"><span>测试集</span><strong class="!text-base">${this.escapeHtml(payload.mode || '')}</strong><em>${this.escapeHtml(payload.suite_path || '')}</em></div>
+              <div class="mini-metric"><span>用例</span><strong class="!text-base">${(payload.cases || []).length} 个用例</strong><em>${(payload.errors || []).length} 个错误</em></div>
               <div class="factory-form">
-                <div class="room-title">Model Baseline Gate</div>
-                <label><span class="room-sub">baseline name</span><input id="compliance-baseline-name" value="${defaultBaseline}"></label>
-                <button class="industrial dark" onclick="window.__marvisSaveComplianceBaseline && window.__marvisSaveComplianceBaseline('${this.escapeHtml(report.filename)}')">SAVE BASELINE</button>
-                <div class="room-sub">Compare this report with an existing Moon Bridge / DeepSeek baseline</div>
+                <div class="room-title">模型基线闸口</div>
+                <label><span class="room-sub">基线名称</span><input id="compliance-baseline-name" value="${defaultBaseline}"></label>
+                <button class="industrial dark" onclick="window.__marvisSaveComplianceBaseline && window.__marvisSaveComplianceBaseline('${this.escapeHtml(report.filename)}')">保存基线</button>
+                <div class="room-sub">将当前报告与已有 Moon Bridge / DeepSeek 基线对比</div>
                 ${this.complianceBaselines.map((baseline) => `
                   <button class="industrial" onclick="window.__marvisCompareComplianceBaseline && window.__marvisCompareComplianceBaseline('${this.escapeHtml(baseline.name)}', '${this.escapeHtml(report.filename)}')">${this.escapeHtml(baseline.name)}</button>
-                `).join('') || '<div class="mono">no baselines saved yet</div>'}
+                `).join('') || '<div class="mono">暂无已保存基线</div>'}
               </div>
               <pre class="mono">${this.escapeHtml(JSON.stringify(payload, null, 2))}</pre>
             </div>
@@ -789,7 +789,7 @@
               body: JSON.stringify({name, report_filename: filename})
             });
             await this.refreshComplianceBaselines();
-            this.notify(`Compliance baseline saved: ${name}`);
+            this.notify(`验厂基线已保存：${name}`);
           } catch (error) {
             this.notifyError(error);
           }
@@ -797,17 +797,17 @@
         async compareComplianceBaseline(name, filename) {
           try {
             const result = await this.requestJson(`/api/compliance/baselines/${encodeURIComponent(name)}/compare/${encodeURIComponent(filename)}`, {method: 'POST'});
-            this.drawerTitle = `BASELINE COMPARE · ${name}`;
-            this.drawerSubtitle = result.passed ? 'no regression' : 'regression detected';
+            this.drawerTitle = `基线对比 · ${name}`;
+            this.drawerSubtitle = result.passed ? '未发现回退' : '发现回退';
             this.drawerHtml = `
               <div class="space-y-3">
-                <div class="mini-metric"><span>Result</span><strong class="!text-base">${result.passed ? 'PASSED' : 'FAILED'}</strong><em>${this.escapeHtml(result.report || filename)}</em></div>
-                <div class="mini-metric"><span>Regressions</span><strong class="!text-base">${(result.regressions || []).length}</strong><em>new failures ${(result.new_failures || []).length}</em></div>
+                <div class="mini-metric"><span>结果</span><strong class="!text-base">${result.passed ? '通过' : '失败'}</strong><em>${this.escapeHtml(result.report || filename)}</em></div>
+                <div class="mini-metric"><span>回退</span><strong class="!text-base">${(result.regressions || []).length}</strong><em>新增失败 ${(result.new_failures || []).length}</em></div>
                 <pre class="mono">${this.escapeHtml(JSON.stringify(result, null, 2))}</pre>
               </div>
             `;
             this.drawerOpen = true;
-            this.notify(result.passed ? `Baseline compare passed: ${name}` : `Baseline compare failed: ${name}`, result.passed ? 'ok' : 'error');
+            this.notify(result.passed ? `基线对比通过：${name}` : `基线对比失败：${name}`, result.passed ? 'ok' : 'error');
           } catch (error) {
             this.notifyError(error);
           }
@@ -815,13 +815,13 @@
         openComplianceBaseline(baseline) {
           if (!baseline) return;
           const latestReport = this.complianceReports[0] ? this.complianceReports[0].filename : '';
-          this.drawerTitle = `BASELINE · ${baseline.name}`;
-          this.drawerSubtitle = `${baseline.mode || 'mode'} · ${baseline.cases || 0} cases`;
+          this.drawerTitle = `基线 · ${baseline.name}`;
+          this.drawerSubtitle = `${baseline.mode || '模式'} · ${baseline.cases || 0} 个用例`;
           this.drawerHtml = `
             <div class="space-y-3">
-              <div class="mini-metric"><span>Baseline</span><strong class="!text-base">${this.escapeHtml(baseline.name)}</strong><em>${this.escapeHtml(baseline.path || '')}</em></div>
-              <div class="mini-metric"><span>Status</span><strong class="!text-base">${baseline.success ? 'PASS' : 'FAIL'}</strong><em>${baseline.size || 0} bytes</em></div>
-              ${latestReport ? `<button class="industrial dark" onclick="window.__marvisCompareComplianceBaseline && window.__marvisCompareComplianceBaseline('${this.escapeHtml(baseline.name)}', '${this.escapeHtml(latestReport)}')">COMPARE LATEST REPORT</button>` : '<div class="mono">no reports available for compare</div>'}
+              <div class="mini-metric"><span>基线</span><strong class="!text-base">${this.escapeHtml(baseline.name)}</strong><em>${this.escapeHtml(baseline.path || '')}</em></div>
+              <div class="mini-metric"><span>状态</span><strong class="!text-base">${baseline.success ? '通过' : '失败'}</strong><em>${baseline.size || 0} 字节</em></div>
+              ${latestReport ? `<button class="industrial dark" onclick="window.__marvisCompareComplianceBaseline && window.__marvisCompareComplianceBaseline('${this.escapeHtml(baseline.name)}', '${this.escapeHtml(latestReport)}')">对比最新报告</button>` : '<div class="mono">暂无可对比报告</div>'}
             </div>
           `;
           this.drawerOpen = true;
@@ -834,7 +834,7 @@
               method: 'POST',
               body: JSON.stringify({path: this.filePath})
             });
-            this.notify(`Loaded ${this.fileContext.files.length} source files`);
+            this.notify(`已加载 ${this.fileContext.files.length} 个源码文件`);
           } catch (error) {
             this.notifyError(error);
           } finally {
@@ -852,7 +852,7 @@
               method: 'POST',
               body: formData
             });
-            this.notify(`Uploaded ${this.fileContext.files.length} source files`);
+            this.notify(`已上传 ${this.fileContext.files.length} 个源码文件`);
           } catch (error) {
             this.notifyError(error);
           } finally {
@@ -879,24 +879,24 @@
             template: 'general',
             count: 1
           };
-          this.drawerTitle = 'NEW AGENT BAY · CREATE WORKER';
-          this.drawerSubtitle = 'persisted into runtime_config.json';
+          this.drawerTitle = '新建 Agent 工位';
+          this.drawerSubtitle = '保存到 runtime_config.json';
           this.drawerHtml = `
             <div class="factory-form" id="workerCreateForm">
-              <label><span class="room-sub">template clone</span><select id="create-template"><option value="general">general delivery</option><option value="reverse">legacy reverse engineer</option><option value="requirements">requirements writer</option><option value="test">test planner</option></select></label>
-              <label><span class="room-sub">batch count</span><input id="create-count" type="number" min="1" max="20" value="1"></label>
-              <label><span class="room-sub">worker_id</span><input id="create-worker-id" value="${this.escapeHtml(this.workerCreateForm.worker_id)}"></label>
-              <label><span class="room-sub">display_name</span><input id="create-display-name" value="${this.escapeHtml(this.workerCreateForm.display_name)}"></label>
-              <label><span class="room-sub">backend_type</span><select id="create-backend-type"><option value="fake">fake</option><option value="codex_cli">codex_cli</option><option value="claude_cli">claude_cli</option><option value="openai_compatible">openai_compatible</option></select></label>
-              <label><span class="room-sub">provider</span><input id="create-provider" value="${this.escapeHtml(this.workerCreateForm.provider)}"></label>
-              <label><span class="room-sub">base_url</span><input id="create-base-url" value="${this.escapeHtml(this.workerCreateForm.base_url)}" placeholder="http://127.0.0.1:38440/v1"></label>
-              <label><span class="room-sub">model</span><input id="create-model" value="${this.escapeHtml(this.workerCreateForm.model)}"></label>
-              <label><span class="room-sub">group</span><input id="create-group" value="${this.escapeHtml(this.workerCreateForm.group)}"></label>
-              <label><span class="room-sub">tags comma separated</span><input id="create-tags" value="${this.escapeHtml(this.workerCreateForm.tags)}"></label>
-              <label><span class="room-sub">skills / capabilities</span><input id="create-capabilities" value="${this.escapeHtml(this.workerCreateForm.capabilities)}"></label>
-              <label><span class="room-sub">role</span><textarea id="create-role">${this.escapeHtml(this.workerCreateForm.role)}</textarea></label>
-              <label><span class="room-sub">api_key optional</span><input id="create-api-key" type="password" placeholder="saved locally when provided"></label>
-              <button class="industrial dark" onclick="window.__marvisCreateWorker && window.__marvisCreateWorker()">CREATE AGENT</button>
+              <label><span class="room-sub">克隆模板</span><select id="create-template"><option value="general">通用交付</option><option value="reverse">老系统逆向</option><option value="requirements">需求撰写</option><option value="test">测试设计</option></select></label>
+              <label><span class="room-sub">批量数量</span><input id="create-count" type="number" min="1" max="20" value="1"></label>
+              <label><span class="room-sub">工位 ID</span><input id="create-worker-id" value="${this.escapeHtml(this.workerCreateForm.worker_id)}"></label>
+              <label><span class="room-sub">显示名称</span><input id="create-display-name" value="${this.escapeHtml(this.workerCreateForm.display_name)}"></label>
+              <label><span class="room-sub">后端类型</span><select id="create-backend-type"><option value="fake">fake</option><option value="codex_cli">codex_cli</option><option value="claude_cli">claude_cli</option><option value="openai_compatible">openai_compatible</option></select></label>
+              <label><span class="room-sub">模型提供方</span><input id="create-provider" value="${this.escapeHtml(this.workerCreateForm.provider)}"></label>
+              <label><span class="room-sub">接口地址</span><input id="create-base-url" value="${this.escapeHtml(this.workerCreateForm.base_url)}" placeholder="http://127.0.0.1:38440/v1"></label>
+              <label><span class="room-sub">模型名称</span><input id="create-model" value="${this.escapeHtml(this.workerCreateForm.model)}"></label>
+              <label><span class="room-sub">分组</span><input id="create-group" value="${this.escapeHtml(this.workerCreateForm.group)}"></label>
+              <label><span class="room-sub">标签，逗号分隔</span><input id="create-tags" value="${this.escapeHtml(this.workerCreateForm.tags)}"></label>
+              <label><span class="room-sub">技能 / 能力</span><input id="create-capabilities" value="${this.escapeHtml(this.workerCreateForm.capabilities)}"></label>
+              <label><span class="room-sub">角色说明</span><textarea id="create-role">${this.escapeHtml(this.workerCreateForm.role)}</textarea></label>
+              <label><span class="room-sub">API 密钥，可选</span><input id="create-api-key" type="password" placeholder="填写后保存到本地运行配置"></label>
+              <button class="industrial dark" onclick="window.__marvisCreateWorker && window.__marvisCreateWorker()">创建智能体</button>
             </div>
           `;
           this.drawerOpen = true;
@@ -946,7 +946,7 @@
             for (const workerId of created) {
               if (!this.selectedComposerAgents.includes(workerId)) this.selectedComposerAgents = [...this.selectedComposerAgents, workerId];
             }
-            this.notify(`Agents created: ${created.join(', ')}`);
+            this.notify(`智能体已创建：${created.join(', ')}`);
             this.selectWorker(created[0]);
           } catch (error) {
             this.notifyError(error);
@@ -956,11 +956,11 @@
         },
         openDocumentInstall(worker) {
           this.documentInstallWorker = worker;
-          this.drawerTitle = `DOCUMENTS · ${worker.worker_id}`;
-          this.drawerSubtitle = 'task manual and conversion rules';
+          this.drawerTitle = `资料安装 · ${worker.worker_id}`;
+          this.drawerSubtitle = '任务手册与转换规则';
           this.drawerHtml = `
             <div class="space-y-3">
-              <div class="mini-metric"><span>Worker</span><strong class="!text-base">${worker.worker_id}</strong><em>${worker.role || ''}</em></div>
+              <div class="mini-metric"><span>工位</span><strong class="!text-base">${worker.worker_id}</strong><em>${worker.role || ''}</em></div>
               <label class="block">
                 <span class="room-sub">task_manual</span>
                 <input onchange="window.__marvisInstallDocument && window.__marvisInstallDocument(event, 'task_manual')" type="file" class="field">
@@ -985,7 +985,7 @@
               body: formData
             });
             await this.refreshWorkers();
-            this.notify(`Document installed: ${kind}`);
+            this.notify(`资料已安装：${this.documentLabels[kind] || kind}`);
           } catch (error) {
             this.notifyError(error);
           } finally {
@@ -1005,21 +1005,21 @@
             capabilities: (worker.capabilities || []).join(', '),
             api_key: ''
           };
-          this.drawerTitle = `WORKER CONFIG · ${worker.worker_id}`;
-          this.drawerSubtitle = 'backend type read-only';
+          this.drawerTitle = `工位配置 · ${worker.worker_id}`;
+          this.drawerSubtitle = '后端类型只读';
           this.drawerHtml = `
             <div class="space-y-3" id="workerConfigForm">
-              <div class="mini-metric"><span>BACKEND TYPE</span><strong class="!text-base">${this.escapeHtml(this.configForm.backend_type)}</strong><em>read only</em></div>
+              <div class="mini-metric"><span>后端类型</span><strong class="!text-base">${this.escapeHtml(this.configForm.backend_type)}</strong><em>只读</em></div>
               <div class="factory-form">
-                <label><span class="room-sub">provider</span><input id="config-provider" value="${this.escapeHtml(this.configForm.provider)}"></label>
-                <label><span class="room-sub">base_url</span><input id="config-base-url" value="${this.escapeHtml(this.configForm.base_url)}"></label>
-                <label><span class="room-sub">model</span><input id="config-model" value="${this.escapeHtml(this.configForm.model)}"></label>
-                <label><span class="room-sub">group</span><input id="config-group" value="${this.escapeHtml(this.configForm.group)}"></label>
-                <label><span class="room-sub">tags</span><input id="config-tags" value="${this.escapeHtml(this.configForm.tags)}"></label>
-                <label><span class="room-sub">skills / capabilities</span><input id="config-capabilities" value="${this.escapeHtml(this.configForm.capabilities)}"></label>
-                <label><span class="room-sub">role</span><textarea id="config-role">${this.escapeHtml(this.configForm.role)}</textarea></label>
-                <label><span class="room-sub">api_key optional</span><input id="config-api-key" type="password" placeholder="leave blank to keep existing"></label>
-                <button class="industrial dark" onclick="window.__marvisSaveWorkerConfig && window.__marvisSaveWorkerConfig()">SAVE CONFIG</button>
+                <label><span class="room-sub">模型提供方</span><input id="config-provider" value="${this.escapeHtml(this.configForm.provider)}"></label>
+                <label><span class="room-sub">接口地址</span><input id="config-base-url" value="${this.escapeHtml(this.configForm.base_url)}"></label>
+                <label><span class="room-sub">模型名称</span><input id="config-model" value="${this.escapeHtml(this.configForm.model)}"></label>
+                <label><span class="room-sub">分组</span><input id="config-group" value="${this.escapeHtml(this.configForm.group)}"></label>
+                <label><span class="room-sub">标签</span><input id="config-tags" value="${this.escapeHtml(this.configForm.tags)}"></label>
+                <label><span class="room-sub">技能 / 能力</span><input id="config-capabilities" value="${this.escapeHtml(this.configForm.capabilities)}"></label>
+                <label><span class="room-sub">角色说明</span><textarea id="config-role">${this.escapeHtml(this.configForm.role)}</textarea></label>
+                <label><span class="room-sub">API 密钥，可选</span><input id="config-api-key" type="password" placeholder="留空则保持现有密钥"></label>
+                <button class="industrial dark" onclick="window.__marvisSaveWorkerConfig && window.__marvisSaveWorkerConfig()">保存配置</button>
               </div>
             </div>
           `;
@@ -1056,7 +1056,7 @@
             });
             this.configForm.api_key = '';
             await this.refreshWorkers();
-            this.notify(`Worker config saved: ${this.selectedWorker}`);
+            this.notify(`工位配置已保存：${this.selectedWorker}`);
           } catch (error) {
             this.notifyError(error);
           } finally {
@@ -1143,8 +1143,8 @@
         },
         workerHealthRiskLabel() {
           const summary = this.workerHealthSummary.summary;
-          if (!summary) return 'checking worker configuration';
-          return `missing key ${summary.missing_api_key} · base url ${summary.missing_base_url} · command ${summary.backend_command_warnings}`;
+          if (!summary) return '正在检查工位配置';
+          return `缺密钥 ${summary.missing_api_key} · 缺接口地址 ${summary.missing_base_url} · 命令异常 ${summary.backend_command_warnings}`;
         },
         workerHealthLamp() {
           const summary = this.workerHealthSummary.summary;
@@ -1163,9 +1163,28 @@
         csvList(text) {
           return String(text || '').split(',').map((item) => item.trim()).filter(Boolean);
         },
+        statusLabel(status) {
+          const labels = {
+            ok: '正常',
+            ready: '就绪',
+            partial: '部分完成',
+            planned: '规划中',
+            succeeded: '成功',
+            success: '成功',
+            passed: '通过',
+            failed: '失败',
+            blocked: '阻塞',
+            running: '运行中',
+            queued: '排队中',
+            idle: '空闲',
+            warning: '警告',
+            pending: '待处理'
+          };
+          return labels[status] || status || '未知';
+        },
         marvisProgressLabel() {
           const product = this.marvisStatus.product || {};
-          if (!product.progress_percent) return 'SYNC';
+          if (!product.progress_percent) return '待同步';
           return `${product.progress_percent}% / ${product.target_percent}%`;
         },
         milestoneSummaryLabel() {
@@ -1182,24 +1201,24 @@
           const milestones = this.marvisStatus.milestones || [];
           const risks = this.marvisStatus.risks || [];
           const phaseOrder = ['P0', 'P1', 'P2'];
-          this.drawerTitle = 'MARVIS · FACTORY STATUS';
-          this.drawerSubtitle = `${product.progress_percent || 0}% blueprint progress`;
+          this.drawerTitle = 'Marvis · 工厂状态';
+          this.drawerSubtitle = `蓝图进度 ${product.progress_percent || 0}%`;
           this.drawerHtml = `
             <div class="space-y-3">
-              <div class="mini-metric"><span>Scenario</span><strong class="!text-base">${this.escapeHtml(product.primary_scenario || '')}</strong><em>${this.escapeHtml(product.stage || '')}</em></div>
-              <div class="mini-metric"><span>Factory Metrics</span><strong class="!text-base">${metrics.runs_total || 0} runs · ${metrics.workers_ready || 0}/${metrics.workers_total || 0} workers</strong><em>${metrics.runs_succeeded || 0} succeeded · ${metrics.runs_failed || 0} failed · ${metrics.runs_blocked || 0} blocked</em></div>
-              <div class="mini-metric"><span>Blueprint Milestones</span><strong class="!text-base">${phaseOrder.map((phase) => {
+              <div class="mini-metric"><span>主场景</span><strong class="!text-base">${this.escapeHtml(product.primary_scenario || '')}</strong><em>${this.escapeHtml(product.stage || '')}</em></div>
+              <div class="mini-metric"><span>工厂指标</span><strong class="!text-base">${metrics.runs_total || 0} 条流水线 · ${metrics.workers_ready || 0}/${metrics.workers_total || 0} 个工位就绪</strong><em>${metrics.runs_succeeded || 0} 成功 · ${metrics.runs_failed || 0} 失败 · ${metrics.runs_blocked || 0} 阻塞</em></div>
+              <div class="mini-metric"><span>蓝图里程碑</span><strong class="!text-base">${phaseOrder.map((phase) => {
                 const item = milestoneSummary[phase] || {};
                 return `${phase} ${item.ready || 0}/${item.total || 0}`;
-              }).join(' · ')}</strong><em>ready means accepted by tests or wired into the operator path</em></div>
+              }).join(' · ')}</strong><em>就绪表示已经被测试验收或接入操作路径</em></div>
               ${phaseOrder.map((phase) => {
                 const phaseMilestones = milestones.filter((item) => item.phase === phase);
                 if (!phaseMilestones.length) return '';
                 return `
                   <div class="mini-metric">
-                    <span>${phase} acceptance map</span>
-                    <strong class="!text-base">${phaseMilestones.filter((item) => item.status === 'ready').length}/${phaseMilestones.length} ready</strong>
-                    <em>${phaseMilestones.map((item) => `${item.key}: ${item.status}`).join(' · ')}</em>
+                    <span>${phase} 验收地图</span>
+                    <strong class="!text-base">${phaseMilestones.filter((item) => item.status === 'ready').length}/${phaseMilestones.length} 就绪</strong>
+                    <em>${phaseMilestones.map((item) => `${item.key}: ${this.statusLabel(item.status)}`).join(' · ')}</em>
                   </div>
                 `;
               }).join('')}
@@ -1218,17 +1237,17 @@
         openWorkerHealthCenter() {
           const summary = this.workerHealthSummary.summary || {};
           const workers = this.workerHealthSummary.workers || [];
-          this.drawerTitle = 'CONFIG CENTER · WORKER HEALTH';
-          this.drawerSubtitle = `${summary.ok || 0}/${summary.total || 0} workers ready`;
+          this.drawerTitle = '配置中心 · 工位健康';
+          this.drawerSubtitle = `${summary.ok || 0}/${summary.total || 0} 个工位就绪`;
           this.drawerHtml = `
             <div class="space-y-3">
-              <button class="industrial dark" onclick="window.__marvisOpenWorkerCreateForm && window.__marvisOpenWorkerCreateForm()">CREATE AGENT BAY</button>
-              <div class="mini-metric"><span>Fleet</span><strong class="!text-base">${summary.ok || 0}/${summary.total || 0} OK</strong><em>missing key ${summary.missing_api_key || 0} · base url ${summary.missing_base_url || 0}</em></div>
+              <button class="industrial dark" onclick="window.__marvisOpenWorkerCreateForm && window.__marvisOpenWorkerCreateForm()">新建智能体工位</button>
+              <div class="mini-metric"><span>工位集群</span><strong class="!text-base">${summary.ok || 0}/${summary.total || 0} 正常</strong><em>缺密钥 ${summary.missing_api_key || 0} · 缺地址 ${summary.missing_base_url || 0}</em></div>
               ${workers.map((worker) => `
                 <div class="mini-metric">
                   <span>${this.escapeHtml(worker.worker_id)}</span>
-                  <strong class="!text-base">${this.escapeHtml(worker.status)}</strong>
-                  <em>${this.escapeHtml(worker.checks.filter((check) => check.status !== 'passed').map((check) => `${check.name}: ${check.message}`).join(' · ') || 'ready')}</em>
+                  <strong class="!text-base">${this.escapeHtml(this.statusLabel(worker.status))}</strong>
+                  <em>${this.escapeHtml(worker.checks.filter((check) => check.status !== 'passed').map((check) => `${check.name}: ${check.message}`).join(' · ') || '就绪')}</em>
                 </div>
               `).join('')}
             </div>
@@ -1242,9 +1261,9 @@
           return this.tasks.filter((task) => task.status === 'queued').length;
         },
         complianceSummary() {
-          if (!this.complianceResult) return 'suite idle';
+          if (!this.complianceResult) return '测试集待运行';
           const failed = this.complianceResult.cases.filter((item) => item.status !== 'passed').length;
-          return `${this.complianceResult.cases.length} cases · ${failed} failed`;
+          return `${this.complianceResult.cases.length} 个用例 · ${failed} 个失败`;
         },
         qualitySteps() {
           return this.selectedRunQuality && this.selectedRunQuality.steps ? this.selectedRunQuality.steps : [];
@@ -1253,23 +1272,23 @@
           return !this.selectedRunQuality || !this.selectedRunQuality.summary || this.selectedRunQuality.summary.failed === 0;
         },
         qualityScoreLabel() {
-          if (!this.selectedRunQuality || !this.selectedRunQuality.summary) return 'QUALITY IDLE';
-          return `${this.selectedRunQuality.summary.score}% · ${this.selectedRunQuality.summary.status.toUpperCase()}`;
+          if (!this.selectedRunQuality || !this.selectedRunQuality.summary) return '质量待检查';
+          return `${this.selectedRunQuality.summary.score}% · ${this.statusLabel(this.selectedRunQuality.summary.status)}`;
         },
         qualitySummaryLabel() {
-          if (!this.selectedRunQuality || !this.selectedRunQuality.summary) return 'waiting for selected run';
+          if (!this.selectedRunQuality || !this.selectedRunQuality.summary) return '等待选择流水线';
           const summary = this.selectedRunQuality.summary;
-          return `${summary.passed}/${summary.total} checks passed`;
+          return `${summary.passed}/${summary.total} 项检查通过`;
         },
         openQualityStep(step) {
-          this.drawerTitle = `QUALITY · ${step.step_id}`;
-          this.drawerSubtitle = `${step.summary.passed}/${step.summary.total} checks passed`;
+          this.drawerTitle = `质量检查 · ${step.step_id}`;
+          this.drawerSubtitle = `${step.summary.passed}/${step.summary.total} 项检查通过`;
           this.drawerHtml = `
             <div class="space-y-2">
               ${(step.checks || []).map((check) => `
                 <div class="mini-metric">
-                  <span>${this.escapeHtml(check.type || 'check')}</span>
-                  <strong class="!text-base">${this.escapeHtml(check.status || '')}</strong>
+                  <span>${this.escapeHtml(check.type || '检查')}</span>
+                  <strong class="!text-base">${this.escapeHtml(this.statusLabel(check.status || ''))}</strong>
                   <em>${this.escapeHtml(check.path || check.term || check.text || '')}</em>
                 </div>
               `).join('')}
@@ -1305,19 +1324,19 @@
           }
           const worker = this.workers.find((item) => item.worker_id === workerId);
           if (worker) {
-            this.drawerTitle = `WORKER · ${worker.worker_id}`;
+            this.drawerTitle = `工位 · ${worker.worker_id}`;
             this.drawerSubtitle = worker.backend_type || '';
             this.drawerHtml = `
               <div class="space-y-3">
-                <div class="mini-metric"><span>Role</span><strong class="!text-base">${this.escapeHtml(worker.role || '')}</strong><em>${this.escapeHtml(worker.model || '')}</em></div>
-                <div class="mini-metric"><span>Group / Tags</span><strong class="!text-base">${this.escapeHtml(worker.group || 'default')}</strong><em>${this.escapeHtml((worker.tags || []).join(' · ') || 'no tags')}</em></div>
-                <div class="mini-metric"><span>Skills</span><strong class="!text-base">${this.escapeHtml((worker.capabilities || []).join(' · ') || 'not declared')}</strong><em>used by TaskBook Composer and audits</em></div>
-                <div class="mini-metric"><span>BACKEND</span><strong class="!text-base">${this.escapeHtml(worker.backend_type || '')}</strong><em>${this.escapeHtml(worker.base_url || '')}</em></div>
+                <div class="mini-metric"><span>角色</span><strong class="!text-base">${this.escapeHtml(worker.role || '')}</strong><em>${this.escapeHtml(worker.model || '')}</em></div>
+                <div class="mini-metric"><span>分组 / 标签</span><strong class="!text-base">${this.escapeHtml(worker.group || '默认')}</strong><em>${this.escapeHtml((worker.tags || []).join(' · ') || '暂无标签')}</em></div>
+                <div class="mini-metric"><span>技能</span><strong class="!text-base">${this.escapeHtml((worker.capabilities || []).join(' · ') || '未声明')}</strong><em>用于任务书组合与审计</em></div>
+                <div class="mini-metric"><span>后端</span><strong class="!text-base">${this.escapeHtml(worker.backend_type || '')}</strong><em>${this.escapeHtml(worker.base_url || '')}</em></div>
                 <div class="grid grid-cols-2 gap-2">
-                  <button class="btn" onclick="window.__marvisOpenWorkerConfig && window.__marvisOpenWorkerConfig('${worker.worker_id}')">CONFIG</button>
-                  <button class="btn" onclick="window.__marvisOpenDocumentInstall && window.__marvisOpenDocumentInstall('${worker.worker_id}')">DOCS</button>
+                  <button class="btn" onclick="window.__marvisOpenWorkerConfig && window.__marvisOpenWorkerConfig('${worker.worker_id}')">配置</button>
+                  <button class="btn" onclick="window.__marvisOpenDocumentInstall && window.__marvisOpenDocumentInstall('${worker.worker_id}')">资料</button>
                 </div>
-                <button class="industrial dark" onclick="window.__marvisComposeTaskbookFromWorkers && window.__marvisComposeTaskbookFromWorkers()">USE IN TASKBOOK</button>
+                <button class="industrial dark" onclick="window.__marvisComposeTaskbookFromWorkers && window.__marvisComposeTaskbookFromWorkers()">加入任务书</button>
               </div>
             `;
             this.drawerOpen = true;

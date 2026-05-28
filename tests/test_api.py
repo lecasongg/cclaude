@@ -363,7 +363,7 @@ def test_console_displays_worker_backend_type():
     html = console.read_text(encoding="utf-8")
 
     assert "worker.backend_type" in html
-    assert "BACKEND" in html
+    assert "后端" in html
 
 
 def test_console_worker_config_modal_shows_backend_type_read_only():
@@ -371,14 +371,14 @@ def test_console_worker_config_modal_shows_backend_type_read_only():
     html = console.read_text(encoding="utf-8")
 
     assert "configForm.backend_type" in html
-    assert "BACKEND TYPE" in html
+    assert "后端类型" in html
 
 
 def test_console_fetches_pipeline_runs_and_events():
     console = Path(__file__).parents[1] / "web" / "console.html"
     html = console.read_text(encoding="utf-8")
 
-    assert "Marvis AI Factory Console" in html
+    assert "Marvis AI 工厂控制台" in html
     assert "工厂屋顶掀开后的上帝视角总控图" in html
     assert "2.5D 工厂沙盘" in html
     assert 'class="viewport"' in html
@@ -386,9 +386,9 @@ def test_console_fetches_pipeline_runs_and_events():
     assert 'class="pipe"' in html
     assert "工位 / 车间区" in html
     assert "多流水线总览" in html
-    assert "控制中心 / 主 Agent 办公室" in html
+    assert "控制中心 / 主智能体办公室" in html
     assert "产物仓库" in html
-    assert "Step Timeline / Run Log" in html
+    assert "步骤时间线 / 运行日志" in html
     assert "任务书工作间" in html
     assert "taskbookPath" in html
     assert "sourcePath" in html
@@ -408,27 +408,27 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "factoryArtifactLabel" in html
     assert "/api/artifacts?limit=24" in html
     assert "selectedRunQuality" in html
-    assert "Quality Gate" in html
+    assert "质量闸口" in html
     assert "qualityScoreLabel" in html
     assert "openQualityStep" in html
     assert "artifactLabel" in html
     assert "notifyError" in html
-    assert "CONFIG CENTER" in html
+    assert "配置中心" in html
     assert "refreshWorkerHealthSummary" in html
     assert "/api/workers/health-summary" in html
     assert "marvisStatus" in html
     assert "marvisProgressLabel" in html
     assert "milestoneSummaryLabel" in html
-    assert "Blueprint Milestones" in html
-    assert "acceptance map" in html
+    assert "蓝图里程碑" in html
+    assert "验收地图" in html
     assert "openMarvisStatus" in html
     assert "/api/marvis/status" in html
     assert "complianceReports" in html
     assert "refreshComplianceReports" in html
     assert "openComplianceReport" in html
     assert "/api/compliance/reports" in html
-    assert "Factory sync complete" in html
-    assert "Compliance passed" in html
+    assert "工厂状态同步完成" in html
+    assert "验厂通过" in html
     assert "refreshTaskbooks" in html
     assert "selectedTaskbookFilename" in html
     assert "selectedTaskbookPath" in html
@@ -441,7 +441,6 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "drawerHtml" in html
     assert "/api/taskbooks/${filename}" in html
     assert "/api/compliance/run" in html
-    assert "/api/compliance/run" in html
     assert "/api/runs" in html
     assert "/api/runs/${runId}/events" in html
     assert "/api/runs/${runId}/artifacts" in html
@@ -449,18 +448,17 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "openRunManifest" in html
     assert "/api/runs/${this.selectedRun.run_id}/manifest" in html
 
-
 def test_console_has_taskbook_studio_editor():
     console = Path(__file__).parents[1] / "web" / "console.html"
     html = console.read_text(encoding="utf-8")
 
-    assert "TaskBook Dispatch Rack" in html
+    assert "任务书调度架" in html
     assert "new-taskbook.yml" in html
     assert "selectedTaskbookFilename" in html
     assert "taskbookEditorContent" in html
     assert "refreshTaskbooks" in html
     assert "legacyModernizationDraft" in html
-    assert "LEGACY FLOW" in html
+    assert "老系统流程" in html
     assert "reverse-module" in html
     assert "write-test-plan" in html
     assert "loadTaskbook" in html
@@ -468,31 +466,29 @@ def test_console_has_taskbook_studio_editor():
     assert "openTaskbookComposer" in html
     assert "composeTaskbookFromWorkers" in html
     assert "selectedComposerAgents" in html
-    assert "AGENT COMPOSER" in html
+    assert "智能体组合器" in html
     assert "/api/taskbooks/${filename}" in html
     assert "/api/taskbooks" in html
-
 
 def test_console_has_agent_creation_and_configuration_flow():
     console = Path(__file__).parents[1] / "web" / "console.html"
     html = console.read_text(encoding="utf-8")
 
-    assert "NEW AGENT BAY" in html
+    assert "新建智能体工位" in html
     assert "workerCreateForm" in html
     assert "openWorkerCreateForm" in html
     assert "createWorker" in html
-    assert "CREATE AGENT" in html
-    assert "template clone" in html
-    assert "batch count" in html
+    assert "创建智能体" in html
+    assert "克隆模板" in html
+    assert "批量数量" in html
     assert "create-tags" in html
     assert "create-capabilities" in html
     assert "workerTemplate" in html
     assert "workerConfigForm" in html
-    assert "SAVE CONFIG" in html
-    assert "USE IN TASKBOOK" in html
+    assert "保存配置" in html
+    assert "加入任务书" in html
     assert "/api/workers" in html
     assert "/api/workers/${body.worker.worker_id}/config" in html
-
 
 def test_console_has_pipeline_filter_density_and_compliance_baselines():
     console = Path(__file__).parents[1] / "web" / "console.html"
@@ -502,14 +498,13 @@ def test_console_has_pipeline_filter_density_and_compliance_baselines():
     assert "runStatusFocus" in html
     assert "lineDensity" in html
     assert "visibleRuns" in html
-    assert "SAVE BASELINE" in html
-    assert "COMPARE LATEST REPORT" in html
+    assert "保存基线" in html
+    assert "对比最新报告" in html
     assert "refreshComplianceBaselines" in html
     assert "saveComplianceBaseline" in html
     assert "compareComplianceBaseline" in html
     assert "/api/compliance/baselines" in html
     assert "/api/compliance/baselines/${encodeURIComponent(name)}/compare/${encodeURIComponent(filename)}" in html
-
 
 def test_api_lists_workers_with_token(tmp_path):
     client = build_client(tmp_path)

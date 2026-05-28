@@ -71,7 +71,7 @@ def test_worker_server_serves_console_from_external_config_dir(tmp_path):
 
     assert root_response.status_code == 200
     assert console_response.status_code == 200
-    assert "Marvis AI Factory Console" in root_response.text
+    assert "Marvis AI 工厂控制台" in root_response.text
     assert "class=\"viewport\"" in console_response.text
 
 
