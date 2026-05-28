@@ -23,7 +23,7 @@ from agent_factory.core.event_log import EventLog
 from agent_factory.core.marvis_status import build_marvis_status
 from agent_factory.core.preflight import run_preflight
 from agent_factory.core.resource_manager import ResourceManager
-from agent_factory.core.run_manifest import build_run_manifest, list_artifacts_across_runs
+from agent_factory.core.run_manifest import build_run_manifest, diff_artifacts, list_artifacts_across_runs
 from agent_factory.core.task_bus import TaskBus
 from agent_factory.core.taskbook import TaskBookError, load_taskbook
 from agent_factory.core.worker_runtime import WorkerRuntime
@@ -122,6 +122,13 @@ def _build_parser() -> argparse.ArgumentParser:
     artifact_list.add_argument("--limit", type=int, default=50)
     artifact_list.add_argument("--json", action="store_true")
     artifact_list.set_defaults(handler=_artifact_list)
+    artifact_diff = artifact_subparsers.add_parser("diff")
+    artifact_diff.add_argument("left")
+    artifact_diff.add_argument("right")
+    artifact_diff.add_argument("--workspace", default=".")
+    artifact_diff.add_argument("--context", type=int, default=3)
+    artifact_diff.add_argument("--json", action="store_true")
+    artifact_diff.set_defaults(handler=_artifact_diff)
 
     return parser
 
@@ -323,6 +330,15 @@ def _artifact_list(args: argparse.Namespace) -> int:
             print(
                 f"{artifact['run_id']}\t{artifact['step_id']}\t{artifact['size']}\t{artifact['path']}"
             )
+    return 0
+
+
+def _artifact_diff(args: argparse.Namespace) -> int:
+    result = diff_artifacts(Path(args.workspace), args.left, args.right, context_lines=args.context)
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    else:
+        print(result["diff"])
     return 0
 
 

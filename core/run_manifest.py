@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 from pathlib import Path
 
 from agent_factory.core.event_log import EventLog
@@ -60,6 +61,46 @@ def list_artifacts_across_runs(
             artifacts.append(indexed)
     artifacts.sort(key=lambda item: (item["updated_at"], item["path"]), reverse=True)
     return artifacts[: max(limit, 0)]
+
+
+def diff_artifacts(
+    workspace_root: str | Path,
+    left_path: str,
+    right_path: str,
+    context_lines: int = 3,
+) -> dict:
+    workspace_root = Path(workspace_root).resolve()
+    left = _resolve_artifact_path(workspace_root, left_path)
+    right = _resolve_artifact_path(workspace_root, right_path)
+    left_text = left.read_text(encoding="utf-8", errors="replace")
+    right_text = right.read_text(encoding="utf-8", errors="replace")
+    diff = list(
+        difflib.unified_diff(
+            left_text.splitlines(),
+            right_text.splitlines(),
+            fromfile=left_path,
+            tofile=right_path,
+            lineterm="",
+            n=max(context_lines, 0),
+        )
+    )
+    return {
+        "left": left_path,
+        "right": right_path,
+        "left_size": left.stat().st_size,
+        "right_size": right.stat().st_size,
+        "diff": "\n".join(diff),
+        "changed": left_text != right_text,
+    }
+
+
+def _resolve_artifact_path(workspace_root: Path, relative_path: str) -> Path:
+    normalized = relative_path.replace("\\", "/")
+    candidate = (workspace_root / normalized).resolve()
+    artifact_root = (workspace_root / "artifacts" / "runs").resolve()
+    if not candidate.is_relative_to(artifact_root) or not candidate.is_file():
+        raise FileNotFoundError("artifact not found")
+    return candidate
 
 
 def _list_artifacts(workspace_root: Path, run_id: str, steps: list[dict]) -> list[dict]:

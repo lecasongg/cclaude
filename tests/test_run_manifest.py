@@ -1,6 +1,8 @@
 from agent_factory.core.event_log import EventLog
 from agent_factory.core.resource_manager import ResourceManager
-from agent_factory.core.run_manifest import build_run_manifest, list_artifacts_across_runs
+import pytest
+
+from agent_factory.core.run_manifest import build_run_manifest, diff_artifacts, list_artifacts_across_runs
 
 
 def test_run_manifest_indexes_artifacts_by_declared_step(tmp_path):
@@ -53,6 +55,28 @@ def test_list_artifacts_across_runs_supports_query_and_limit(tmp_path):
     assert artifacts[0]["path"].endswith("function-list.md")
 
     assert len(list_artifacts_across_runs(manager, tmp_path, limit=1)) == 1
+
+
+def test_diff_artifacts_returns_unified_diff_and_blocks_escape(tmp_path):
+    left = tmp_path / "artifacts" / "runs" / "run-1" / "reverse" / "function-list.md"
+    right = tmp_path / "artifacts" / "runs" / "run-2" / "reverse" / "function-list.md"
+    left.parent.mkdir(parents=True)
+    right.parent.mkdir(parents=True)
+    left.write_text("login\nlogout\n", encoding="utf-8")
+    right.write_text("login\nlogout\nreset-password\n", encoding="utf-8")
+
+    result = diff_artifacts(
+        tmp_path,
+        "artifacts/runs/run-1/reverse/function-list.md",
+        "artifacts/runs/run-2/reverse/function-list.md",
+    )
+
+    assert result["changed"] is True
+    assert "+reset-password" in result["diff"]
+    assert result["left_size"] == left.stat().st_size
+
+    with pytest.raises(FileNotFoundError, match="artifact not found"):
+        diff_artifacts(tmp_path, "../secret.txt", "artifacts/runs/run-2/reverse/function-list.md")
 
 
 def _create_run_with_artifact(manager, tmp_path, title, step_id, filename):

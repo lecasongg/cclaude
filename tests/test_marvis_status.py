@@ -52,7 +52,8 @@ def test_marvis_status_reports_blueprint_progress_and_capabilities(tmp_path):
         "agent-isolation",
     }
     assert status["milestone_summary"]["P0"]["ready"] >= 8
-    assert status["milestone_summary"]["P1"]["partial"] >= 4
+    assert status["milestone_summary"]["P1"]["ready"] >= 1
+    assert status["milestone_summary"]["P1"]["partial"] >= 3
 
 
 def test_marvis_blueprint_progress_is_calculated_from_capability_ledger():

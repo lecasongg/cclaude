@@ -800,6 +800,17 @@ steps:
     assert all_artifacts[0]["run_id"] == body["run"]["run_id"]
     assert all_artifacts[0]["run_status"] == "succeeded"
 
+    other = tmp_path / "artifacts" / "runs" / "run-other" / "reverse-login" / "function-list.md"
+    other.parent.mkdir(parents=True)
+    other.write_text("鍔熻兘娓呭崟\nreset-password", encoding="utf-8")
+    diff_response = client.get(
+        f"/api/artifacts/diff?left={artifact_id}&right=artifacts/runs/run-other/reverse-login/function-list.md",
+        headers={"x-hermes-token": "local-token"},
+    )
+    assert diff_response.status_code == 200
+    assert diff_response.json()["changed"] is True
+    assert "+reset-password" in diff_response.json()["diff"]
+
 
 def test_api_lints_taskbook_path(tmp_path):
     client = build_client(tmp_path)

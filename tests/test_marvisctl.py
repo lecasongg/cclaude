@@ -369,6 +369,28 @@ def test_marvisctl_artifact_list_searches_across_runs(tmp_path, capsys):
     assert "function-list.md" in text
 
 
+def test_marvisctl_artifact_diff_prints_unified_diff(tmp_path, capsys):
+    left = tmp_path / "artifacts" / "runs" / "run-1" / "reverse" / "function-list.md"
+    right = tmp_path / "artifacts" / "runs" / "run-2" / "reverse" / "function-list.md"
+    left.parent.mkdir(parents=True)
+    right.parent.mkdir(parents=True)
+    left.write_text("login\n", encoding="utf-8")
+    right.write_text("login\nlogout\n", encoding="utf-8")
+
+    assert marvisctl.main(
+        [
+            "artifact",
+            "diff",
+            "artifacts/runs/run-1/reverse/function-list.md",
+            "artifacts/runs/run-2/reverse/function-list.md",
+            "--workspace",
+            str(tmp_path),
+        ]
+    ) == 0
+
+    assert "+logout" in capsys.readouterr().out
+
+
 def _write_agent_config(tmp_path):
     config_path = tmp_path / "agents.json"
     config_path.write_text(

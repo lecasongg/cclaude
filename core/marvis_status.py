@@ -184,9 +184,9 @@ BLUEPRINT_MILESTONES = [
         "phase": "P1",
         "key": "artifact-audit",
         "title": "Artifact Library And Audit",
-        "status": "partial",
-        "evidence": "run manifests, artifact drawers and cross-run artifact index expose provenance",
-        "next_step": "Add diffable report views",
+        "status": "ready",
+        "evidence": "run manifests, artifact drawers, cross-run artifact index and artifact diff expose provenance",
+        "next_step": "Add richer report comparison UI",
     },
     {
         "phase": "P1",

@@ -17,7 +17,7 @@ from agent_factory.core.pipeline_executor import PipelineExecutor
 from agent_factory.core.preflight import run_preflight
 from agent_factory.core.quality import evaluate_run_quality
 from agent_factory.core.resource_manager import ResourceManager, ResourceManagerError
-from agent_factory.core.run_manifest import build_run_manifest, list_artifacts_across_runs
+from agent_factory.core.run_manifest import build_run_manifest, diff_artifacts, list_artifacts_across_runs
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
@@ -558,6 +558,14 @@ def create_app(
                 limit=limit,
             )
         }
+
+    @app.get("/api/artifacts/diff")
+    async def diff_run_artifacts(left: str, right: str, context: int = 3, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        try:
+            return diff_artifacts(pipeline_workspace_root or Path.cwd(), left, right, context_lines=context)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="artifact not found") from exc
 
     @app.get("/api/runs/{run_id}/artifacts/{artifact_path:path}")
     async def read_run_artifact(run_id: str, artifact_path: str, x_hermes_token: str | None = Header(default=None)):
