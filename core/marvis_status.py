@@ -121,8 +121,8 @@ BLUEPRINT_MILESTONES = [
         "key": "taskbook-linter",
         "title": "TaskBook Loader And Linter",
         "status": "ready",
-        "evidence": "YAML parsing, required fields, dependency DAG and output path checks",
-        "next_step": "Add stronger input allowlist and forbidden path schema",
+        "evidence": "YAML parsing, required fields, dependency DAG, input allowlist and output path checks",
+        "next_step": "Add execution-time path policy checks before worker dispatch",
     },
     {
         "phase": "P0",
