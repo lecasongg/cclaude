@@ -1,0 +1,10 @@
+title: missing input contract
+objective: verify compliance can detect missing declared source fixtures
+steps:
+  - id: reverse-missing-input
+    agent: niuma-1
+    objective: reverse a module whose expected source fixture is absent
+    inputs:
+      - path: shared/references/missing-login.jsp
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-missing-input/function-list.md

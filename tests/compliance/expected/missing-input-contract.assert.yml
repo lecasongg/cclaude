@@ -1,0 +1,10 @@
+assert:
+  expected_result: failed
+  run_status: succeeded
+  input_exists:
+    - shared/references/missing-login.jsp
+  steps:
+    reverse-missing-input:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/reverse-missing-input/function-list.md

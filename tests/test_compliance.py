@@ -56,6 +56,18 @@ def test_compliance_quick_suite_reports_failed_assertion(tmp_path):
     assert result.cases[0]["status"] == "failed"
 
 
+def test_compliance_supports_expected_failure_cases(tmp_path):
+    suite_root = _write_suite(tmp_path, expected_output="artifacts/runs/{run_id}/missing.md", expected_result="failed")
+
+    result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace")
+
+    assert result.success is True
+    assert result.errors == []
+    assert result.cases[0]["status"] == "passed"
+    assert result.cases[0]["expected_result"] == "failed"
+    assert "missing expected output" in result.cases[0]["errors"][0]
+
+
 def test_marvisctl_runs_quick_compliance_suite(tmp_path, capsys):
     suite_root = _write_suite(tmp_path)
     report_dir = tmp_path / "reports"
@@ -110,7 +122,7 @@ def test_repository_compliance_suite_runs(tmp_path):
     result = ComplianceSuite(suite_root).run_quick(tmp_path / "workspace")
 
     assert result.success is True
-    assert {case["name"] for case in result.cases} == {"legacy-login", "legacy-modernization"}
+    assert {case["name"] for case in result.cases} == {"legacy-login", "legacy-modernization", "missing-input-contract"}
     assert all(case["status"] == "passed" for case in result.cases)
 
 
@@ -170,6 +182,7 @@ def _write_suite(
     expected_output="artifacts/runs/{run_id}/reverse-login/function-list.md",
     output_contains=None,
     forbidden_modified=None,
+    expected_result="passed",
 ):
     suite_root = tmp_path / "suite"
     (suite_root / "taskbooks").mkdir(parents=True)
@@ -201,6 +214,7 @@ def _write_suite(
         textwrap.dedent(
             f"""
             assert:
+              expected_result: {expected_result}
               run_status: succeeded
               steps:
                 reverse-login:

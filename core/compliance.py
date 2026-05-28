@@ -55,13 +55,16 @@ class ComplianceSuite:
         errors: list[str] = []
         cases: list[dict[str, Any]] = []
         for taskbook_path in sorted((self.root / "taskbooks").glob("*.yml")):
-            case_errors = self._run_taskbook_case(taskbook_path, workspace_root / taskbook_path.stem, step_runner)
-            errors.extend(case_errors)
+            case_errors, expected_result = self._run_taskbook_case(taskbook_path, workspace_root / taskbook_path.stem, step_runner)
+            case_passed = _case_passed(case_errors, expected_result)
+            if not case_passed:
+                errors.extend(case_errors or [f"case {taskbook_path.stem} expected {expected_result}"])
             cases.append(
                 {
                     "name": taskbook_path.stem,
                     "taskbook_path": str(taskbook_path),
-                    "status": "failed" if case_errors else "passed",
+                    "status": "passed" if case_passed else "failed",
+                    "expected_result": expected_result,
                     "errors": case_errors,
                 }
             )
@@ -78,7 +81,7 @@ class ComplianceSuite:
             result = replace(result, report_path=str(report_path))
         return result
 
-    def _run_taskbook_case(self, taskbook_path: Path, workspace_root: Path, step_runner) -> list[str]:
+    def _run_taskbook_case(self, taskbook_path: Path, workspace_root: Path, step_runner) -> tuple[list[str], str]:
         taskbook = load_taskbook(taskbook_path)
         expected_path = self.root / "expected" / f"{taskbook_path.stem}.assert.yml"
         expected = _load_expected(expected_path)
@@ -94,11 +97,17 @@ class ComplianceSuite:
         )
         protected_snapshot = _snapshot_forbidden_paths(workspace_root, expected.get("forbidden_modified", []))
         run_id = executor.run(taskbook)
-        return _assert_expected(taskbook, expected, manager, workspace_root, run_id, protected_snapshot)
+        return _assert_expected(taskbook, expected, manager, workspace_root, run_id, protected_snapshot), expected.get("expected_result", "passed")
 
 
 def _mock_step_runner(context: StepExecutionContext) -> dict[str, str]:
     return {output_path: f"mock output for {context.step.step_id}" for output_path in context.output_paths}
+
+
+def _case_passed(case_errors: list[str], expected_result: str) -> bool:
+    if expected_result == "failed":
+        return bool(case_errors)
+    return not case_errors
 
 
 def write_compliance_report(result: ComplianceResult, report_dir: str | Path) -> Path:
@@ -157,6 +166,11 @@ def _assert_expected(
     expected_run_status = expected.get("run_status")
     if expected_run_status and manager.get_pipeline_run(run_id)["status"] != expected_run_status:
         errors.append(f"expected run_status {expected_run_status}")
+
+    for input_path in expected.get("input_exists", []):
+        resolved = workspace_root / input_path.replace("{run_id}", run_id)
+        if not resolved.exists():
+            errors.append(f"missing expected input: {resolved}")
 
     expected_steps = expected.get("steps", {})
     for step_id, step_expected in expected_steps.items():
