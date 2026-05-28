@@ -411,6 +411,9 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "/api/workers/health-summary" in html
     assert "marvisStatus" in html
     assert "marvisProgressLabel" in html
+    assert "milestoneSummaryLabel" in html
+    assert "Blueprint Milestones" in html
+    assert "acceptance map" in html
     assert "openMarvisStatus" in html
     assert "/api/marvis/status" in html
     assert "complianceReports" in html

@@ -143,7 +143,7 @@
         <aside class="dock"><div class="yard-title">Output Dock</div><template x-for="artifact in runArtifacts.slice(0, 3)" :key="artifact.path"><div class="cube ok" @click="loadRunArtifact(artifact)"><div class="cube-top"></div><div class="cube-front"></div><div class="cube-side"></div><b x-text="artifact.path.split('/').slice(-1)[0]"></b></div></template></aside>
       </div></article>
 
-      <article class="room control"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content control-content"><section class="glass"><div class="desk">主 Agent<br>独立<br>办公室</div><div class="control-note"><b>调度室</b><br><span x-text="`正在调度 ${runs.length} 条流水线、${workers.length} 个工位与 ${tasks.length} 个任务。`"></span></div></section><section class="buttons"><button class="industrial" @click="runPreflight" :disabled="isRunningPreflight" x-text="isRunningPreflight ? 'CHECKING' : 'PREFLIGHT'"></button><button class="industrial dark" @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button><button class="industrial" @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" x-text="isRunningCompliance ? 'RUNNING' : 'COMPLIANCE'"></button><button class="industrial" @click="openRunManifest" :disabled="!selectedRun">MANIFEST</button></section><section class="board"><input class="field-iso" x-model="taskbookPath" placeholder="taskbook path"><input class="field-iso" x-model="sourcePath" placeholder="source path or directory"><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>Blueprint</span><b x-text="marvisProgressLabel()"></b></div><div class="board-row"><span>Preflight</span><b x-text="preflightResult ? preflightResult.status.toUpperCase() : 'IDLE'"></b></div><div class="board-row"><span>Selected Worker</span><b x-text="selectedWorker"></b></div><div class="board-row"><span>Selected TaskBook</span><b x-text="selectedTaskbookFilename || 'NONE'"></b></div><div class="board-row"><span>Compliance</span><b x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></b></div></section></div></article>
+      <article class="room control"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content control-content"><section class="glass"><div class="desk">主 Agent<br>独立<br>办公室</div><div class="control-note"><b>调度室</b><br><span x-text="`正在调度 ${runs.length} 条流水线、${workers.length} 个工位与 ${tasks.length} 个任务。`"></span></div></section><section class="buttons"><button class="industrial" @click="runPreflight" :disabled="isRunningPreflight" x-text="isRunningPreflight ? 'CHECKING' : 'PREFLIGHT'"></button><button class="industrial dark" @click="startTaskbookRun" :disabled="isStartingRun || !taskbookPath.trim()" x-text="isStartingRun ? 'STARTING' : 'START RUN'"></button><button class="industrial" @click="runCompliance" :disabled="isRunningCompliance || !complianceSuitePath.trim()" x-text="isRunningCompliance ? 'RUNNING' : 'COMPLIANCE'"></button><button class="industrial" @click="openRunManifest" :disabled="!selectedRun">MANIFEST</button></section><section class="board"><input class="field-iso" x-model="taskbookPath" placeholder="taskbook path"><input class="field-iso" x-model="sourcePath" placeholder="source path or directory"><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>Blueprint</span><b x-text="marvisProgressLabel()"></b></div><div class="board-row cursor-pointer" @click="openMarvisStatus"><span>Milestones</span><b x-text="milestoneSummaryLabel()"></b></div><div class="board-row"><span>Preflight</span><b x-text="preflightResult ? preflightResult.status.toUpperCase() : 'IDLE'"></b></div><div class="board-row"><span>Selected Worker</span><b x-text="selectedWorker"></b></div><div class="board-row"><span>Selected TaskBook</span><b x-text="selectedTaskbookFilename || 'NONE'"></b></div><div class="board-row"><span>Compliance</span><b x-text="complianceResult ? (complianceResult.success ? 'PASS' : 'FAIL') : 'IDLE'"></b></div></section></div></article>
 
       <article class="room warehouse"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content warehouse-content"><section class="shelf"><template x-for="artifact in runArtifacts" :key="artifact.path"><button class="filebox ok" @click="loadRunArtifact(artifact)" :title="artifact.path" x-text="artifactLabel(artifact)"></button></template><div x-show="runArtifacts.length === 0" class="filebox warn">暂无产物</div></section><section class="preview"><div class="room-title">Artifact Preview</div><div class="mono" x-text="selectedRunArtifactPath || '—'"></div><pre x-text="selectedRunArtifactContent || selectedTaskResult() || '—'"></pre></section><section class="quality"><div class="room-title">Quality Gate</div><div class="assertion" :class="qualityPassed() ? 'ok' : 'fail'"><b x-text="qualityScoreLabel()"></b><br><span x-text="qualitySummaryLabel()"></span></div><template x-for="step in qualitySteps()" :key="step.step_id"><div class="assertion" :class="step.summary && step.summary.failed ? 'fail' : 'ok'" @click="openQualityStep(step)"><b x-text="step.step_id"></b><br><span x-text="`${step.summary.passed}/${step.summary.total} checks passed`"></span></div></template><div x-show="complianceResult" class="assertion" :class="complianceResult && complianceResult.success ? 'ok' : 'fail'" x-text="complianceSummary()"></div><template x-for="report in complianceReports.slice(0, 2)" :key="report.filename"><div class="assertion ok" @click="openComplianceReport(report)"><b x-text="report.filename"></b><br><span x-text="`${report.size} bytes`"></span></div></template><div x-show="!selectedRunQuality && !complianceResult && complianceReports.length === 0" class="assertion">断言测试集待运行</div></section></div></article>
 
@@ -838,17 +838,41 @@
           if (!product.progress_percent) return 'SYNC';
           return `${product.progress_percent}% / ${product.target_percent}%`;
         },
+        milestoneSummaryLabel() {
+          const summary = this.marvisStatus.milestone_summary || {};
+          const p0 = summary.P0 || {};
+          const p1 = summary.P1 || {};
+          return `P0 ${p0.ready || 0}/${p0.total || 0} · P1 ${p1.partial || 0}/${p1.total || 0}`;
+        },
         openMarvisStatus() {
           const product = this.marvisStatus.product || {};
           const metrics = this.marvisStatus.metrics || {};
           const capabilities = this.marvisStatus.capabilities || [];
+          const milestoneSummary = this.marvisStatus.milestone_summary || {};
+          const milestones = this.marvisStatus.milestones || [];
           const risks = this.marvisStatus.risks || [];
+          const phaseOrder = ['P0', 'P1', 'P2'];
           this.drawerTitle = 'MARVIS · FACTORY STATUS';
           this.drawerSubtitle = `${product.progress_percent || 0}% blueprint progress`;
           this.drawerHtml = `
             <div class="space-y-3">
               <div class="mini-metric"><span>Scenario</span><strong class="!text-base">${this.escapeHtml(product.primary_scenario || '')}</strong><em>${this.escapeHtml(product.stage || '')}</em></div>
               <div class="mini-metric"><span>Factory Metrics</span><strong class="!text-base">${metrics.runs_total || 0} runs · ${metrics.workers_ready || 0}/${metrics.workers_total || 0} workers</strong><em>${metrics.runs_succeeded || 0} succeeded · ${metrics.runs_failed || 0} failed · ${metrics.runs_blocked || 0} blocked</em></div>
+              <div class="mini-metric"><span>Blueprint Milestones</span><strong class="!text-base">${phaseOrder.map((phase) => {
+                const item = milestoneSummary[phase] || {};
+                return `${phase} ${item.ready || 0}/${item.total || 0}`;
+              }).join(' · ')}</strong><em>ready means accepted by tests or wired into the operator path</em></div>
+              ${phaseOrder.map((phase) => {
+                const phaseMilestones = milestones.filter((item) => item.phase === phase);
+                if (!phaseMilestones.length) return '';
+                return `
+                  <div class="mini-metric">
+                    <span>${phase} acceptance map</span>
+                    <strong class="!text-base">${phaseMilestones.filter((item) => item.status === 'ready').length}/${phaseMilestones.length} ready</strong>
+                    <em>${phaseMilestones.map((item) => `${item.key}: ${item.status}`).join(' · ')}</em>
+                  </div>
+                `;
+              }).join('')}
               ${capabilities.map((item) => `
                 <div class="mini-metric">
                   <span>${this.escapeHtml(item.key)}</span>
