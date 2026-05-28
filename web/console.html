@@ -153,7 +153,7 @@
 
       <article class="room taskbook"><div class="top"></div><div class="side-r"></div><div class="side-b"></div><div class="content contracts"><div class="room-title">任务书调度架</div><template x-for="item in taskbooks.slice(0, 3)" :key="item.filename"><section class="contract" @click="loadTaskbook(item.filename)"><div class="contract-icon">书</div><div><strong x-text="item.filename"></strong><small x-text="item.path"></small></div><div class="state" :class="selectedTaskbookFilename === item.filename ? 'run' : 'queue'" x-text="selectedTaskbookFilename === item.filename ? '选中' : '待命'"></div></section></template></div></article>
 
-      <section class="editor-panel"><div class="room-title">任务书工作台 · new-taskbook.yml</div><textarea x-model="taskbookEditorContent" placeholder="title: ..."></textarea><div class="editor-actions"><button class="industrial dark" @click="saveTaskbook" :disabled="isSavingTaskbook || !selectedTaskbookFilename.trim() || !taskbookEditorContent.trim()" x-text="isSavingTaskbook ? '保存中' : '保存'"></button><button class="industrial" @click="newTaskbookDraft">空白</button><button class="industrial" @click="legacyModernizationDraft">老系统流程</button><button class="industrial" @click="openTaskbookComposer">组合工位</button></div><pre x-text="taskbookLint || '任务书检查结果会显示在这里'"></pre></section>
+      <section class="editor-panel"><div class="room-title">任务书工作台 · 自定义编排</div><textarea x-model="taskbookEditorContent" placeholder="先新建空白任务书，或用组合工位逐步编排"></textarea><div class="editor-actions"><button class="industrial dark" @click="saveTaskbook" :disabled="isSavingTaskbook || !selectedTaskbookFilename.trim() || !taskbookEditorContent.trim()" x-text="isSavingTaskbook ? '保存中' : '保存'"></button><button class="industrial" @click="newTaskbookDraft">空白</button><button class="industrial" @click="openTaskbookComposer">组合工位</button><button class="industrial" @click="lintTaskbook">检查</button></div><pre x-text="taskbookLint || '任务书检查结果会显示在这里'"></pre></section>
     </div></section>
     <div class="drawer" :class="drawerOpen ? 'open' : ''">
       <div class="drawer-head">
@@ -196,7 +196,7 @@
         taskbookLint: '',
         selectedStep: null,
         selectedWorker: 'niuma-1',
-        selectedComposerAgents: ['niuma-1', 'niuma-2'],
+        selectedComposerAgents: [],
         prompt: '',
         chainPrompt: '',
         filePath: '',
@@ -320,8 +320,6 @@
             if (current) {
               await this.selectRun(current);
             }
-          } else if (this.runs.length) {
-            await this.selectRun(this.runs[0]);
           }
         },
         async refreshTaskbooks() {
@@ -329,9 +327,6 @@
           try {
             const body = await this.requestJson('/api/taskbooks');
             this.taskbooks = body.taskbooks || [];
-            if (!this.selectedTaskbookFilename && this.taskbooks.length) {
-              await this.loadTaskbook(this.taskbooks[0].filename);
-            }
           } finally {
             this.isLoadingTaskbooks = false;
           }
@@ -476,15 +471,13 @@
           this.selectedTaskbookFilename = this.selectedTaskbookFilename || 'new-taskbook.yml';
           this.selectedTaskbookPath = '';
           this.taskbookEditorContent = [
+            'taskbook_version: 1',
             'title: 新任务书',
             'objective: 描述这条流水线的交付目标',
-            'steps:',
-            '  - id: reverse-module',
-            '    agent: niuma-1',
-            '    objective: 逆向分析旧系统模块',
-            '    outputs:',
-            '      - path: artifacts/runs/{run_id}/reverse-module/function-list.md'
+            'steps:'
           ].join('\n');
+          this.taskbookPath = '';
+          this.taskbookLint = '空白任务书已创建，请手工添加步骤或使用组合工位。';
         },
         taskbookComposerAgentIds() {
           return this.selectedComposerAgents.filter((workerId) => this.workers.some((worker) => worker.worker_id === workerId));
@@ -503,7 +496,7 @@
           this.drawerSubtitle = `已选择 ${selected.length} 个工位`;
           this.drawerHtml = `
             <div class="space-y-3">
-              <div class="mini-metric"><span>装配线</span><strong class="!text-base">${selected.join(' → ') || '未选择'}</strong><em>选择多个工位后生成文件级产物握手任务书</em></div>
+              <div class="mini-metric"><span>装配线</span><strong class="!text-base">${selected.join(' → ') || '未选择'}</strong><em>先选择子 Agent，再逐个填写任务、规则、输入文件位置和输出文件位置。</em></div>
               <div class="agent-grid">
                 ${this.workers.map((worker) => `
                   <button class="agent-tile ${selected.includes(worker.worker_id) ? 'selected' : ''}" onclick="window.__marvisToggleComposerAgent && window.__marvisToggleComposerAgent('${worker.worker_id}')">
@@ -512,6 +505,18 @@
                   </button>
                 `).join('')}
               </div>
+              <label><span class="room-sub">任务书文件名</span><input id="compose-filename" value="${this.escapeHtml(this.selectedTaskbookFilename || 'new-taskbook.yml')}"></label>
+              <label><span class="room-sub">总目标</span><textarea id="compose-objective">描述这条流水线最终要产出的结果</textarea></label>
+              ${selected.map((workerId, index) => `
+                <div class="factory-form">
+                  <div class="room-title">第 ${index + 1} 步 · ${this.escapeHtml(workerId)}</div>
+                  <label><span class="room-sub">步骤 ID</span><input id="compose-step-id-${index}" value="${this.escapeHtml(this.slugStepId(workerId, index))}"></label>
+                  <label><span class="room-sub">派发任务</span><textarea id="compose-objective-${index}" placeholder="写给这个子 Agent 的任务说明"></textarea></label>
+                  <label><span class="room-sub">规则说明</span><textarea id="compose-rules-${index}" placeholder="这个子 Agent 必须遵守的规则，每行一条"></textarea></label>
+                  <label><span class="room-sub">输入文件位置</span><textarea id="compose-inputs-${index}" placeholder="每行一个路径。第一步可留空或填写源码/材料路径；后续步骤可填上游产物路径。"></textarea></label>
+                  <label><span class="room-sub">输出文件位置</span><textarea id="compose-outputs-${index}" placeholder="每行一个路径，例如 artifacts/runs/{run_id}/step-${index + 1}/result.md"></textarea></label>
+                </div>
+              `).join('')}
               <button class="industrial dark" onclick="window.__marvisComposeTaskbookFromWorkers && window.__marvisComposeTaskbookFromWorkers()">生成任务书草稿</button>
             </div>
           `;
@@ -519,126 +524,56 @@
         },
         composeTaskbookFromWorkers() {
           const selected = this.taskbookComposerAgentIds();
-          const agents = selected.length ? selected : this.workers.slice(0, 2).map((worker) => worker.worker_id);
-          if (!agents.length) {
-            this.notify('没有可用于组合的工位', 'error');
+          if (!selected.length) {
+            this.notify('请先选择至少一个子 Agent 工位', 'error');
             return;
           }
-          this.selectedComposerAgents = agents;
-          this.selectedTaskbookFilename = 'factory-composed-taskbook.yml';
+          const valueOf = (id) => {
+            const element = document.getElementById(id);
+            return element ? element.value.trim() : '';
+          };
+          const linesOf = (id) => valueOf(id).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+          this.selectedComposerAgents = selected;
+          this.selectedTaskbookFilename = valueOf('compose-filename') || 'new-taskbook.yml';
           this.selectedTaskbookPath = '';
-          const first = agents[0];
-          const second = agents[1] || agents[0];
-          const third = agents[2] || second;
-          this.taskbookEditorContent = [
+          const objective = valueOf('compose-objective') || '描述这条流水线最终要产出的结果';
+          const content = [
             'taskbook_version: 1',
-            'title: 工厂编排任务书：老系统改造流水线',
+            'title: 自定义工厂流水线',
             'objective: >',
-            '  由前台 Agent Composer 生成，按选中的工位组合执行逆向分析、需求整理、测试设计，',
-            '  每个阶段通过 artifacts/runs/{run_id} 下的文件级产物握手。',
-            'steps:',
-            '  - id: reverse-module',
-            `    agent: ${first}`,
-            '    objective: 逆向分析旧系统模块，输出功能清单、入口文件、字段、SQL/接口依赖和待确认问题。',
-            '    outputs:',
-            '      - path: artifacts/runs/{run_id}/reverse-module/function-list.md',
-            '    self_check:',
-            '      - 必须包含功能清单',
-            '      - 必须包含入口文件或代码线索',
-            '      - 不确定信息必须标注待确认',
-            '  - id: write-requirements',
-            `    agent: ${second}`,
-            '    depends_on:',
-            '      - reverse-module',
-            '    objective: 读取逆向产物，生成含主流程、异常流程、字段说明、权限和验收标准的需求文档。',
-            '    inputs:',
-            '      - path: artifacts/runs/{run_id}/reverse-module/function-list.md',
-            '    outputs:',
-            '      - path: artifacts/runs/{run_id}/write-requirements/requirements.md',
-            '    self_check:',
-            '      - 必须包含主流程',
-            '      - 必须包含异常流程',
-            '      - 必须包含验收标准',
-            '  - id: write-test-plan',
-            `    agent: ${third}`,
-            '    depends_on:',
-            '      - write-requirements',
-            '    objective: 读取需求文档，生成覆盖正向、异常、字段校验、权限边界和测试数据的测试计划。',
-            '    inputs:',
-            '      - path: artifacts/runs/{run_id}/write-requirements/requirements.md',
-            '    outputs:',
-            '      - path: artifacts/runs/{run_id}/write-test-plan/test-plan.md',
-            '    self_check:',
-            '      - 必须覆盖正向用例',
-            '      - 必须覆盖异常用例',
-            '      - 必须包含测试数据',
-            'rules:',
-            '  - 只能读取 source_path 和上游 inputs 声明的产物',
-            '  - 所有输出必须写入 artifacts/runs/{run_id}',
-            '  - 不得编造没有证据的业务规则'
-          ].join('\n');
-          this.taskbookLint = `已组合工位：${agents.join(' -> ')}`;
-          this.notify(`任务书已组合：${agents.length} 个工位`);
-        },
-        legacyModernizationDraft() {
-          this.selectedTaskbookFilename = 'legacy-modernization-draft.yml';
-          this.selectedTaskbookPath = '';
-          this.taskbookEditorContent = [
-            'taskbook_version: 1',
-            'title: 老系统模块改造：逆向到需求到测试',
-            'objective: >',
-            '  面向旧系统改造团队，把一个 JSP/JS/SQL/Java 模块从源代码逆向分析，',
-            '  转换成可评审的需求文档，再生成可执行的测试计划。所有阶段通过文件级产物握手。',
-            'steps:',
-            '  - id: reverse-module',
-            '    agent: niuma-1',
-            '    objective: >',
-            '      阅读用户提供的旧系统模块材料，输出功能清单、入口文件、关键字段、SQL/接口依赖、',
-            '      页面跳转、异常分支、权限判断和待确认问题。不要编造没有证据的业务规则。',
-            '    outputs:',
-            '      - path: artifacts/runs/{run_id}/reverse-module/function-list.md',
-            '    self_check:',
-            '      - 必须包含功能清单',
-            '      - 必须包含入口文件或代码线索',
-            '      - 必须包含数据字段或 SQL 依赖',
-            '      - 不确定信息必须标注待确认',
-            '  - id: write-requirements',
-            '    agent: niuma-2',
-            '    depends_on:',
-            '      - reverse-module',
-            '    objective: >',
-            '      读取逆向产物，生成需求文档。需求文档必须包含业务目标、用户角色、主流程、',
-            '      异常流程、字段说明、权限/审计要求、验收标准和待确认问题。',
-            '    inputs:',
-            '      - path: artifacts/runs/{run_id}/reverse-module/function-list.md',
-            '    outputs:',
-            '      - path: artifacts/runs/{run_id}/write-requirements/requirements.md',
-            '    self_check:',
-            '      - 必须包含主流程',
-            '      - 必须包含异常流程',
-            '      - 必须包含验收标准',
-            '  - id: write-test-plan',
-            '    agent: niuma-2',
-            '    depends_on:',
-            '      - write-requirements',
-            '    objective: >',
-            '      读取需求文档，生成测试计划。测试计划必须覆盖正向用例、异常用例、字段校验、',
-            '      权限边界、回归风险、测试数据和通过/失败判定。',
-            '    inputs:',
-            '      - path: artifacts/runs/{run_id}/write-requirements/requirements.md',
-            '    outputs:',
-            '      - path: artifacts/runs/{run_id}/write-test-plan/test-plan.md',
-            '    self_check:',
-            '      - 必须覆盖正向用例',
-            '      - 必须覆盖异常用例',
-            '      - 必须包含测试数据',
-            '      - 必须包含通过/失败判定',
-            'constraints:',
-            '  - 不得修改用户提供的源代码和 shared/references 下的材料',
-            '  - 所有产物必须写入 artifacts/runs/{run_id}',
-            '  - 不确定的信息必须标注待确认'
-          ].join('\n');
-          this.taskbookLint = '老系统改造模板已就绪';
+            `  ${objective}`,
+            'steps:'
+          ];
+          selected.forEach((workerId, index) => {
+            const stepId = valueOf(`compose-step-id-${index}`) || this.slugStepId(workerId, index);
+            const stepObjective = valueOf(`compose-objective-${index}`) || `请 ${workerId} 完成本步骤任务`;
+            const inputs = linesOf(`compose-inputs-${index}`);
+            const outputs = linesOf(`compose-outputs-${index}`);
+            const rules = linesOf(`compose-rules-${index}`);
+            content.push(`  - id: ${stepId}`);
+            content.push(`    agent: ${workerId}`);
+            if (index > 0) {
+              const previousStepId = valueOf(`compose-step-id-${index - 1}`) || this.slugStepId(selected[index - 1], index - 1);
+              content.push('    depends_on:');
+              content.push(`      - ${previousStepId}`);
+            }
+            content.push('    objective: >');
+            content.push(`      ${stepObjective}`);
+            if (inputs.length) {
+              content.push('    inputs:');
+              inputs.forEach((path) => content.push(`      - path: ${path}`));
+            }
+            content.push('    outputs:');
+            (outputs.length ? outputs : [`artifacts/runs/{run_id}/${stepId}/result.md`]).forEach((path) => content.push(`      - path: ${path}`));
+            if (rules.length) {
+              content.push('    self_check:');
+              rules.forEach((rule) => content.push(`      - ${rule}`));
+            }
+          });
+          this.taskbookEditorContent = content.join('\n');
+          this.taskbookLint = `已按手工配置组合工位：${selected.join(' -> ')}`;
+          this.taskbookPath = '';
+          this.notify(`任务书草稿已生成：${selected.length} 个子 Agent`);
         },
         async saveTaskbook() {
           if (this.isSavingTaskbook || !this.selectedTaskbookFilename.trim() || !this.taskbookEditorContent.trim()) return;
@@ -1169,6 +1104,10 @@
             general: {provider: 'test', model: 'fake-model', backend_type: 'fake', base_url: '', group: 'general', tags: ['general'], capabilities: ['delivery'], role: '通用交付工位'}
           };
           return templates[name] || templates.general;
+        },
+        slugStepId(workerId, index) {
+          const raw = String(workerId || `agent-${index + 1}`).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          return `step-${index + 1}-${raw || 'agent'}`;
         },
         csvList(text) {
           return String(text || '').split(',').map((item) => item.trim()).filter(Boolean);

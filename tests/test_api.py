@@ -402,6 +402,7 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "/api/preflight" in html
     assert "runCompliance" in html
     assert "selectedRunEvents" in html
+    assert "this.selectRun(this.runs[0])" not in html
     assert "selectedRunArtifactContent" in html
     assert "factoryArtifacts" in html
     assert "artifactQuery" in html
@@ -432,6 +433,7 @@ def test_console_fetches_pipeline_runs_and_events():
     assert "工厂状态同步完成" in html
     assert "验厂通过" in html
     assert "refreshTaskbooks" in html
+    assert "this.loadTaskbook(this.taskbooks[0].filename)" not in html
     assert "selectedTaskbookFilename" in html
     assert "selectedTaskbookPath" in html
     assert "selectedStep" in html
@@ -459,16 +461,18 @@ def test_console_has_taskbook_studio_editor():
     assert "selectedTaskbookFilename" in html
     assert "taskbookEditorContent" in html
     assert "refreshTaskbooks" in html
-    assert "legacyModernizationDraft" in html
-    assert "老系统流程" in html
-    assert "reverse-module" in html
-    assert "write-test-plan" in html
     assert "loadTaskbook" in html
     assert "saveTaskbook" in html
     assert "openTaskbookComposer" in html
     assert "composeTaskbookFromWorkers" in html
-    assert "selectedComposerAgents" in html
+    assert "selectedComposerAgents: []" in html
     assert "智能体组合器" in html
+    assert "输入文件位置" in html
+    assert "输出文件位置" in html
+    assert "规则说明" in html
+    assert "请先选择至少一个子 Agent 工位" in html
+    assert "legacyModernizationDraft" not in html
+    assert "老系统流程" not in html
     assert "/api/taskbooks/${filename}" in html
     assert "/api/taskbooks" in html
 
