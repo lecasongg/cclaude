@@ -209,6 +209,14 @@ async def test_openai_compatible_backend_uses_worker_base_url_instead_of_global_
     ]
 
 
+def test_openai_compatible_backend_configure_api_url_sets_completion_url():
+    backend = OpenAICompatibleWorkerBackend()
+
+    backend.configure_api_url("http://relay.local/v1")
+
+    assert backend.api_url == "http://relay.local/v1/chat/completions"
+
+
 @pytest.mark.asyncio
 async def test_openai_compatible_backend_reports_http_error_body(monkeypatch):
     def fake_urlopen(req, timeout):

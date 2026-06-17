@@ -1,0 +1,26 @@
+title: 老系统模块改造验厂
+objective: 验证老系统改造三阶段链路：逆向、需求、测试计划
+steps:
+  - id: reverse-module
+    agent: niuma-1
+    objective: 逆向旧系统模块
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-module/function-list.md
+  - id: write-requirements
+    agent: niuma-2
+    depends_on:
+      - reverse-module
+    objective: 编写需求文档
+    inputs:
+      - path: artifacts/runs/{run_id}/reverse-module/function-list.md
+    outputs:
+      - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+  - id: write-test-plan
+    agent: niuma-2
+    depends_on:
+      - write-requirements
+    objective: 编写测试计划
+    inputs:
+      - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+    outputs:
+      - path: artifacts/runs/{run_id}/write-test-plan/test-plan.md

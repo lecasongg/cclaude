@@ -1,0 +1,253 @@
+import textwrap
+from pathlib import Path
+
+import pytest
+
+from agent_factory.core.taskbook import TaskBookError, load_taskbook
+
+
+def test_load_taskbook_builds_execution_order(tmp_path):
+    taskbook_path = tmp_path / "login.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            taskbook_version: 1
+            title: 登录模块改造
+            objective: 输出登录模块逆向文档和测试计划
+            agents:
+              - id: niuma-1
+                role: reverse-engineering
+              - id: niuma-2
+                role: requirements-writer
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: 逆向登录模块
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+              - id: write-requirements
+                agent: niuma-2
+                depends_on:
+                  - reverse-login
+                objective: 编写需求文档
+                inputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+                outputs:
+                  - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+            constraints:
+              - 不得修改 shared/references 下的源文件
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    taskbook = load_taskbook(taskbook_path)
+
+    assert taskbook.title == "登录模块改造"
+    assert taskbook.execution_order() == ["reverse-login", "write-requirements"]
+    assert taskbook.step("write-requirements").depends_on == ["reverse-login"]
+
+
+def test_taskbook_rejects_duplicate_step_ids(tmp_path):
+    taskbook_path = tmp_path / "duplicate.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: 重复步骤
+            objective: 测试
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: 逆向
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/a.md
+              - id: reverse-login
+                agent: niuma-2
+                objective: 写文档
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/b.md
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TaskBookError, match="duplicate step id: reverse-login"):
+        load_taskbook(taskbook_path)
+
+
+def test_taskbook_rejects_unknown_dependency(tmp_path):
+    taskbook_path = tmp_path / "unknown-dependency.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: 未知依赖
+            objective: 测试
+            steps:
+              - id: write-requirements
+                agent: niuma-2
+                depends_on:
+                  - reverse-login
+                objective: 写文档
+                outputs:
+                  - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TaskBookError, match="unknown dependency reverse-login for step write-requirements"):
+        load_taskbook(taskbook_path)
+
+
+def test_taskbook_rejects_cycle(tmp_path):
+    taskbook_path = tmp_path / "cycle.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: 循环依赖
+            objective: 测试
+            steps:
+              - id: a
+                agent: niuma-1
+                depends_on: [b]
+                objective: A
+                outputs:
+                  - path: artifacts/runs/{run_id}/a/a.md
+              - id: b
+                agent: niuma-2
+                depends_on: [a]
+                objective: B
+                outputs:
+                  - path: artifacts/runs/{run_id}/b/b.md
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TaskBookError, match="cycle detected"):
+        load_taskbook(taskbook_path)
+
+
+def test_taskbook_rejects_output_paths_outside_artifacts(tmp_path):
+    taskbook_path = tmp_path / "bad-output.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: 越权输出
+            objective: 测试
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: 逆向
+                outputs:
+                  - path: ../shared/references/login.jsp
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TaskBookError, match="invalid output path for step reverse-login"):
+        load_taskbook(taskbook_path)
+
+
+def test_taskbook_rejects_input_paths_outside_shared_or_artifacts(tmp_path):
+    taskbook_path = tmp_path / "bad-input.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: 越界输入
+            objective: 测试
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: 逆向
+                inputs:
+                  - path: ../../secret.txt
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TaskBookError, match="invalid input path for step reverse-login"):
+        load_taskbook(taskbook_path)
+
+
+def test_taskbook_rejects_absolute_input_paths(tmp_path):
+    taskbook_path = tmp_path / "absolute-input.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: 绝对输入
+            objective: 测试
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: 逆向
+                inputs:
+                  - path: C:/Users/12799/secret.txt
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TaskBookError, match="invalid input path for step reverse-login"):
+        load_taskbook(taskbook_path)
+
+
+def test_taskbook_allows_shared_and_artifact_inputs(tmp_path):
+    taskbook_path = tmp_path / "good-input.yml"
+    taskbook_path.write_text(
+        textwrap.dedent(
+            """
+            title: 合法输入
+            objective: 测试
+            steps:
+              - id: reverse-login
+                agent: niuma-1
+                objective: 逆向
+                inputs:
+                  - path: shared/references/login.jsp
+                outputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+              - id: write-requirements
+                agent: niuma-2
+                depends_on:
+                  - reverse-login
+                objective: 写需求
+                inputs:
+                  - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+                outputs:
+                  - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    taskbook = load_taskbook(taskbook_path)
+
+    assert taskbook.step("reverse-login").inputs[0].path == "shared/references/login.jsp"
+    assert taskbook.step("write-requirements").inputs[0].path == "artifacts/runs/{run_id}/reverse-login/function-list.md"
+
+
+def test_repository_sample_taskbooks_are_valid():
+    taskbook_dir = Path(__file__).parents[1] / "taskbooks"
+    sample_paths = sorted(taskbook_dir.glob("*.yml"))
+
+    assert sample_paths
+    for path in sample_paths:
+        load_taskbook(path)
+
+
+def test_legacy_module_modernization_template_covers_reverse_docs_and_tests():
+    taskbook_path = Path(__file__).parents[1] / "taskbooks" / "legacy-module-modernization.yml"
+
+    taskbook = load_taskbook(taskbook_path)
+
+    assert taskbook.execution_order() == ["reverse-module", "write-requirements", "write-test-plan"]
+    assert taskbook.step("write-requirements").inputs[0].path == "artifacts/runs/{run_id}/reverse-module/function-list.md"
+    assert taskbook.step("write-test-plan").inputs[0].path == "artifacts/runs/{run_id}/write-requirements/requirements.md"
+    assert taskbook.step("write-test-plan").outputs[0].path == "artifacts/runs/{run_id}/write-test-plan/test-plan.md"

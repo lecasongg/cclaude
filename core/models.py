@@ -23,7 +23,13 @@ class WorkerConfig:
     skills_dir: str
     base_url: str = ""
     role: str = "通用交付工位"
+    group: str = ""
+    tags: list[str] = field(default_factory=list)
+    capabilities: list[str] = field(default_factory=list)
     enabled: bool = True
+    backend_type: str = "claude_cli"
+    backend_options: dict = field(default_factory=dict)
+    backend_configured: bool = True
 
 
 @dataclass

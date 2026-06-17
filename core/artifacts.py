@@ -14,6 +14,9 @@ class ArtifactStore:
     def read_text(self, artifact_id: str) -> str:
         return (self.root / artifact_id).read_text(encoding="utf-8")
 
+    def resolve_path(self, artifact_id: str) -> str:
+        return str((self.root / artifact_id).resolve())
+
     def list_task_artifacts(self, worker_id: str, task_id: str) -> list[str]:
         task_dir = self.root / worker_id / task_id
         if not task_dir.exists():

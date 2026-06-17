@@ -1,0 +1,44 @@
+taskbook_version: 1
+title: 老系统登录模块逆向到需求文档
+objective: >
+  以老系统登录模块为样例，先输出逆向分析清单，再基于逆向产物生成可交付需求文档。
+
+agents:
+  - id: niuma-1
+    role: reverse-engineering
+  - id: niuma-2
+    role: requirements-writer
+
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: >
+      分析当前工作区或用户提供的登录模块材料，输出功能清单、入口文件、关键字段、
+      数据库依赖、异常分支和待确认问题。
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+    self_check:
+      - 必须包含功能清单
+      - 必须包含入口或文件线索
+      - 不确定信息必须标注“待确认”
+
+  - id: write-requirements
+    agent: niuma-2
+    depends_on:
+      - reverse-login
+    objective: >
+      读取逆向产物，生成需求文档，包含业务流程、字段说明、异常流程、
+      验收标准和待确认问题。
+    inputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+    outputs:
+      - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+    self_check:
+      - 必须包含业务流程
+      - 必须包含验收标准
+      - 必须保留待确认问题
+
+constraints:
+  - 不得修改 shared/references 下的源文件
+  - 所有产物必须写入 artifacts/runs/{run_id}
+  - 不确定的信息必须标注“待确认”

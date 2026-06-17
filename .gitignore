@@ -1,5 +1,6 @@
 # --- Secrets / runtime ---
 runtime_config.json
+factory_config.json
 .env
 .env.*
 !.env.example
@@ -14,13 +15,18 @@ __pycache__/
 venv/
 env/
 .pytest_cache/
+.tmp/
 .mypy_cache/
 .ruff_cache/
 
 # --- Runtime / generated output ---
 artifacts/
 workspaces/
+profiles/
+events/
 logs/
+marvis.db
+marvis.db-*
 *.log
 
 # --- Proposal package archives (源目录入库，zip 不入库) ---

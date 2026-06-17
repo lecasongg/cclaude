@@ -1,0 +1,17 @@
+title: correction loop contract
+objective: verify a failed step can be corrected and rerun with downstream recovery
+steps:
+  - id: reverse-needs-correction
+    agent: niuma-1
+    objective: fail-before-correction reverse the login module
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-needs-correction/function-list.md
+  - id: write-after-correction
+    agent: niuma-2
+    depends_on:
+      - reverse-needs-correction
+    objective: write requirements from corrected reverse output
+    inputs:
+      - path: artifacts/runs/{run_id}/reverse-needs-correction/function-list.md
+    outputs:
+      - path: artifacts/runs/{run_id}/write-after-correction/requirements.md

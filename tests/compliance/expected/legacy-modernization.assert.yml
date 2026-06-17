@@ -1,0 +1,31 @@
+assert:
+  run_status: succeeded
+  depends_after:
+    write-requirements:
+      - reverse-module
+    write-test-plan:
+      - write-requirements
+  forbidden_modified:
+    - shared/references/login.jsp
+  steps:
+    reverse-module:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/reverse-module/function-list.md
+      output_contains:
+        - path: artifacts/runs/{run_id}/reverse-module/function-list.md
+          text: mock output for reverse-module
+    write-requirements:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/write-requirements/requirements.md
+      output_contains:
+        - path: artifacts/runs/{run_id}/write-requirements/requirements.md
+          text: mock output for write-requirements
+    write-test-plan:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/write-test-plan/test-plan.md
+      output_contains:
+        - path: artifacts/runs/{run_id}/write-test-plan/test-plan.md
+          text: mock output for write-test-plan

@@ -1,0 +1,14 @@
+assert:
+  run_status: blocked
+  reconcile_on_startup:
+    initial_run_status: running
+    initial_step_status: running
+    agent_status: idle
+    summary:
+      released_leases: 1
+      blocked_runs: 1
+      blocked_steps: 1
+      reset_agents: 1
+  steps:
+    reverse-before-restart:
+      status: blocked

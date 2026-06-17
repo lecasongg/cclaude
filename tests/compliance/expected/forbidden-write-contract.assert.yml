@@ -1,0 +1,11 @@
+assert:
+  run_status: succeeded
+  input_exists:
+    - shared/references/protected-login.jsp
+  forbidden_modified:
+    - shared/references/protected-login.jsp
+  steps:
+    inspect-protected-source:
+      status: succeeded
+      output_exists:
+        - artifacts/runs/{run_id}/inspect-protected-source/source-notes.md

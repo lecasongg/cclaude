@@ -1,0 +1,17 @@
+title: 登录模块改造验厂
+objective: 验证 TaskBook 基础执行、产物声明和文件级握手
+steps:
+  - id: reverse-login
+    agent: niuma-1
+    objective: 逆向登录模块
+    outputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+  - id: write-requirements
+    agent: niuma-2
+    depends_on:
+      - reverse-login
+    objective: 编写需求文档
+    inputs:
+      - path: artifacts/runs/{run_id}/reverse-login/function-list.md
+    outputs:
+      - path: artifacts/runs/{run_id}/write-requirements/requirements.md

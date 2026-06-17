@@ -1,5 +1,7 @@
+import asyncio
 import os
 from dataclasses import asdict
+import json
 
 from pathlib import Path
 
@@ -7,10 +9,29 @@ from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from agent_factory.core.config import save_runtime_config
+from agent_factory.core.compliance import (
+    ComplianceSuite,
+    compare_compliance_baseline,
+    list_compliance_baselines,
+    list_compliance_reports as list_report_files,
+    read_compliance_report as read_report_file,
+    write_compliance_baseline,
+)
+from agent_factory.core.event_log import EventLog
+from agent_factory.core.marvis_status import build_marvis_status
 from agent_factory.core.models import TaskRecord, WorkerConfig
+from agent_factory.core.pipeline_executor import PipelineExecutor
+from agent_factory.core.preflight import run_preflight
+from agent_factory.core.quality import evaluate_run_quality
+from agent_factory.core.resource_manager import ResourceManager, ResourceManagerError
+from agent_factory.core.run_manifest import build_run_manifest, diff_artifacts, list_artifacts_across_runs
 from agent_factory.core.security import SecurityGate
 from agent_factory.core.supervisor import HermesSupervisor
 from agent_factory.core.task_bus import TaskBus
+from agent_factory.core.taskbook import TaskBookError, load_taskbook
+from agent_factory.core.worker_runtime import ClaudeCliWorkerBackend, CodexCliWorkerBackend, FakeWorkerBackend, OpenAICompatibleWorkerBackend, SubprocessWorkerBackend
+from agent_factory.core.worker_health import check_worker_health, summarize_worker_health
+from agent_factory.core.worker_step_runner import WorkerRuntimeStepRunner
 
 
 class DelegateRequest(BaseModel):
@@ -29,6 +50,41 @@ class FilePathRequest(BaseModel):
     path: str
 
 
+class TaskBookRunRequest(BaseModel):
+    taskbook_path: str
+    source_path: str | None = None
+
+
+class StepRerunRequest(BaseModel):
+    taskbook_path: str = ""
+    source_path: str | None = None
+    correction: str = ""
+
+
+class TaskBookPathRequest(BaseModel):
+    taskbook_path: str
+
+
+class TaskBookSaveRequest(BaseModel):
+    content: str
+
+
+class ComplianceRunRequest(BaseModel):
+    suite_path: str
+    mode: str = "quick"
+
+
+class PreflightRequest(BaseModel):
+    taskbook_path: str = ""
+    source_path: str = ""
+    compliance_suite_path: str = ""
+
+
+class ComplianceBaselineRequest(BaseModel):
+    name: str
+    report_filename: str
+
+
 REQUIRED_DOCUMENT_WORKER_ID = "niuma-1"
 TASK_MANUAL = "task_manual"
 CONVERSION_RULES = "conversion_rules"
@@ -43,8 +99,26 @@ class WorkerConfigUpdate(BaseModel):
     provider: str | None = None
     model: str | None = None
     role: str | None = None
+    group: str | None = None
+    tags: list[str] | None = None
+    capabilities: list[str] | None = None
     base_url: str | None = None
     api_key: str | None = None
+    persist: bool = True
+
+
+class WorkerCreateRequest(BaseModel):
+    worker_id: str
+    display_name: str = ""
+    provider: str = "test"
+    model: str = "fake-model"
+    backend_type: str = "fake"
+    role: str = "通用交付工位"
+    group: str = ""
+    tags: list[str] = []
+    capabilities: list[str] = []
+    base_url: str = ""
+    api_key_env: str = ""
     persist: bool = True
 
 
@@ -52,6 +126,20 @@ def task_to_dict(task: TaskRecord) -> dict:
     data = asdict(task)
     data["status"] = task.status.value
     return data
+
+
+def backend_type_name(backend) -> str:
+    if isinstance(backend, ClaudeCliWorkerBackend):
+        return "claude_cli"
+    if isinstance(backend, CodexCliWorkerBackend):
+        return "codex_cli"
+    if isinstance(backend, OpenAICompatibleWorkerBackend):
+        return "openai_compatible"
+    if isinstance(backend, SubprocessWorkerBackend):
+        return "subprocess"
+    if isinstance(backend, FakeWorkerBackend):
+        return "fake"
+    return backend.__class__.__name__
 
 
 def build_file_prompt(files: list[tuple[str, str, int]]) -> dict:
@@ -67,7 +155,7 @@ def build_file_prompt(files: list[tuple[str, str, int]]) -> dict:
 
 
 def read_local_files(path_text: str) -> dict:
-    path = Path(path_text).expanduser()
+    path = Path(normalize_user_path(path_text)).expanduser()
     if not path.exists():
         raise HTTPException(status_code=404, detail="path not found")
     paths = [path]
@@ -75,6 +163,10 @@ def read_local_files(path_text: str) -> dict:
         paths = [candidate for candidate in sorted(path.rglob("*")) if candidate.is_file()]
     files = [(str(candidate), candidate.read_text(encoding="utf-8", errors="replace"), candidate.stat().st_size) for candidate in paths]
     return build_file_prompt(files)
+
+
+def normalize_user_path(path_text: str) -> str:
+    return path_text.strip().strip('"').strip("'").strip()
 
 
 def document_status(documents: dict) -> dict:
@@ -96,6 +188,9 @@ def create_app(
     security: SecurityGate,
     runtime_config_path: Path | None = None,
     runtime_config: dict | None = None,
+    resource_manager: ResourceManager | None = None,
+    event_log: EventLog | None = None,
+    pipeline_workspace_root: Path | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Hermes Local Agent Factory")
     runtime_data = runtime_config if runtime_config is not None else {}
@@ -109,6 +204,14 @@ def create_app(
 
     def worker_documents(worker_id: str) -> dict:
         return worker_runtime_entry(worker_id).setdefault("installed_documents", {})
+
+    def rebuild_worker_runtime(worker: WorkerConfig) -> None:
+        from agent_factory.core.backends import build_backend
+        from agent_factory.core.artifacts import ArtifactStore
+        from agent_factory.core.worker_runtime import WorkerRuntime
+
+        artifacts_root = (pipeline_workspace_root or Path.cwd()) / "artifacts"
+        supervisor.runtimes[worker.worker_id] = WorkerRuntime(worker, bus, ArtifactStore(artifacts_root), build_backend(worker))
 
     def build_installed_document_prompt(worker_id: str) -> str:
         if worker_id != REQUIRED_DOCUMENT_WORKER_ID:
@@ -157,14 +260,35 @@ def create_app(
             "current_task_id": state.current_task_id,
             "provider": worker.provider,
             "model": worker.model,
+            "backend_type": backend_type_name(runtime.backend) if runtime else getattr(worker, "backend_type", ""),
             "api_key_env": worker.api_key_env,
             "api_key_configured": bool(os.environ.get(worker.api_key_env)),
             "base_url": base_url,
             "role": worker.role,
+            "group": worker.group,
+            "tags": worker.tags,
+            "capabilities": worker.capabilities,
             "workspace_dir": worker.workspace_dir,
             "skills_dir": worker.skills_dir,
             "installed_documents": document_status(worker_documents(worker.worker_id)),
         }
+
+    def ensure_workers_registered_for_pipeline() -> None:
+        if resource_manager is None:
+            return
+        for worker in workers:
+            resource_manager.register_agent(worker.worker_id, display_name=worker.display_name, group=worker.group, tags=worker.tags)
+
+    def taskbooks_root() -> Path:
+        return (pipeline_workspace_root or Path.cwd()) / "taskbooks"
+
+    def compliance_reports_root() -> Path:
+        return (pipeline_workspace_root or Path.cwd()) / "artifacts" / "compliance"
+
+    def resolve_taskbook_filename(filename: str) -> Path:
+        if "/" in filename or "\\" in filename or not filename.endswith((".yml", ".yaml")):
+            raise HTTPException(status_code=404, detail="taskbook not found")
+        return taskbooks_root() / filename
 
     @app.get("/api/health")
     async def health(x_hermes_token: str | None = Header(default=None)):
@@ -177,10 +301,85 @@ def create_app(
             "runtime_config_persistence": runtime_config_path is not None,
         }
 
+    @app.get("/api/marvis/status")
+    async def marvis_status(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        return build_marvis_status(workers, bus, resource_manager, runtime_config_path)
+
+    @app.post("/api/preflight")
+    async def preflight(request: PreflightRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        return run_preflight(
+            workers,
+            normalize_user_path(request.taskbook_path) if request.taskbook_path else "",
+            normalize_user_path(request.source_path) if request.source_path else "",
+            normalize_user_path(request.compliance_suite_path) if request.compliance_suite_path else "",
+        )
+
     @app.get("/api/workers")
     async def list_workers(x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
         return {"workers": [worker_to_dict(worker) for worker in workers]}
+
+    @app.post("/api/workers")
+    async def create_worker(request: WorkerCreateRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        worker_id = request.worker_id.strip()
+        if not worker_id or any(char in worker_id for char in "/\\ "):
+            raise HTTPException(status_code=400, detail="invalid worker_id")
+        if any(worker.worker_id == worker_id for worker in workers):
+            raise HTTPException(status_code=400, detail="worker already exists")
+        api_key_env = request.api_key_env.strip() or f"{worker_id.upper().replace('-', '_')}_API_KEY"
+        worker = WorkerConfig(
+            worker_id=worker_id,
+            display_name=request.display_name.strip() or worker_id,
+            provider=request.provider,
+            model=request.model,
+            api_key_env=api_key_env,
+            profile_dir=f"profiles/{worker_id}",
+            workspace_dir=f"workspaces/{worker_id}",
+            skills_dir=f"skills/{worker_id}",
+            base_url=request.base_url,
+            role=request.role,
+            group=request.group,
+            tags=request.tags,
+            capabilities=request.capabilities,
+            backend_type=request.backend_type,
+            backend_options={"response_text": f"{worker_id} completed task"} if request.backend_type == "fake" else {},
+        )
+        workers.append(worker)
+        bus.register_worker(worker_id)
+        rebuild_worker_runtime(worker)
+        if resource_manager is not None:
+            resource_manager.register_agent(worker.worker_id, display_name=worker.display_name, group=worker.group, tags=worker.tags)
+        if request.persist and runtime_config_path:
+            saved_worker = runtime_data.setdefault("workers", {}).setdefault(worker_id, {})
+            saved_worker.update(
+                {
+                    "display_name": worker.display_name,
+                    "provider": worker.provider,
+                    "model": worker.model,
+                    "api_key_env": worker.api_key_env,
+                    "profile_dir": worker.profile_dir,
+                    "workspace_dir": worker.workspace_dir,
+                    "skills_dir": worker.skills_dir,
+                    "base_url": worker.base_url,
+                    "role": worker.role,
+                    "group": worker.group,
+                    "tags": worker.tags,
+                    "capabilities": worker.capabilities,
+                    "backend_type": worker.backend_type,
+                    "backend_options": worker.backend_options,
+                    "enabled": True,
+                }
+            )
+            save_runtime_config(runtime_config_path, runtime_data)
+        return {"worker": worker_to_dict(worker), "notice": "worker created"}
+
+    @app.get("/api/workers/health-summary")
+    async def get_workers_health_summary(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        return summarize_worker_health(workers)
 
     @app.post("/api/file-context/path")
     async def file_context_from_path(request: FilePathRequest, x_hermes_token: str | None = Header(default=None)):
@@ -196,12 +395,131 @@ def create_app(
             loaded_files.append((uploaded.filename, content.decode("utf-8", errors="replace"), len(content)))
         return build_file_prompt(loaded_files)
 
+    @app.post("/api/taskbooks/lint")
+    async def lint_taskbook(request: TaskBookPathRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        try:
+            taskbook = load_taskbook(request.taskbook_path)
+        except (TaskBookError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {
+            "title": taskbook.title,
+            "objective": taskbook.objective,
+            "execution_order": taskbook.execution_order(),
+            "steps": [
+                {
+                    "step_id": step.step_id,
+                    "agent": step.agent,
+                    "objective": step.objective,
+                    "depends_on": step.depends_on,
+                }
+                for step in taskbook.steps
+            ],
+        }
+
+    @app.get("/api/taskbooks")
+    async def list_taskbooks(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        root = taskbooks_root()
+        root.mkdir(parents=True, exist_ok=True)
+        taskbooks = [
+            {"filename": path.name, "path": str(path), "size": path.stat().st_size}
+            for path in sorted(root.iterdir())
+            if path.is_file() and path.suffix in {".yml", ".yaml"}
+        ]
+        return {"taskbooks": taskbooks}
+
+    @app.get("/api/taskbooks/{filename}")
+    async def read_taskbook(filename: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        path = resolve_taskbook_filename(filename)
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="taskbook not found")
+        return {"filename": filename, "path": str(path), "content": path.read_text(encoding="utf-8")}
+
+    @app.put("/api/taskbooks/{filename}")
+    async def save_taskbook(filename: str, request: TaskBookSaveRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        path = resolve_taskbook_filename(filename)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(request.content, encoding="utf-8")
+        try:
+            taskbook = load_taskbook(path)
+        except (TaskBookError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"filename": filename, "path": str(path), "title": taskbook.title, "execution_order": taskbook.execution_order()}
+
+    @app.post("/api/compliance/run")
+    async def run_compliance(request: ComplianceRunRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if request.mode not in {"quick", "model"}:
+            raise HTTPException(status_code=400, detail="unsupported compliance mode")
+        suite_path = Path(normalize_user_path(request.suite_path))
+        if not suite_path.exists():
+            raise HTTPException(status_code=404, detail="suite not found")
+        workspace_root = (pipeline_workspace_root or Path.cwd()) / ".tmp" / "compliance-runs"
+        report_dir = compliance_reports_root()
+        if request.mode == "quick":
+            result = ComplianceSuite(suite_path).run_quick(workspace_root, report_dir=report_dir)
+        else:
+            result = await asyncio.to_thread(
+                ComplianceSuite(suite_path).run_with_runner,
+                workspace_root,
+                WorkerRuntimeStepRunner(supervisor.runtimes),
+                request.mode,
+                report_dir,
+            )
+        return result.to_dict()
+
+    @app.get("/api/compliance/reports")
+    async def list_compliance_report_files(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        return {"reports": list_report_files(compliance_reports_root())}
+
+    @app.get("/api/compliance/reports/{filename}")
+    async def read_compliance_report_file(filename: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        try:
+            return read_report_file(compliance_reports_root(), filename)
+        except (FileNotFoundError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=404, detail="compliance report not found") from exc
+
+    @app.get("/api/compliance/baselines")
+    async def list_compliance_baseline_entries(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        return {"baselines": list_compliance_baselines(compliance_reports_root())}
+
+    @app.post("/api/compliance/baselines")
+    async def create_compliance_baseline(request: ComplianceBaselineRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        try:
+            path = write_compliance_baseline(compliance_reports_root(), request.name, request.report_filename)
+            return {"baseline": {"name": request.name, "path": str(path)}, "notice": "baseline saved"}
+        except (FileNotFoundError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=404, detail="compliance baseline not found") from exc
+
+    @app.post("/api/compliance/baselines/{name}/compare/{filename}")
+    async def compare_baseline(name: str, filename: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        try:
+            return compare_compliance_baseline(compliance_reports_root(), name, filename)
+        except (FileNotFoundError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=404, detail="compliance baseline not found") from exc
+
     @app.get("/api/workers/{worker_id}/installed-documents")
     async def get_installed_documents(worker_id: str, x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
         if not any(worker.worker_id == worker_id for worker in workers):
             raise HTTPException(status_code=404, detail="worker not found")
         return {"worker_id": worker_id, "installed_documents": document_status(worker_documents(worker_id))}
+
+    @app.get("/api/workers/{worker_id}/health")
+    async def get_worker_health(worker_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        worker = next((candidate for candidate in workers if candidate.worker_id == worker_id), None)
+        if worker is None:
+            raise HTTPException(status_code=404, detail="worker not found")
+        return check_worker_health(worker)
 
     @app.post("/api/workers/{worker_id}/installed-documents/{kind}")
     async def install_document(worker_id: str, kind: str, file: UploadFile = File(...), x_hermes_token: str | None = Header(default=None)):
@@ -220,6 +538,12 @@ def create_app(
             worker.model = request.model
         if request.role is not None:
             worker.role = request.role
+        if request.group is not None:
+            worker.group = request.group
+        if request.tags is not None:
+            worker.tags = request.tags
+        if request.capabilities is not None:
+            worker.capabilities = request.capabilities
         if request.api_key:
             os.environ[worker.api_key_env] = request.api_key
         if request.base_url is not None:
@@ -233,11 +557,19 @@ def create_app(
                 saved_worker["model"] = request.model
             if request.role is not None:
                 saved_worker["role"] = request.role
+            if request.group is not None:
+                saved_worker["group"] = request.group
+            if request.tags is not None:
+                saved_worker["tags"] = request.tags
+            if request.capabilities is not None:
+                saved_worker["capabilities"] = request.capabilities
             if request.base_url is not None:
                 saved_worker["base_url"] = request.base_url
             if request.api_key:
                 saved_worker["api_key"] = request.api_key
             save_runtime_config(runtime_config_path, runtime_data)
+        if resource_manager is not None:
+            resource_manager.register_agent(worker.worker_id, display_name=worker.display_name, group=worker.group, tags=worker.tags)
         notice = "配置已保存，重启后仍会生效。" if request.persist and runtime_config_path else "配置已更新，仅对当前 Worker Server 进程生效。"
         return {"worker": worker_to_dict(worker), "notice": notice}
 
@@ -245,6 +577,179 @@ def create_app(
     async def list_tasks(x_hermes_token: str | None = Header(default=None)):
         authorize(x_hermes_token)
         return {"tasks": [task_to_dict(task) for task in bus.list_tasks()]}
+
+    @app.get("/api/runs")
+    async def list_runs(x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None:
+            return {"runs": []}
+        return {"runs": resource_manager.list_pipeline_runs()}
+
+    @app.post("/api/runs")
+    async def start_run(request: TaskBookRunRequest, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None or event_log is None:
+            raise HTTPException(status_code=400, detail="pipeline runtime not configured")
+        try:
+            taskbook = load_taskbook(request.taskbook_path)
+        except (TaskBookError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        source_context = ""
+        if request.source_path:
+            source_context = read_local_files(request.source_path)["prompt"]
+        ensure_workers_registered_for_pipeline()
+        executor = PipelineExecutor(
+            resource_manager=resource_manager,
+            event_log=event_log,
+            workspace_root=pipeline_workspace_root or Path.cwd(),
+            step_runner=WorkerRuntimeStepRunner(supervisor.runtimes, global_context=source_context),
+        )
+        run_id = await asyncio.to_thread(
+            executor.run,
+            taskbook,
+            str(Path(normalize_user_path(request.taskbook_path))),
+            normalize_user_path(request.source_path) if request.source_path else "",
+        )
+        return {
+            "run": resource_manager.get_pipeline_run(run_id),
+            "steps": resource_manager.list_step_runs(run_id),
+        }
+
+    @app.post("/api/runs/{run_id}/steps/{step_id}/rerun")
+    async def rerun_step(
+        run_id: str,
+        step_id: str,
+        request: StepRerunRequest,
+        x_hermes_token: str | None = Header(default=None),
+    ):
+        authorize(x_hermes_token)
+        if resource_manager is None or event_log is None:
+            raise HTTPException(status_code=400, detail="pipeline runtime not configured")
+        try:
+            run = resource_manager.get_pipeline_run(run_id)
+            taskbook_path = request.taskbook_path or run.get("taskbook_path", "")
+            source_path = request.source_path if request.source_path is not None else run.get("source_path", "")
+            if not taskbook_path:
+                raise HTTPException(status_code=400, detail="taskbook_path required for rerun")
+            taskbook = load_taskbook(taskbook_path)
+            taskbook.step(step_id)
+        except ResourceManagerError as exc:
+            raise HTTPException(status_code=404, detail="run not found") from exc
+        except (TaskBookError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        source_context = ""
+        if source_path:
+            source_context = read_local_files(source_path)["prompt"]
+        ensure_workers_registered_for_pipeline()
+        executor = PipelineExecutor(
+            resource_manager=resource_manager,
+            event_log=event_log,
+            workspace_root=pipeline_workspace_root or Path.cwd(),
+            step_runner=WorkerRuntimeStepRunner(supervisor.runtimes, global_context=source_context),
+        )
+        try:
+            await asyncio.to_thread(executor.rerun_from_step, run_id, taskbook, step_id, request.correction)
+        except ResourceManagerError as exc:
+            raise HTTPException(status_code=404, detail="step not found") from exc
+        return {
+            "run": resource_manager.get_pipeline_run(run_id),
+            "steps": resource_manager.list_step_runs(run_id),
+            "events": event_log.read_events(run_id),
+        }
+
+    @app.get("/api/runs/{run_id}/artifacts")
+    async def list_run_artifacts(run_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is not None:
+            try:
+                return {"artifacts": build_run_manifest(resource_manager, pipeline_workspace_root or Path.cwd(), run_id)["artifacts"]}
+            except ResourceManagerError:
+                return {"artifacts": []}
+        workspace_root = pipeline_workspace_root or Path.cwd()
+        run_root = workspace_root / "artifacts" / "runs" / run_id
+        if not run_root.exists():
+            return {"artifacts": []}
+        return {
+            "artifacts": [
+                {"path": path.relative_to(workspace_root).as_posix(), "size": path.stat().st_size}
+                for path in sorted(run_root.rglob("*"))
+                if path.is_file()
+            ]
+        }
+
+    @app.get("/api/artifacts")
+    async def list_artifacts(q: str = "", limit: int = 100, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None:
+            return {"artifacts": []}
+        return {
+            "artifacts": list_artifacts_across_runs(
+                resource_manager,
+                pipeline_workspace_root or Path.cwd(),
+                query=q,
+                limit=limit,
+            )
+        }
+
+    @app.get("/api/artifacts/diff")
+    async def diff_run_artifacts(left: str, right: str, context: int = 3, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        try:
+            return diff_artifacts(pipeline_workspace_root or Path.cwd(), left, right, context_lines=context)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="artifact not found") from exc
+
+    @app.get("/api/runs/{run_id}/artifacts/{artifact_path:path}")
+    async def read_run_artifact(run_id: str, artifact_path: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        workspace_root = (pipeline_workspace_root or Path.cwd()).resolve()
+        run_root = (workspace_root / "artifacts" / "runs" / run_id).resolve()
+        artifact = (workspace_root / artifact_path).resolve()
+        if not artifact.is_relative_to(run_root) or not artifact.is_file():
+            raise HTTPException(status_code=404, detail="artifact not found")
+        return {"path": artifact.relative_to(workspace_root).as_posix(), "content": artifact.read_text(encoding="utf-8")}
+
+    @app.get("/api/runs/{run_id}")
+    async def get_run(run_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        try:
+            return {
+                "run": resource_manager.get_pipeline_run(run_id),
+                "steps": resource_manager.list_step_runs(run_id),
+            }
+        except ResourceManagerError as exc:
+            raise HTTPException(status_code=404, detail="run not found") from exc
+
+    @app.get("/api/runs/{run_id}/events")
+    async def get_run_events(run_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if event_log is None:
+            return {"events": []}
+        return {"events": event_log.read_events(run_id)}
+
+    @app.get("/api/runs/{run_id}/quality")
+    async def get_run_quality(run_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        try:
+            resource_manager.get_pipeline_run(run_id)
+        except ResourceManagerError as exc:
+            raise HTTPException(status_code=404, detail="run not found") from exc
+        return evaluate_run_quality(resource_manager, pipeline_workspace_root or Path.cwd(), run_id)
+
+    @app.get("/api/runs/{run_id}/manifest")
+    async def get_run_manifest(run_id: str, x_hermes_token: str | None = Header(default=None)):
+        authorize(x_hermes_token)
+        if resource_manager is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        try:
+            resource_manager.get_pipeline_run(run_id)
+        except ResourceManagerError as exc:
+            raise HTTPException(status_code=404, detail="run not found") from exc
+        return build_run_manifest(resource_manager, pipeline_workspace_root or Path.cwd(), run_id, event_log)
 
     @app.get("/api/artifacts/{worker_id}/{task_id}/{filename}")
     async def read_artifact(worker_id: str, task_id: str, filename: str, x_hermes_token: str | None = Header(default=None)):
